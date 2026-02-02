@@ -12,7 +12,7 @@ export const Button = ({
   const baseClasses = 'px-6 py-3.5 rounded-xl font-semibold transition-all duration-200';
   
   const variants = {
-    primary: 'bg-brand-primary text-white hover:bg-brand-hover shadow-md hover:shadow-lg',
+    primary: 'bg-teal-600 dark:bg-teal-500 text-black dark:text-white hover:bg-teal-700 dark:hover:bg-teal-600 shadow-md hover:shadow-lg',
     secondary: 'bg-surface-elevated text-text-primary hover:bg-brand-light border border-border',
   };
 

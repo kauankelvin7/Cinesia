@@ -1,15 +1,29 @@
 @import "tailwindcss";
 
 /* ==============================================
-   DESIGN SYSTEM - SEMANTIC COLOR TOKENS
+   GOOGLE FONTS - TIPOGRAFIA MODERNA
+   ============================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* ==============================================
+   DESIGN SYSTEM 2.0 - DEEP SLATE DARK MODE
    ============================================== */
 
 @layer base {
-  /* Light Mode (Default) */
+  /* Reset Global */
+  * {
+    @apply border-slate-700;
+  }
+  
+  body {
+    @apply font-sans antialiased;
+  }
+
+  /* Light Mode (Medical Minimalist Clean) */
   :root {
     /* Backgrounds */
-    --bg-app: 248 250 252; /* Slate 50 */
-    --bg-surface: 255 255 255; /* White */
+    --bg-app: 248 250 252; /* Slate 50 - Off-white suave */
+    --bg-surface: 255 255 255; /* White - Cards limpos */
     --bg-surface-elevated: 255 255 255;
     
     /* Text */
@@ -25,48 +39,50 @@
     /* Borders */
     --border-color: 226 232 240; /* Slate 200 */
     --border-light: 241 245 249; /* Slate 100 */
-    
-    /* States */
-    --success: 34 197 94; /* Green 500 */
-    --error: 239 68 68; /* Red 500 */
-    --warning: 245 158 11; /* Amber 500 */
   }
 
-  /* Dark Mode */
+  /* Dark Mode (Deep Slate - Moderno & Profissional) */
   .dark {
-    /* Backgrounds */
-    --bg-app: 2 6 23; /* Slate 950 */
-    --bg-surface: 15 23 42; /* Slate 900 */
-    --bg-surface-elevated: 30 41 59; /* Slate 800 */
+    /* Backgrounds - NÃO use preto puro! */
+    --bg-app: 2 6 23; /* #020617 - Slate 950 */
+    --bg-surface: 15 23 42; /* #0F172A - Slate 900 */
+    --bg-surface-elevated: 30 41 59; /* #1E293B - Slate 800 */
     
-    /* Text */
-    --text-primary: 241 245 249; /* Slate 100 */
-    --text-secondary: 148 163 184; /* Slate 400 */
-    --text-tertiary: 100 116 139; /* Slate 500 */
+    /* Text - Alta legibilidade */
+    --text-primary: 226 232 240; /* #E2E8F0 - Slate 200 */
+    --text-secondary: 148 163 184; /* #94A3B8 - Slate 400 */
+    --text-tertiary: 100 116 139; /* #64748B - Slate 500 */
     
-    /* Brand */
-    --brand-primary: 20 184 166; /* Teal 500 - mais luminoso */
-    --brand-hover: 45 212 191; /* Teal 400 */
-    --brand-light: 19 78 74; /* Teal 900 */
+    /* Brand - Teal vibrante */
+    --brand-primary: 45 212 191; /* #2DD4BF - Teal 400 */
+    --brand-hover: 94 234 212; /* #5EEAD4 - Teal 300 */
+    --brand-light: 19 78 74; /* #134E4A - Teal 900 */
     
-    /* Borders */
-    --border-color: 30 41 59; /* Slate 800 */
-    --border-light: 51 65 85; /* Slate 700 */
+    /* Borders - Sutis */
+    --border-color: 51 65 85; /* #334155 - Slate 700 */
+    --border-light: 71 85 105; /* #475569 - Slate 600 */
     
-    /* States */
-    --success: 74 222 128; /* Green 400 */
-    --error: 248 113 113; /* Red 400 */
-    --warning: 251 191 36; /* Amber 400 */
+    /* States - Cores vibrantes para contraste */
+    --success: 74 222 128; /* #4ADE80 - Green 400 */
+    --error: 248 113 113; /* #F87171 - Red 400 */
+    --warning: 251 191 36; /* #FBBF24 - Amber 400 */
   }
 
-  /* Base Styles */
+  /* Base Styles - TIPOGRAFIA MODERNA */
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     background-color: rgb(var(--bg-app));
     color: rgb(var(--text-primary));
+    letter-spacing: -0.011em; /* Inter optical sizing */
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
   }
 }
 

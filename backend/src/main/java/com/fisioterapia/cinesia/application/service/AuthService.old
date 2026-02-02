@@ -1,0 +1,60 @@
+package com.fisioterapia.cinesia.application.service;
+
+import com.fisioterapia.cinesia.application.dto.AuthResponse;
+import com.fisioterapia.cinesia.application.dto.LoginRequest;
+import com.fisioterapia.cinesia.application.dto.RegisterRequest;
+import com.fisioterapia.cinesia.domain.entity.Usuario;
+import com.fisioterapia.cinesia.domain.repository.UsuarioRepository;
+import com.fisioterapia.cinesia.infrastructure.exception.BusinessException;
+import com.fisioterapia.cinesia.infrastructure.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+    
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        // Verifica se o email já existe
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException("Email já cadastrado");
+        }
+        
+        // Cria novo usuário
+        Usuario usuario = new Usuario();
+        usuario.setNome(request.getNome());
+        usuario.setEmail(request.getEmail());
+        usuario.setSenhaHash(passwordEncoder.encode(request.getSenha()));
+        
+        usuario = usuarioRepository.save(usuario);
+        
+        // Gera token JWT
+        String token = jwtUtil.generateToken(usuario.getId(), usuario.getEmail());
+        
+        return new AuthResponse(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+    }
+    
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        // Busca usuário por email
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException("Email ou senha inválidos"));
+        
+        // Verifica senha
+        if (!passwordEncoder.matches(request.getSenha(), usuario.getSenhaHash())) {
+            throw new BusinessException("Email ou senha inválidos");
+        }
+        
+        // Gera token JWT
+        String token = jwtUtil.generateToken(usuario.getId(), usuario.getEmail());
+        
+        return new AuthResponse(token, usuario.getId(), usuario.getNome(), usuario.getEmail());
+    }
+}

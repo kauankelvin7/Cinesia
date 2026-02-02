@@ -10,9 +10,9 @@ import java.util.Optional;
 @Repository
 public interface MateriaRepository extends JpaRepository<Materia, Long> {
     
-    List<Materia> findAllByOrderByNomeAsc();
+    List<Materia> findByUsuarioIdOrderByNomeAsc(Long usuarioId);
     
-    Optional<Materia> findByNome(String nome);
+    Optional<Materia> findByIdAndUsuarioId(Long id, Long usuarioId);
     
-    boolean existsByNome(String nome);
+    boolean existsByNomeAndUsuarioId(String nome, Long usuarioId);
 }

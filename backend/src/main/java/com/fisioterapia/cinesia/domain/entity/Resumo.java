@@ -30,6 +30,10 @@ public class Resumo {
     @JoinColumn(name = "materia_id", nullable = false)
     private Materia materia;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+    
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
     

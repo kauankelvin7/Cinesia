@@ -31,6 +31,10 @@ public class Materia {
     @Column(length = 7)
     private String cor; // Código hexadecimal da cor (ex: #FF5733)
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+    
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm;
     

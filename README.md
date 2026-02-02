@@ -1,113 +1,152 @@
-# Cinesia 📚
+# Cinesia 📚🔥
 
-Sistema web/PWA de estudos para Fisioterapia com suporte a resumos com formatação rica e flashcards com imagens.
+Sistema web/PWA de estudos para Fisioterapia com arquitetura **100% Serverless Firebase**.
 
-## 🚀 Tecnologias
+## 🚀 Arquitetura
 
-### Backend
-- **Java 17**
-- **Spring Boot 3.2.2**
-  - Spring Web
-  - Spring Data JPA
-  - Spring Validation
-- **PostgreSQL** (Banco de dados)
-- **Maven** (Gerenciador de dependências)
-- **Lombok** (Redução de boilerplate)
+### ⚡ Serverless (Firebase)
+- **Firebase Authentication** (Login com Google + Email/Senha)
+- **Firestore Database** (NoSQL em tempo real)
+- **Firebase Storage** (Upload de imagens)
+- **Sem backend local** - Infraestrutura gerenciada pelo Google
 
 ### Frontend
 - **React 18**
 - **Vite** (Build tool)
 - **React Router DOM** (Roteamento)
 - **React Quill** (Editor de texto rico)
-- **Axios** (Cliente HTTP)
+- **Firebase SDK** (Auth + Firestore + Storage)
+- **Framer Motion** (Animações)
 - **React Icons** (Ícones)
 - **PWA** (Progressive Web App)
 
 ## 📋 Funcionalidades
 
 ### ✅ Implementadas
+- 🔐 **Autenticação Firebase**
+  - Login com Google
+  - Login com Email/Senha
+  - Registro de novos usuários
+  - Estado persistente (auto-login)
+
 - ✨ **Gerenciamento de Matérias**
   - Criar, editar, listar e excluir matérias
-  - Personalização com cores
-  - Visualização de estatísticas (total de resumos e flashcards)
+  - Personalização com 8 cores diferentes
+  - Dados salvos no Firestore
+  - Isolamento por usuário (uid)
 
 - 📝 **Resumos com Editor Rico**
   - Editor WYSIWYG com formatação completa
   - Suporte a imagens, listas, cores e estilos
   - Organização por matérias
-  - Busca por título
+  - Armazenamento no Firestore
 
 - 🎴 **Flashcards com Imagens**
   - Criação de flashcards com pergunta e resposta
-  - Upload de imagens (ideal para anatomia)
-  - Modo de estudo interativo com flip cards
+  - Upload de imagens no Firebase Storage
+  - Modo de estudo interativo com flip cards 3D
   - Navegação entre flashcards
+  - URLs públicas de imagens
 
 - 📱 **PWA (Progressive Web App)**
   - Instalável em dispositivos móveis
-  - Funciona offline (após primeira carga)
+  - Funciona offline (com cache do Firestore)
   - Ícones e manifest configurados
+## 🏗️ Arquitetura Serverless
 
-## 🏗️ Arquitetura
-
-O projeto segue os princípios **SOLID** com arquitetura em camadas:
+O projeto usa **Firebase** como backend completo, eliminando a necessidade de servidores próprios:
 
 ```
-Backend (Spring Boot)
-├── domain/              # Camada de Domínio
-│   ├── entity/         # Entidades JPA
-│   └── repository/     # Repositórios (acesso a dados)
-├── application/         # Camada de Aplicação
-│   ├── dto/            # Data Transfer Objects
-│   ├── mapper/         # Conversores Entity ↔ DTO
-│   └── service/        # Lógica de negócio
-├── presentation/        # Camada de Apresentação
-│   └── controller/     # Controllers REST
-└── infrastructure/      # Infraestrutura
-    └── exception/      # Tratamento de exceções
+Frontend (React + Firebase SDK)
+├── config/
+│   └── firebase-config.js      # Configuração Firebase (Auth, Firestore, Storage)
+├── services/
+│   └── firebaseService.js      # Camada de serviço (CRUD completo)
+├── contexts/
+│   └── AuthContext-firebase.jsx # Context de autenticação
+├── components/                  # Componentes reutilizáveis
+├── pages/                      # Páginas da aplicação
+│   ├── Materias.jsx
+│   ├── Flashcards.jsx
+│   └── Resumos.jsx
+└── App.jsx                     # Componente raiz
 
-Frontend (React)
-├── components/          # Componentes reutilizáveis
-├── pages/              # Páginas da aplicação
-├── services/           # Comunicação com API
-└── App.jsx             # Componente raiz
+Firebase (Backend Gerenciado)
+├── Authentication              # Login/Registro de usuários
+├── Firestore Database         # Banco NoSQL
+│   ├── materias/              # Coleção de matérias
+│   ├── flashcards/            # Coleção de flashcards
+│   └── resumos/               # Coleção de resumos
+└── Storage                     # Armazenamento de imagens
+    └── flashcards/{userId}/   # Imagens organizadas por usuário
 ```
 
 ## 🛠️ Configuração e Instalação
 
 ### Pré-requisitos
-- Java 17 ou superior
 - Node.js 18 ou superior
-- PostgreSQL 13 ou superior
-- Maven 3.8+
+- Conta no [Firebase](https://firebase.google.com)
 
-### 1️⃣ Configurar Banco de Dados
+### 1️⃣ Configurar Firebase
 
-```sql
--- Criar banco de dados PostgreSQL
-CREATE DATABASE cinesia;
+#### Criar Projeto Firebase:
+1. Acesse [Firebase Console](https://console.firebase.google.com)
+2. Clique em "Adicionar projeto"
+3. Nome: **Cinesia** (ou outro de sua escolha)
+4. Desative Google Analytics (opcional)
+
+#### Configurar Authentication:
+1. No menu lateral → **Authentication**
+2. Clique em "Começar"
+3. Ative os métodos:
+   - ✅ **Google** (configure OAuth)
+   - ✅ **Email/Senha**
+
+#### Configurar Firestore Database:
+1. No menu lateral → **Firestore Database**
+2. Clique em "Criar banco de dados"
+3. Escolha **Modo de produção**
+4. Região: **us-central** (ou mais próxima)
+5. Vá em **Regras** e cole:
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{collection}/{docId} {
+      allow read, write: if request.auth != null 
+                         && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null 
+                    && request.auth.uid == request.resource.data.uid;
+    }
+  }
+}
 ```
 
-### 2️⃣ Configurar Backend
-
-```bash
-# Navegar para o diretório backend
-cd backend
-
-# Editar application.properties com suas credenciais PostgreSQL
-# src/main/resources/application.properties
-# spring.datasource.url=jdbc:postgresql://localhost:5432/cinesia
-# spring.datasource.username=seu_usuario
-# spring.datasource.password=sua_senha
-
-# Compilar e executar
-mvn clean install
-mvn spring-boot:run
+#### Configurar Storage:
+1. No menu lateral → **Storage**
+2. Clique em "Começar"
+3. Modo de produção → **us-central**
+4. Vá em **Regras** e cole:
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /flashcards/{userId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
 ```
 
-O backend estará rodando em: `http://localhost:8080`
+#### Obter Credenciais:
+1. ⚙️ **Configurações do Projeto** (ícone de engrenagem)
+2. Role até "Seus apps" → Clique no ícone **Web** (`</>`)
+3. Registre o app: **Cinesia Web**
+4. Copie o objeto `firebaseConfig`
+5. Cole em `frontend/src/config/firebase-config.js`
 
-### 3️⃣ Configurar Frontend
+### 2️⃣ Configurar Frontend
 
 ```bash
 # Navegar para o diretório frontend
@@ -116,94 +155,189 @@ cd frontend
 # Instalar dependências
 npm install
 
-# Copiar arquivo de ambiente
-copy .env.example .env
-
 # Executar em modo de desenvolvimento
 npm run dev
 ```
 
-O frontend estará rodando em: `http://localhost:3000`
+O frontend estará rodando em: `http://localhost:5173` (porta padrão do Vite)
 
-## 📡 API Endpoints
+## 🔥 Estrutura de Dados Firestore
 
-### Matérias
-- `GET /api/materias` - Listar todas as matérias
-- `GET /api/materias/{id}` - Buscar matéria por ID
-- `POST /api/materias` - Criar nova matéria
-- `PUT /api/materias/{id}` - Atualizar matéria
-- `DELETE /api/materias/{id}` - Excluir matéria
-
-### Resumos
-- `GET /api/resumos` - Listar todos os resumos
-- `GET /api/resumos/{id}` - Buscar resumo por ID
-- `GET /api/resumos/materia/{materiaId}` - Listar resumos de uma matéria
-- `GET /api/resumos/buscar?titulo={titulo}` - Buscar por título
-- `POST /api/resumos` - Criar novo resumo
-- `PUT /api/resumos/{id}` - Atualizar resumo
-- `DELETE /api/resumos/{id}` - Excluir resumo
-
-### Flashcards
-- `GET /api/flashcards` - Listar todos os flashcards
-- `GET /api/flashcards/{id}` - Buscar flashcard por ID
-- `GET /api/flashcards/materia/{materiaId}` - Listar flashcards de uma matéria
-- `GET /api/flashcards/buscar?texto={texto}` - Buscar em pergunta ou resposta
-- `POST /api/flashcards` - Criar novo flashcard
-- `PUT /api/flashcards/{id}` - Atualizar flashcard
-- `DELETE /api/flashcards/{id}` - Excluir flashcard
-
-### Upload
-- `POST /api/upload/imagem` - Fazer upload de imagem (multipart/form-data)
-- `GET /api/upload/imagem/{filename}` - Obter imagem
-- `DELETE /api/upload/imagem/{filename}` - Excluir imagem
-
-## 🎨 Estrutura do Banco de Dados
-
-```sql
-materias
-├── id (PK)
-├── nome
-├── descricao
-├── cor
-├── criado_em
-└── atualizado_em
-
-resumos
-├── id (PK)
-├── titulo
-├── conteudo (TEXT/HTML)
-├── materia_id (FK)
-├── criado_em
-└── atualizado_em
-
-flashcards
-├── id (PK)
-├── pergunta
-├── resposta
-├── imagem_url
-├── materia_id (FK)
-├── criado_em
-└── atualizado_em
+### Coleção: `materias`
+```javascript
+{
+  id: "auto-id",
+  nome: "Anatomia Humana",
+  descricao: "Estudo do corpo",
+  cor: "#0D9488",
+  uid: "firebase-user-id",
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
 ```
 
-## 🔒 Princípios SOLID Aplicados
+### Coleção: `flashcards`
+```javascript
+{
+  id: "auto-id",
+  pergunta: "O que é a escápula?",
+  resposta: "Osso triangular...",
+  imagemUrl: "https://firebasestorage...",
+  materiaId: "id-da-materia",
+  uid: "firebase-user-id",
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
 
-1. **Single Responsibility Principle (SRP)**
-   - Cada classe tem uma única responsabilidade
-   - Controllers apenas recebem requisições
-   - Services contêm lógica de negócio
-   - Repositories apenas acessam dados
+### Coleção: `resumos`
+```javascript
+{
+  id: "auto-id",
+  titulo: "Sistema Esquelético",
+  conteudo: "<p>HTML do editor...</p>",
+  materiaId: "id-da-materia",
+  uid: "firebase-user-id",
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+```
 
-2. **Open/Closed Principle (OCP)**
-   - Uso de interfaces (Repository, Service)
-   - Extensível através de herança e composição
+## 🚀 Como Usar
 
-3. **Liskov Substitution Principle (LSP)**
-   - Implementações podem substituir abstrações
-   - Uso correto de herança e interfaces
+### 1. Fazer Login
+- Clique em "Entrar com Google" ou
+- Registre-se com email/senha
 
-4. **Interface Segregation Principle (ISP)**
-   - Interfaces específicas por contexto
+### 2. Criar Matérias
+1. Vá em "Matérias"
+2. Clique em "Nova Matéria"
+3. Preencha nome, cor e descrição
+4. Dados salvos automaticamente no Firestore
+
+### 3. Criar Flashcards
+1. Vá em "Flashcards"
+2. Clique em "Novo Flashcard"
+3. Adicione pergunta e resposta
+4. (Opcional) Faça upload de imagem
+5. Associe a uma matéria
+
+### 4. Modo de Estudo
+1. Em Flashcards, clique em "Iniciar Estudo"
+2. Clique no card para revelar resposta
+3. Navegue com setas < >
+
+### 5. Criar Resumos
+1. Vá em "Resumos"
+2. Use o editor rico para formatar conteúdo
+3. Suporta negrito, listas, cores, imagens inline
+
+## 🔒 Segurança Firebase
+
+✅ **Regras de Firestore:**
+- Usuários só acessam seus próprios dados
+- Validação de `uid` em todas operações
+
+✅ **Regras de Storage:**
+- Upload apenas na pasta do próprio usuário
+- Leitura permitida para usuários autenticados
+
+✅ **Autenticação:**
+- Tokens JWT gerenciados pelo Firebase
+- Auto-refresh de tokens
+- Logout seguro
+
+## 🎯 Vantagens da Arquitetura Serverless
+
+| Aspecto | Firebase | Backend Tradicional |
+|---------|----------|---------------------|
+| **Infraestrutura** | ✅ Gerenciada pelo Google | ❌ Você configura tudo |
+| **Escalabilidade** | ✅ Automática | ❌ Manual |
+| **Custo Inicial** | ✅ Grátis até 1GB | ❌ Servidor sempre ligado |
+| **Manutenção** | ✅ Zero | ❌ Alta |
+| **Deploy** | ✅ Apenas frontend | ❌ Backend + Frontend |
+| **Tempo Real** | ✅ Nativo | ❌ Requer WebSockets |
+
+## 📦 Scripts Disponíveis
+
+```bash
+# Frontend
+npm run dev          # Desenvolvimento (Vite)
+npm run build        # Build de produção
+npm run preview      # Preview do build
+npm run lint         # Linter
+
+# Firebase (após instalar firebase-tools)
+firebase deploy      # Deploy completo
+firebase serve       # Teste local
+```
+
+## 🌐 Deploy (Opcional)
+
+### Hospedar no Firebase Hosting:
+```bash
+# Instalar Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Inicializar
+firebase init hosting
+
+# Build do frontend
+cd frontend
+npm run build
+
+# Deploy
+firebase deploy --only hosting
+```
+
+Seu app estará em: `https://cinesia-72d45.web.app`
+
+## 📚 Documentação Adicional
+
+- [MIGRACAO_FIREBASE.md](MIGRACAO_FIREBASE.md) - Detalhes da migração para Firebase
+- [Firebase Docs](https://firebase.google.com/docs)
+- [React Docs](https://react.dev)
+- [Vite Docs](https://vitejs.dev)
+
+## 🆘 Solução de Problemas
+
+### ❌ Erro: "Missing or insufficient permissions"
+**Solução:** Verifique as regras de segurança do Firestore/Storage
+
+### ❌ Erro: "Storage bucket not configured"  
+**Solução:** Crie o Storage no Firebase Console
+
+### ❌ Erro: "The query requires an index"
+**Solução:** Clique no link do erro, Firebase cria índice automaticamente
+
+### ❌ Upload de imagem não funciona
+**Solução:** 
+- Verifique regras de Storage
+- Limite de 5MB por imagem
+- Apenas imagens permitidas (jpg, png, gif)
+
+## 🤝 Contribuindo
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## ✨ Autor
+
+Desenvolvido com ❤️ para estudantes de Fisioterapia
+
+---
+
+**Stack:** React + Firebase (Serverless)  
+**Última atualização:** 2 de Fevereiro de 2026
    - Repositories com métodos específicos
 
 5. **Dependency Inversion Principle (DIP)**

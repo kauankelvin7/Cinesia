@@ -1,12 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiHome, FiBook, FiFileText, FiLayers, FiSun, FiMoon } from 'react-icons/fi';
+import { FiHome, FiBook, FiFileText, FiLayers, FiSun, FiMoon, FiLogOut, FiUser } from 'react-icons/fi';
 import Logo from './Logo';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext-firebase';
+import IconWrapper from './IconWrapper';
 
 const Sidebar = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   const links = [
     { to: '/', icon: FiHome, label: 'Home' },
@@ -48,7 +51,8 @@ const Sidebar = () => {
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <link.icon
+                <IconWrapper
+                  icon={link.icon}
                   size={20}
                   className={isActive ? 'text-brand-primary' : ''}
                 />
@@ -73,12 +77,27 @@ const Sidebar = () => {
             animate={{ rotate: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           >
-            {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
+            <IconWrapper icon={theme === 'dark' ? FiSun : FiMoon} size={20} />
           </motion.div>
           <span className="font-semibold">
             {theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
           </span>
         </motion.button>
+
+        {/* User Info */}
+        <div className="mt-4 p-3 bg-surface-secondary rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <IconWrapper icon={FiUser} size={16} className="text-text-secondary" />
+            <span className="text-sm font-medium text-text-primary truncate">{user?.nome}</span>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors"
+          >
+            <IconWrapper icon={FiLogOut} size={16} />
+            <span className="text-sm font-medium">Sair</span>
+          </button>
+        </div>
 
         {/* Info Footer */}
         <div className="mt-4 text-center text-xs text-text-tertiary">

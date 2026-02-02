@@ -47,6 +47,13 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        // OBRIGATÓRIO: Imprime stack trace completo no console para debug
+        System.err.println("\n===========================================================");
+        System.err.println("❌ ERRO 500 CAPTURADO - Stack Trace Completo:");
+        System.err.println("===========================================================");
+        ex.printStackTrace();
+        System.err.println("===========================================================");
+        
         ErrorResponse error = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
             "Erro interno do servidor: " + ex.getMessage(),

@@ -4,33 +4,38 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
+  darkMode: false,
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+      },
       colors: {
-        // Semantic Colors usando CSS Variables
-        background: 'rgb(var(--bg-app) / <alpha-value>)',
-        surface: 'rgb(var(--bg-surface) / <alpha-value>)',
-        'surface-elevated': 'rgb(var(--bg-surface-elevated) / <alpha-value>)',
+        // Deep Slate Dark Mode (Modern & Professional)
+        dark: {
+          app: '#020617',        // slate-950 - Background principal
+          surface: '#0F172A',    // slate-900 - Cards/Surface
+          elevated: '#1E293B',   // slate-800 - Surface elevada
+          border: '#334155',     // slate-700 - Bordas
+        },
         
+        // Text Colors (Dark Mode)
         text: {
-          primary: 'rgb(var(--text-primary) / <alpha-value>)',
-          secondary: 'rgb(var(--text-secondary) / <alpha-value>)',
-          tertiary: 'rgb(var(--text-tertiary) / <alpha-value>)',
+          primary: '#E2E8F0',    // slate-200 - Texto principal (evita branco puro)
+          secondary: '#94A3B8',  // slate-400 - Texto secundário
+          tertiary: '#64748B',   // slate-500 - Texto terciário
+          muted: '#475569',      // slate-600 - Texto muito sutil
         },
         
+        // Brand Colors (Teal Accent)
         brand: {
-          primary: 'rgb(var(--brand-primary) / <alpha-value>)',
-          hover: 'rgb(var(--brand-hover) / <alpha-value>)',
-          light: 'rgb(var(--brand-light) / <alpha-value>)',
+          primary: '#14B8A6',    // teal-500
+          hover: '#0D9488',      // teal-600
+          light: '#2DD4BF',      // teal-400 (brilhante no dark)
+          dark: '#0F766E',       // teal-700
         },
         
-        border: {
-          DEFAULT: 'rgb(var(--border-color) / <alpha-value>)',
-          light: 'rgb(var(--border-light) / <alpha-value>)',
-        },
-        
-        // Fallback para cores tradicionais (manter compatibilidade)
+        // Cores tradicionais (compatibilidade)
         teal: {
           50: '#F0FDFA',
           100: '#CCFBF1',
@@ -42,6 +47,7 @@ export default {
           700: '#0F766E',
           800: '#115E59',
           900: '#134E4A',
+          950: '#042F2E',
         },
         slate: {
           50: '#F8FAFC',

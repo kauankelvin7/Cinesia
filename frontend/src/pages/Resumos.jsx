@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { resumosAPI, materiasAPI } from '../services/api';
+import { listarResumos, criarResumo, atualizarResumo, deletarResumo, listarMaterias } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext-firebase';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiX } from 'react-icons/fi';
 
 function Resumos() {
+  const { user } = useAuth();
   const { materiaId } = useParams();
   const [resumos, setResumos] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -33,21 +35,24 @@ function Resumos() {
   };
 
   useEffect(() => {
-    carregarDados();
-  }, [materiaId]);
+    if (user) {
+      carregarDados();
+    }
+  }, [materiaId, user]);
 
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [resumosRes, materiasRes] = await Promise.all([
-        materiaId ? resumosAPI.getByMateria(materiaId) : resumosAPI.getAll(),
-        materiasAPI.getAll()
+      const [resumosData, materiasData] = await Promise.all([
+        listarResumos(user.id, materiaId || null),
+        listarMaterias(user.id)
       ]);
-      setResumos(resumosRes.data);
-      setMaterias(materiasRes.data);
+      setResumos(resumosData);
+      setMaterias(materiasData);
       setError(null);
     } catch (err) {
       setError('Erro ao carregar dados: ' + err.message);
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
     }
@@ -55,16 +60,24 @@ function Resumos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.titulo.trim()) {
+      setError('Título é obrigatório');
+      return;
+    }
+
     try {
       if (editingId) {
-        await resumosAPI.update(editingId, formData);
+        await atualizarResumo(editingId, formData);
       } else {
-        await resumosAPI.create(formData);
+        await criarResumo(formData, user.id);
       }
-      carregarDados();
+      await carregarDados();
       resetForm();
+      setError(null);
     } catch (err) {
-      setError('Erro ao salvar resumo: ' + (err.response?.data?.message || err.message));
+      setError('Erro ao salvar resumo: ' + err.message);
+      console.error('Erro ao salvar:', err);
     }
   };
 
@@ -72,7 +85,7 @@ function Resumos() {
     setFormData({
       titulo: resumo.titulo,
       conteudo: resumo.conteudo || '',
-      materiaId: resumo.materiaId
+      materiaId: resumo.materiaId || ''
     });
     setEditingId(resumo.id);
     setShowForm(true);
@@ -81,10 +94,12 @@ function Resumos() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir este resumo?')) {
       try {
-        await resumosAPI.delete(id);
-        carregarDados();
+        await deletarResumo(id);
+        await carregarDados();
+        setError(null);
       } catch (err) {
-        setError('Erro ao excluir resumo: ' + (err.response?.data?.message || err.message));
+        setError('Erro ao excluir resumo: ' + err.message);
+        console.error('Erro ao excluir:', err);
       }
     }
   };

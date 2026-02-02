@@ -4,9 +4,11 @@ import com.fisioterapia.cinesia.application.dto.FlashcardDTO;
 import com.fisioterapia.cinesia.application.mapper.FlashcardMapper;
 import com.fisioterapia.cinesia.domain.entity.Flashcard;
 import com.fisioterapia.cinesia.domain.entity.Materia;
+import com.fisioterapia.cinesia.domain.entity.Usuario;
 import com.fisioterapia.cinesia.domain.repository.FlashcardRepository;
 import com.fisioterapia.cinesia.domain.repository.MateriaRepository;
 import com.fisioterapia.cinesia.infrastructure.exception.ResourceNotFoundException;
+import com.fisioterapia.cinesia.infrastructure.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,8 @@ public class FlashcardService {
     
     @Transactional(readOnly = true)
     public List<FlashcardDTO> listarTodos() {
-        return flashcardRepository.findAll()
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        return flashcardRepository.findByUsuarioIdOrderByCriadoEmDesc(usuarioId)
             .stream()
             .map(flashcardMapper::toDTO)
             .collect(Collectors.toList());
@@ -32,7 +35,8 @@ public class FlashcardService {
     
     @Transactional(readOnly = true)
     public List<FlashcardDTO> listarPorMateria(Long materiaId) {
-        return flashcardRepository.findByMateriaIdOrderByCriadoEmDesc(materiaId)
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        return flashcardRepository.findByMateriaIdAndUsuarioIdOrderByCriadoEmDesc(materiaId, usuarioId)
             .stream()
             .map(flashcardMapper::toDTO)
             .collect(Collectors.toList());
@@ -40,14 +44,17 @@ public class FlashcardService {
     
     @Transactional(readOnly = true)
     public FlashcardDTO buscarPorId(Long id) {
-        Flashcard flashcard = flashcardRepository.findById(id)
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        Flashcard flashcard = flashcardRepository.findByIdAndUsuarioId(id, usuarioId)
             .orElseThrow(() -> new ResourceNotFoundException("Flashcard não encontrado com ID: " + id));
         return flashcardMapper.toDTO(flashcard);
     }
     
     @Transactional(readOnly = true)
     public List<FlashcardDTO> buscar(String texto) {
-        return flashcardRepository.findByPerguntaContainingIgnoreCaseOrRespostaContainingIgnoreCase(texto, texto)
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        return flashcardRepository.findByUsuarioIdAndPerguntaContainingIgnoreCaseOrUsuarioIdAndRespostaContainingIgnoreCase(
+                usuarioId, texto, usuarioId, texto)
             .stream()
             .map(flashcardMapper::toDTO)
             .collect(Collectors.toList());
@@ -55,11 +62,15 @@ public class FlashcardService {
     
     @Transactional
     public FlashcardDTO criar(FlashcardDTO flashcardDTO) {
-        Materia materia = materiaRepository.findById(flashcardDTO.getMateriaId())
+        Usuario usuario = SecurityUtils.getUsuarioAutenticado();
+        Long usuarioId = usuario.getId();
+        
+        Materia materia = materiaRepository.findByIdAndUsuarioId(flashcardDTO.getMateriaId(), usuarioId)
             .orElseThrow(() -> new ResourceNotFoundException("Matéria não encontrada com ID: " + flashcardDTO.getMateriaId()));
         
         Flashcard flashcard = flashcardMapper.toEntity(flashcardDTO);
         flashcard.setMateria(materia);
+        flashcard.setUsuario(usuario);
         
         Flashcard flashcardSalvo = flashcardRepository.save(flashcard);
         return flashcardMapper.toDTO(flashcardSalvo);
@@ -67,11 +78,12 @@ public class FlashcardService {
     
     @Transactional
     public FlashcardDTO atualizar(Long id, FlashcardDTO flashcardDTO) {
-        Flashcard flashcard = flashcardRepository.findById(id)
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        Flashcard flashcard = flashcardRepository.findByIdAndUsuarioId(id, usuarioId)
             .orElseThrow(() -> new ResourceNotFoundException("Flashcard não encontrado com ID: " + id));
         
         if (flashcardDTO.getMateriaId() != null && !flashcard.getMateria().getId().equals(flashcardDTO.getMateriaId())) {
-            Materia novaMateria = materiaRepository.findById(flashcardDTO.getMateriaId())
+            Materia novaMateria = materiaRepository.findByIdAndUsuarioId(flashcardDTO.getMateriaId(), usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Matéria não encontrada com ID: " + flashcardDTO.getMateriaId()));
             flashcard.setMateria(novaMateria);
         }
@@ -83,9 +95,9 @@ public class FlashcardService {
     
     @Transactional
     public void deletar(Long id) {
-        if (!flashcardRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Flashcard não encontrado com ID: " + id);
-        }
-        flashcardRepository.deleteById(id);
+        Long usuarioId = SecurityUtils.getUsuarioIdAutenticado();
+        Flashcard flashcard = flashcardRepository.findByIdAndUsuarioId(id, usuarioId)
+            .orElseThrow(() -> new ResourceNotFoundException("Flashcard não encontrado com ID: " + id));
+        flashcardRepository.delete(flashcard);
     }
 }

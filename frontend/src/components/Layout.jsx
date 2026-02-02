@@ -20,36 +20,20 @@ const Layout = ({ children }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background transition-colors duration-200">
+    <div className="min-h-screen bg-white">
       {/* Desktop: Sidebar */}
       {isDesktop && <Sidebar />}
 
       {/* Mobile/Tablet: Header com Logo e Theme Toggle */}
       {!isDesktop && (
         <motion.header
-          className="fixed top-0 left-0 right-0 bg-surface border-b border-border z-40 px-4 py-3"
+          className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 px-4 py-3"
           initial={{ y: -100 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         >
           <div className="flex items-center justify-between max-w-6xl mx-auto">
             <Logo size="small" />
-            
-            <motion.button
-              onClick={toggleTheme}
-              className="p-3 rounded-xl bg-brand-light text-brand-primary hover:bg-brand-hover/20 transition-all"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <motion.div
-                key={theme}
-                initial={{ rotate: -180, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              >
-                {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-              </motion.div>
-            </motion.button>
           </div>
         </motion.header>
       )}

@@ -2,10 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { flashcardsAPI, materiasAPI, uploadAPI } from '../services/api';
+import { 
+  listarFlashcards, 
+  criarFlashcard, 
+  atualizarFlashcard, 
+  deletarFlashcard,
+  listarMaterias
+} from '../services/firebaseService';
+import { compressImage } from '../utils/imageCompressor';
+import { useAuth } from '../contexts/AuthContext-firebase';
 import { FiPlus, FiEdit2, FiTrash2, FiImage, FiChevronLeft, FiChevronRight, FiX, FiZoomIn } from 'react-icons/fi';
 
 function Flashcards() {
+  const { user } = useAuth();
   const { materiaId } = useParams();
   const [flashcards, setFlashcards] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -17,29 +26,33 @@ function Flashcards() {
   const [currentCard, setCurrentCard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [compressingImage, setCompressingImage] = useState(false);
   const [formData, setFormData] = useState({
     pergunta: '',
     resposta: '',
-    materiaId: materiaId || '',
-    imagemUrl: ''
+    materiaId: materiaId || ''
   });
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
 
   useEffect(() => {
-    carregarDados();
-  }, [materiaId]);
+    if (user) {
+      carregarDados();
+    }
+  }, [materiaId, user]);
 
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [flashcardsRes, materiasRes] = await Promise.all([
-        materiaId ? flashcardsAPI.getByMateria(materiaId) : flashcardsAPI.getAll(),
-        materiasAPI.getAll()
+      const [flashcardsData, materiasData] = await Promise.all([
+        listarFlashcards(user.id, materiaId || null),
+        listarMaterias(user.id)
       ]);
-      setFlashcards(flashcardsRes.data);
-      setMaterias(materiasRes.data);
+      setFlashcards(flashcardsData);
+      setMaterias(materiasData);
       setError(null);
     } catch (err) {
       setError('Erro ao carregar dados: ' + err.message);
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setLoading(false);
     }
@@ -49,28 +62,70 @@ function Flashcards() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validação de tamanho (máx 10MB antes da compressão)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 10MB');
+      return;
+    }
+
+    // Validação de tipo
+    if (!file.type.startsWith('image/')) {
+      setError('Apenas imagens são permitidas (jpg, png, gif, webp)');
+      return;
+    }
+
     try {
-      const response = await uploadAPI.uploadImage(file);
-      const imageUrl = response.data.filename;
-      setFormData({ ...formData, imagemUrl: imageUrl });
-      setImagePreview(uploadAPI.getImageUrl(imageUrl));
+      setCompressingImage(true);
+      setError(null);
+      console.log('🖼️ Comprimindo imagem...');
+      
+      // Comprimir imagem para Base64
+      const base64Data = await compressImage(file);
+      
+      // Estimar tamanho
+      const sizeKB = (base64Data.length * 0.75 / 1024).toFixed(2);
+      console.log(`✅ Imagem comprimida: ${sizeKB}KB`);
+      
+      // Se muito grande, avisar
+      if (base64Data.length * 0.75 > 800 * 1024) {
+        console.warn('⚠️ Imagem comprimida ocupa mais de 800KB');
+      }
+      
+      setImagePreview(base64Data);
+      setSelectedImageFile(base64Data);
+      setError(null);
     } catch (err) {
-      setError('Erro ao fazer upload da imagem: ' + err.message);
+      setError('Erro ao comprimir imagem: ' + err.message);
+      console.error('Erro na compressão:', err);
+      setImagePreview(null);
+      setSelectedImageFile(null);
+    } finally {
+      setCompressingImage(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.pergunta.trim() || !formData.resposta.trim()) {
+      setError('Pergunta e resposta são obrigatórios');
+      return;
+    }
+
     try {
       if (editingId) {
-        await flashcardsAPI.update(editingId, formData);
+        // Atualizar: passar imagem se houver
+        await atualizarFlashcard(editingId, formData, selectedImageFile);
       } else {
-        await flashcardsAPI.create(formData);
+        // Criar: passar imagem (File ou Base64 já processado)
+        await criarFlashcard(formData, selectedImageFile, user.id);
       }
-      carregarDados();
+      await carregarDados();
       resetForm();
+      setError(null);
     } catch (err) {
-      setError('Erro ao salvar flashcard: ' + (err.response?.data?.message || err.message));
+      setError('Erro ao salvar flashcard: ' + err.message);
+      console.error('Erro ao salvar:', err);
     }
   };
 
@@ -78,11 +133,14 @@ function Flashcards() {
     setFormData({
       pergunta: flashcard.pergunta,
       resposta: flashcard.resposta,
-      materiaId: flashcard.materiaId,
-      imagemUrl: flashcard.imagemUrl || ''
+      materiaId: flashcard.materiaId || ''
     });
     if (flashcard.imagemUrl) {
-      setImagePreview(uploadAPI.getImageUrl(flashcard.imagemUrl));
+      setImagePreview(flashcard.imagemUrl);
+      setSelectedImageFile(flashcard.imagemUrl);
+    } else {
+      setImagePreview(null);
+      setSelectedImageFile(null);
     }
     setEditingId(flashcard.id);
     setShowForm(true);
@@ -91,19 +149,22 @@ function Flashcards() {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir este flashcard?')) {
       try {
-        await flashcardsAPI.delete(id);
-        carregarDados();
+        await deletarFlashcard(id);
+        await carregarDados();
+        setError(null);
       } catch (err) {
-        setError('Erro ao excluir flashcard: ' + (err.response?.data?.message || err.message));
+        setError('Erro ao excluir flashcard: ' + err.message);
+        console.error('Erro ao excluir:', err);
       }
     }
   };
 
   const resetForm = () => {
-    setFormData({ pergunta: '', resposta: '', materiaId: materiaId || '', imagemUrl: '' });
+    setFormData({ pergunta: '', resposta: '', materiaId: materiaId || '' });
     setEditingId(null);
     setShowForm(false);
     setImagePreview(null);
+    setSelectedImageFile(null);
   };
 
   const startStudyMode = () => {
@@ -229,7 +290,7 @@ function Flashcards() {
                       </span>
                     </div>
                     
-                    {/* Imagem com Zoom Interativo */}
+                    {/* Imagem com Zoom Interativo - Cloudinary CDN */}
                     {card.imagemUrl && (
                       <motion.div 
                         className="mb-8 rounded-2xl overflow-hidden shadow-card relative group"
@@ -258,7 +319,7 @@ function Flashcards() {
                             contentClass="w-full"
                           >
                             <img 
-                              src={uploadAPI.getImageUrl(card.imagemUrl)} 
+                              src={card.imagemUrl} 
                               alt="Anatomia" 
                               className="w-full h-64 object-cover cursor-move"
                               draggable={false}
@@ -450,17 +511,23 @@ function Flashcards() {
 
                 <div>
                   <label className="block text-sm font-semibold text-text-primary mb-2">
-                    Imagem (Opcional)
+                    Imagem (Opcional - Comprimida para Base64)
                   </label>
-                  <label htmlFor="image-input" className="btn-secondary cursor-pointer inline-flex items-center gap-2">
-                    <FiImage size={20} />
-                    {imagePreview ? 'Alterar Imagem' : 'Adicionar Imagem'}
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="image-input" className="btn-secondary cursor-pointer inline-flex items-center gap-2 disabled:opacity-50">
+                      <FiImage size={20} />
+                      {compressingImage ? 'Comprimindo...' : imagePreview ? 'Alterar Imagem' : 'Adicionar Imagem'}
+                    </label>
+                    {compressingImage && (
+                      <span className="text-sm text-text-secondary">🖼️ Processando...</span>
+                    )}
+                  </div>
                   <input
                     id="image-input"
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
+                    disabled={compressingImage}
                     className="hidden"
                   />
                   {imagePreview && (
@@ -470,6 +537,9 @@ function Flashcards() {
                       animate={{ opacity: 1, scale: 1 }}
                     >
                       <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
+                      <div className="text-xs text-text-secondary p-2 bg-primary-50">
+                        ✅ Imagem pronta para envio
+                      </div>
                     </motion.div>
                   )}
                 </div>
@@ -545,7 +615,7 @@ function Flashcards() {
               {flashcard.imagemUrl && (
                 <div className="mb-4 rounded-xl overflow-hidden">
                   <img 
-                    src={uploadAPI.getImageUrl(flashcard.imagemUrl)} 
+                    src={flashcard.imagemUrl} 
                     alt="Flashcard" 
                     className="w-full h-40 object-cover"
                   />
