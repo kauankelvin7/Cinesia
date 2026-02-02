@@ -1,0 +1,132 @@
+.materias-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  color: var(--text-color);
+}
+
+.form-card {
+  margin-bottom: 30px;
+}
+
+.form-card h2 {
+  margin-bottom: 20px;
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.color-picker input[type="color"] {
+  width: 80px;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.materias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.materia-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  border-left: 5px solid var(--primary-color);
+  transition: transform 0.3s ease;
+}
+
+.materia-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.materia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.materia-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.materia-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: transparent;
+  color: var(--text-light);
+  padding: 8px;
+  font-size: 16px;
+}
+
+.btn-icon:hover {
+  color: var(--primary-color);
+}
+
+.btn-icon.btn-danger:hover {
+  color: var(--danger-color);
+}
+
+.materia-card p {
+  color: var(--text-light);
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.materia-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+}
+
+.empty-state p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .materias-grid {
+    grid-template-columns: 1fr;
+  }
+}

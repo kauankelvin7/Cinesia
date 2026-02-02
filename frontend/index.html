@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sistema de estudos com resumos e flashcards para Fisioterapia" />
+    <meta name="theme-color" content="#4A90E2" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Cinesia - Estudos de Fisioterapia</title>
+    
+    <!-- Script para aplicar tema antes do carregamento -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('cinesia-theme') || 'light';
+        document.documentElement.classList.add(theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

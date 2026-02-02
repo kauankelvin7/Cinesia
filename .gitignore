@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+target/
+*.class
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+tools/
+.mvn/
+
+# Temp
+*.tmp
+*.temp
