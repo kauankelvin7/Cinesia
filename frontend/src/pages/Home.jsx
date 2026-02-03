@@ -1,216 +1,442 @@
+/**
+ * HOME - Dashboard HealthTech Premium (Light Mode Only)
+ * 
+ * Design System v2.0 - Glassmorphism Edition
+ * Features:
+ * - Glassmorphism cards (bg-white/80 backdrop-blur)
+ * - Gradientes premium teal/emerald
+ * - Animações fluidas com Framer Motion
+ * - Skeleton loaders elegantes
+ * - Lucide icons modernos
+ */
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, FileText, CreditCard, CheckCircle, Plus, TrendingUp } from 'lucide-react';
+import { 
+  BookOpen, 
+  FileText, 
+  CreditCard, 
+  Flame, 
+  Plus,
+  BookMarked,
+  ArrowRight,
+  TrendingUp,
+  ChevronRight,
+  Sparkles,
+  Calendar
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
-import { getDashboardStats, salvarEvento } from '../services/firebaseService';
+import { getDashboardStats } from '../services/dashboardService';
+import { salvarEvento, deletarEvento } from '../services/firebaseService';
 import CalendarWidget from '../components/Dashboard/CalendarWidget';
+import AddEventModal from '../components/modals/AddEventModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import Button from '../components/ui/Button';
+import '../styles/calendar.css';
+
+// Utility function (outside component to avoid recreation)
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Bom dia';
+  if (hour < 18) return 'Boa tarde';
+  return 'Boa noite';
+};
+
+// Skeleton Loader Premium
+const SkeletonCard = () => (
+  <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 p-6 animate-pulse border border-white/50">
+    <div className="flex items-start gap-4">
+      <div className="w-14 h-14 bg-gradient-to-br from-teal-200 to-emerald-200 rounded-2xl flex-shrink-0"></div>
+      <div className="flex-1">
+        <div className="h-4 bg-slate-200 rounded-lg w-24 mb-3"></div>
+        <div className="h-8 bg-gradient-to-r from-teal-100 to-emerald-100 rounded-lg w-20 mb-2"></div>
+        <div className="h-3 bg-slate-100 rounded w-32"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Stat Card Premium
+const StatCard = ({ title, value, icon: Icon, subtitle, delay = 0, color = 'teal' }) => {
+  // Fallback icon protection - prevents SVG undefined error
+  const SafeIcon = Icon || BookOpen;
+  
+  const colors = {
+    teal: 'from-teal-400 to-emerald-500 shadow-teal-500/25',
+    blue: 'from-blue-400 to-cyan-500 shadow-blue-500/25',
+    purple: 'from-purple-400 to-pink-500 shadow-purple-500/25',
+    orange: 'from-orange-400 to-amber-500 shadow-orange-500/25',
+  };
+
+  return (
+    <motion.div
+      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300 p-6 border border-white/50 group"
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay, duration: 0.4, type: 'spring', stiffness: 100 }}
+      whileHover={{ y: -5 }}
+    >
+      <div className="flex items-start gap-4">
+        <motion.div 
+          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colors[color]} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}
+          whileHover={{ rotate: 10, scale: 1.1 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+        >
+          <SafeIcon size={28} strokeWidth={2} />
+        </motion.div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+          <p className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1">
+            {value}
+          </p>
+          {subtitle && (
+            <p className="text-xs text-slate-400 flex items-center gap-1">
+              <Sparkles size={12} className="text-teal-500" />
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const Home = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [stats, setStats] = useState({
-    ativas: 0,
-    concluidas: 0,
-    totalMaterias: 0,
-    materiasRecentes: [],
-    totalResumos: 0,
-    totalFlashcards: 0,
-    eventos: []
-  });
-  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Estados do Modal de Evento
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [selectedDateForEvent, setSelectedDateForEvent] = useState(new Date());
+  
+  // Estados do Modal de Confirmação de Exclusão
+  const [confirmDeleteEvento, setConfirmDeleteEvento] = useState({ isOpen: false, evento: null });
+  const [isDeletingEvento, setIsDeletingEvento] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     
-    const carregarDados = async () => {
+    const loadData = async () => {
       const userId = user?.id || user?.uid;
       if (!userId) {
-        setLoading(false);
+        setIsLoading(false);
         return;
       }
       
       try {
         const data = await getDashboardStats(userId);
-        setStats({
-          ...data,
-          totalMaterias: data.ativas + data.concluidas
-        });
+        setDashboardData(data);
       } catch (error) {
         console.error('Erro ao carregar dashboard:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
-    carregarDados();
+    loadData();
   }, [user]);
 
-  const handleAddEvento = async (novoEvento) => {
+  // Handler para abrir o modal de evento
+  const handleOpenEventModal = (date = new Date()) => {
+    setSelectedDateForEvent(date);
+    setIsEventModalOpen(true);
+  };
+
+  // Handler para salvar evento via modal
+  const handleSaveEvent = async (newEvent) => {
     const userId = user?.id || user?.uid;
     if (!userId) return;
     
     try {
-      await salvarEvento(novoEvento, userId);
-      const data = await getDashboardStats(userId);
-      setStats({ ...data, totalMaterias: data.ativas + data.concluidas });
+      await salvarEvento(newEvent, userId);
+      const updatedData = await getDashboardStats(userId);
+      setDashboardData(updatedData);
+      setIsEventModalOpen(false);
     } catch (error) {
       console.error('Erro ao adicionar evento:', error);
+      throw error; // Re-throw para o modal mostrar erro
     }
   };
 
-  const statCards = [
-    { title: 'Total', value: stats.totalMaterias, icon: BookOpen, color: 'teal' },
-    { title: 'Ativas', value: stats.ativas, icon: TrendingUp, color: 'blue' },
-    { title: 'Concluídas', value: stats.concluidas, icon: CheckCircle, color: 'green' },
-    { title: 'Resumos', value: stats.totalResumos, icon: FileText, color: 'orange' }
-  ];
+  // Handler para clique em dia do calendário
+  const handleDayClick = (date) => {
+    handleOpenEventModal(date);
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handler para abrir modal de confirmação de exclusão de evento
+  const handleDeleteEvento = (evento) => {
+    setConfirmDeleteEvento({ isOpen: true, evento });
+  };
 
-  const colorMap = {
-    teal: 'bg-teal-50 text-teal-600',
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    orange: 'bg-orange-50 text-orange-600'
+  // Handler para confirmar exclusão de evento
+  const confirmarExclusaoEvento = async () => {
+    if (!confirmDeleteEvento.evento?.id) return;
+    
+    setIsDeletingEvento(true);
+    try {
+      await deletarEvento(confirmDeleteEvento.evento.id);
+      const userId = user?.id || user?.uid;
+      const updatedData = await getDashboardStats(userId);
+      setDashboardData(updatedData);
+      setConfirmDeleteEvento({ isOpen: false, evento: null });
+    } catch (error) {
+      console.error('Erro ao excluir evento:', error);
+    } finally {
+      setIsDeletingEvento(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white pb-32">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 pb-32">
+      {/* Header Premium com Glass Effect */}
+      <div className="bg-white/70 backdrop-blur-xl border-b border-white/50 sticky top-0 z-40 shadow-lg shadow-slate-200/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Bem-vindo, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}! 👋
-              </h1>
-              <p className="text-gray-600 mt-1">Acompanhe seu progresso de estudos</p>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/materias')}
-              className="bg-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-md w-fit"
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <motion.div 
+              className="flex-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <Plus size={20} />
-              Nova Matéria
-            </motion.button>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-medium text-teal-600 bg-teal-50 px-3 py-1 rounded-full">
+                  {getGreeting()} 
+                </span>
+              </div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 bg-clip-text text-transparent mb-2">
+                {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}
+              </h1>
+              <p className="text-slate-500 text-sm flex items-center gap-2">
+                <Sparkles size={14} className="text-teal-500" />
+                Transforme conhecimento em prática. Sua jornada na fisioterapia começa aqui.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Button
+                variant="primary"
+                size="lg"
+                leftIcon={<Plus size={20} />}
+                onClick={() => navigate('/materias')}
+              >
+                Nova Matéria
+              </Button>
+            </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {statCards.map((card, index) => {
-            const Icon = card.icon;
-            const [bgColor, textColor] = colorMap[card.color].split(' ');
-            return (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.08 }}
-                className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium">{card.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{card.value}</p>
-                  </div>
-                  <div className={`${bgColor} p-3 rounded-lg`}>
-                    <Icon className={textColor} size={24} />
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+        {/* Stats Cards Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+            <StatCard
+              title="Matérias Ativas"
+              value={dashboardData?.ativas || 0}
+              icon={BookOpen}
+              subtitle={`${dashboardData?.totalMaterias || 0} no total`}
+              color="teal"
+              delay={0}
+            />
+            <StatCard
+              title="Flashcards"
+              value={dashboardData?.totalFlashcards || 0}
+              icon={CreditCard}
+              subtitle="Prontos para revisão"
+              color="blue"
+              delay={0.1}
+            />
+            <StatCard
+              title="Resumos"
+              value={dashboardData?.totalResumos || 0}
+              icon={FileText}
+              subtitle="Documentos salvos"
+              color="purple"
+              delay={0.2}
+            />
+            <StatCard
+              title="Dias de Ofensiva"
+              value={dashboardData?.offensiveStreak || 0}
+              icon={Flame}
+              subtitle="Continue assim!"
+              color="orange"
+              delay={0.3}
+            />
+          </div>
+        )}
 
-        {/* Seção Principal */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Matérias Recentes */}
-          <div className="lg:col-span-2">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+        {/* Grid Principal - 12 colunas para melhor proporção */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          {/* Materias em Foco */}
+          <motion.div 
+            className="xl:col-span-7"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg shadow-slate-200/50 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <TrendingUp size={24} className="text-teal-600" />
-                  Matérias em Progresso
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                    <TrendingUp size={18} className="text-white" />
+                  </div>
+                  Matérias em Foco
                 </h2>
                 <button
                   onClick={() => navigate('/materias')}
-                  className="text-teal-600 hover:text-teal-700 font-medium text-sm"
+                  className="text-teal-600 hover:text-teal-700 font-medium text-sm flex items-center gap-1 transition-colors group"
                 >
-                  Ver todas →
+                  Ver todas
+                  <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
 
-              {stats.materiasRecentes && stats.materiasRecentes.length > 0 ? (
+              {/* Empty State Premium */}
+              {!isLoading && (!dashboardData?.materiasRecentes || dashboardData.materiasRecentes.length === 0) ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-12"
+                >
+                  <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-teal-500/10">
+                    <BookMarked size={48} className="text-teal-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    Nenhuma matéria criada ainda
+                  </h3>
+                  <p className="text-slate-500 text-sm mb-8 max-w-md mx-auto">
+                    Comece sua jornada criando sua primeira matéria de estudos
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    leftIcon={<Plus size={20} />}
+                    rightIcon={<ArrowRight size={20} />}
+                    onClick={() => navigate('/materias')}
+                  >
+                    Criar Primeira Matéria
+                  </Button>
+                </motion.div>
+              ) : isLoading ? (
                 <div className="space-y-3">
-                  {stats.materiasRecentes.slice(0, 5).map((materia, idx) => (
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-24 bg-gradient-to-r from-slate-100 to-slate-50 rounded-xl animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {dashboardData.materiasRecentes.slice(0, 6).map((materia, idx) => (
                     <motion.div
                       key={materia.id}
-                      initial={{ opacity: 0, x: -10 }}
+                      initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.05 }}
+                      transition={{ delay: 0.5 + idx * 0.1 }}
                       onClick={() => navigate('/materias')}
-                      className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-slate-50 to-white rounded-xl hover:from-teal-50 hover:to-emerald-50 transition-all cursor-pointer group border border-slate-100 hover:border-teal-200 hover:shadow-md"
                     >
                       <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                        style={{ backgroundColor: materia.cor || '#14b8a6' }}
+                        className="w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${materia.cor || '#14B8A6'}, ${materia.cor || '#14B8A6'}dd)` 
+                        }}
                       >
                         {materia.nome?.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-gray-900 font-semibold truncate">{materia.nome}</h3>
+                        <h3 className="text-slate-900 font-semibold truncate text-lg">
+                          {materia.nome}
+                        </h3>
                         {materia.descricao && (
-                          <p className="text-gray-500 text-sm truncate">{materia.descricao}</p>
+                          <p className="text-slate-500 text-sm truncate">
+                            {materia.descricao}
+                          </p>
                         )}
                       </div>
-                      <BookOpen className="text-gray-400 group-hover:text-teal-600 transition-colors flex-shrink-0" size={20} />
+                      <ChevronRight 
+                        className="text-slate-300 group-hover:text-teal-600 group-hover:translate-x-1 transition-all flex-shrink-0" 
+                        size={24} 
+                      />
                     </motion.div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <BookOpen size={48} className="mx-auto mb-3 text-gray-300" />
-                  <p className="font-medium">Nenhuma matéria criada ainda</p>
-                  <p className="text-sm mt-1">Comece criando sua primeira matéria</p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate('/materias')}
-                    className="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-teal-700 transition-colors"
-                  >
-                    Criar Matéria
-                  </motion.button>
-                </div>
               )}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Calendário */}
-          <div>
-            <CalendarWidget 
-              eventos={stats.eventos}
-              onAddEvento={handleAddEvento}
-            />
-          </div>
+          {/* Calendario - 5 colunas no XL para não ficar espremido */}
+          <motion.div 
+            className="xl:col-span-5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg shadow-slate-200/50 p-4 lg:p-5 calendar-container-compact">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                  <Calendar size={18} className="text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900">Agenda</h2>
+              </div>
+              <CalendarWidget
+                eventos={dashboardData?.proximosEventos || []}
+                onOpenAddModal={handleOpenEventModal}
+                onClickDay={handleDayClick}
+                onDeleteEvento={handleDeleteEvento}
+              />
+            </div>
+          </motion.div>
         </div>
       </div>
+
+      {/* Modal de Adicionar Evento */}
+      <AddEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => setIsEventModalOpen(false)}
+        onSave={handleSaveEvent}
+        selectedDate={selectedDateForEvent}
+      />
+
+      {/* Modal de Confirmação de Exclusão de Evento */}
+      <ConfirmModal
+        isOpen={confirmDeleteEvento.isOpen}
+        onClose={() => setConfirmDeleteEvento({ isOpen: false, evento: null })}
+        onConfirm={confirmarExclusaoEvento}
+        title="Excluir Evento"
+        message={
+          <>
+            Tem certeza que deseja excluir o evento{' '}
+            <span className="font-semibold text-slate-900">
+              "{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"
+            </span>?
+            <br />
+            <span className="text-red-600 font-medium">
+              Essa ação não pode ser desfeita.
+            </span>
+          </>
+        }
+        confirmText="Excluir Evento"
+        type="danger"
+        isLoading={isDeletingEvento}
+      />
     </div>
   );
 };

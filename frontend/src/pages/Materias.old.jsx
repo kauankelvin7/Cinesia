@@ -246,7 +246,7 @@ function Materias() {
             <h3 className="text-2xl font-bold text-text-primary mb-2">
               Nenhuma matéria cadastrada
             </h3>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
+            <p className="text-slate-600 mb-6">
               Crie sua primeira matéria para organizar seus estudos
             </p>
             <Button onClick={() => setShowForm(true)}>

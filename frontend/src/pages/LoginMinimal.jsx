@@ -83,7 +83,11 @@ const LoginMinimal = () => {
         {/* Logo e Título */}
         <div className="login-header">
           <div className="login-logo">
-            <div className="logo-icon">C</div>
+            <img 
+              src="/android-chrome-192x192.png" 
+              alt="Cinesia Logo" 
+              className="logo-image"
+            />
           </div>
           <h1 className="login-title">Cinesia</h1>
           <p className="login-subtitle">Sistema de Estudos para Fisioterapia</p>
@@ -200,7 +204,7 @@ const LoginMinimal = () => {
 
       {/* Rodapé */}
       <div className="login-footer">
-        <p>© 2024 Cinesia - Sistema de Estudos para Fisioterapia</p>
+        <p>© 2026 Cinesia - Sistema de Estudos para Fisioterapia</p>
       </div>
     </div>
   );

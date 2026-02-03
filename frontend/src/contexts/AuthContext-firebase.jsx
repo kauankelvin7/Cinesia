@@ -34,21 +34,20 @@ export const AuthProvider = ({ children }) => {
         const idToken = await firebaseUser.getIdToken();
         
         // Salva no state e localStorage
-        setUser({
+        const userData = {
           id: firebaseUser.uid,
+          uid: firebaseUser.uid,
           nome: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+          displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
           email: firebaseUser.email,
           photoURL: firebaseUser.photoURL
-        });
+        };
+        
+        setUser(userData);
         setToken(idToken);
         
         localStorage.setItem('token', idToken);
-        localStorage.setItem('user', JSON.stringify({
-          id: firebaseUser.uid,
-          nome: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL
-        }));
+        localStorage.setItem('user', JSON.stringify(userData));
       } else {
         // Usuário não está logado
         setUser(null);
@@ -150,6 +149,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     token,
     loading,
     login,

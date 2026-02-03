@@ -81,22 +81,24 @@ const AgendaWidget = () => {
     .slice(0, 5);
 
   const tipoColors = {
-    prova: 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-    trabalho: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-    outro: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+    prova: 'bg-red-100 text-red-600',
+    trabalho: 'bg-blue-100 text-blue-600',
+    outro: 'bg-gray-100 text-gray-600'
   };
 
   return (
-    <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <FiCalendar className="text-brand-primary" size={24} />
-          <h2 className="text-xl font-bold text-text-primary">Agenda</h2>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-md">
+            <FiCalendar className="text-white" size={20} />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Agenda</h2>
         </div>
         <motion.button
           onClick={() => setShowModal(true)}
-          className="p-2 bg-teal-600 dark:bg-teal-500 text-black dark:text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition-colors"
+          className="p-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -117,22 +119,29 @@ const AgendaWidget = () => {
 
       {/* Próximos Eventos */}
       <div>
-        <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+        <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-3">
           Próximos Eventos
         </h3>
         
         {loading ? (
-          <div className="text-text-secondary text-sm">Carregando...</div>
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+            Carregando...
+          </div>
         ) : proximosEventos.length === 0 ? (
-          <div className="text-text-secondary text-sm">Nenhum evento agendado</div>
+          <div className="text-center py-6 text-slate-400 text-sm">
+            <FiCalendar className="mx-auto mb-2 text-slate-300" size={32} />
+            Nenhum evento agendado
+          </div>
         ) : (
           <div className="space-y-2">
-            {proximosEventos.map(evento => (
+            {proximosEventos.map((evento, index) => (
               <motion.div
                 key={evento.id}
-                className="bg-background border border-border rounded-lg p-3 flex items-start justify-between"
+                className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-lg p-3 flex items-start justify-between hover:shadow-md transition-all duration-200 group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -140,20 +149,21 @@ const AgendaWidget = () => {
                       {evento.tipo}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-text-primary truncate">
+                  <p className="text-sm font-medium text-slate-900 truncate">
                     {evento.titulo}
                   </p>
-                  <p className="text-xs text-text-secondary">
+                  <p className="text-xs text-slate-500">
                     {format(evento.dataObj, "dd 'de' MMMM", { locale: ptBR })}
                   </p>
                 </div>
                 <motion.button
                   onClick={() => handleDelete(evento.id)}
-                  className="p-1 text-text-secondary hover:text-red-500 transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-white hover:bg-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
+                  title="Excluir evento"
                 >
-                  <FiTrash2 size={16} />
+                  <FiTrash2 size={14} />
                 </motion.button>
               </motion.div>
             ))}
@@ -165,85 +175,90 @@ const AgendaWidget = () => {
       <AnimatePresence>
         {showModal && (
           <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowModal(false)}
           >
             <motion.div
-              className="bg-surface border border-border rounded-2xl p-6 w-full max-w-md"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-text-primary">Novo Evento</h3>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                    <FiCalendar className="text-white" size={16} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Novo Evento</h3>
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 text-text-secondary hover:text-text-primary transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <FiX size={24} />
+                  <FiX size={20} />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Título
                   </label>
                   <input
                     type="text"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
                     placeholder="Ex: Prova de Anatomia"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Data
                   </label>
                   <input
                     type="date"
                     value={formData.data}
                     onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-all"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Tipo
                   </label>
                   <select
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-background border border-border rounded-lg focus:ring-2 focus:ring-brand-primary focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
                   >
-                    <option value="prova">Prova</option>
-                    <option value="trabalho">Trabalho</option>
-                    <option value="outro">Outro</option>
+                    <option value="prova">🎯 Prova</option>
+                    <option value="trabalho">📝 Trabalho</option>
+                    <option value="outro">📌 Outro</option>
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-4">
                   <motion.button
                     type="submit"
-                    className="flex-1 px-6 py-2.5 bg-teal-600 dark:bg-teal-500 text-black dark:text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition-colors font-medium"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all font-medium"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    Salvar
+                    ✓ Salvar
                   </motion.button>
                   <motion.button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-6 py-2.5 bg-background border border-border text-text-primary rounded-lg hover:bg-brand-light transition-colors font-medium"
+                    className="px-6 py-3 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

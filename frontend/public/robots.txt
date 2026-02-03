@@ -1,0 +1,6 @@
+# Cinesia - Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://cinesia.vercel.app/sitemap.xml

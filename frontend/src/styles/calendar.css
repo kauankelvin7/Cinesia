@@ -1,0 +1,377 @@
+/**
+ * 📅 CALENDAR PREMIUM STYLES
+ * 
+ * Design System HealthTech para react-calendar
+ * Features:
+ * - Cantos arredondados
+ * - Gradientes teal/emerald
+ * - Animações suaves
+ * - Efeito glass sutil
+ * - Fonte moderna Inter
+ */
+
+/* ==============================================
+   CONTAINER PRINCIPAL
+   ============================================== */
+
+.react-calendar {
+  width: 100% !important;
+  max-width: 100%;
+  background: transparent !important;
+  border: none !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  line-height: 1.5;
+}
+
+/* ==============================================
+   NAVEGAÇÃO (MÊS/ANO)
+   ============================================== */
+
+.react-calendar__navigation {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem !important;
+  background: linear-gradient(135deg, #14B8A6 0%, #10B981 100%) !important;
+  border-radius: 12px !important;
+  padding: 0.5rem 0.75rem !important;
+  box-shadow: 
+    0 6px 15px -5px rgba(20, 184, 166, 0.25),
+    0 2px 4px -2px rgba(20, 184, 166, 0.1) !important;
+}
+
+.react-calendar__navigation button {
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0.4rem 0.6rem !important;
+  border-radius: 8px !important;
+  min-width: 36px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.react-calendar__navigation button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: scale(1.05);
+}
+
+.react-calendar__navigation button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.react-calendar__navigation button:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+.react-calendar__navigation__label {
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: -0.01em;
+}
+
+.react-calendar__navigation__arrow {
+  font-size: 1.1rem !important;
+}
+
+/* ==============================================
+   DIAS DA SEMANA (CABEÇALHO)
+   ============================================== */
+
+.react-calendar__month-view__weekdays {
+  padding: 0.25rem 0 0.5rem !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  text-align: center !important;
+  padding: 0.25rem !important;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  color: #64748B !important;
+  font-weight: 600 !important;
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  text-decoration: none !important;
+}
+
+/* ==============================================
+   GRID DE DIAS
+   ============================================== */
+
+.react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 2px !important;
+}
+
+/* ==============================================
+   TILES (CADA DIA) - COMPACTO
+   ============================================== */
+
+.react-calendar__tile {
+  position: relative !important;
+  aspect-ratio: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  background: white !important;
+  border: 1px solid #F1F5F9 !important;
+  color: #1E293B !important;
+  font-weight: 500 !important;
+  font-size: 0.8rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  padding: 0.25rem !important;
+  min-width: 0 !important;
+}
+
+.react-calendar__tile:hover:not(:disabled):not(.react-calendar__tile--active) {
+  background: linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 100%) !important;
+  border-color: #14B8A6 !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 16px -4px rgba(20, 184, 166, 0.15) !important;
+}
+
+.react-calendar__tile:active:not(:disabled) {
+  transform: scale(0.95) !important;
+}
+
+/* ==============================================
+   DIA ATUAL (HOJE)
+   ============================================== */
+
+.react-calendar__tile--now {
+  background: linear-gradient(135deg, #F0FDFA 0%, #D1FAE5 100%) !important;
+  border: 2px solid #14B8A6 !important;
+  font-weight: 700 !important;
+  color: #0D9488 !important;
+}
+
+.react-calendar__tile--now::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #14B8A6, #10B981);
+  z-index: -1;
+  opacity: 0.1;
+}
+
+/* ==============================================
+   DIA SELECIONADO
+   ============================================== */
+
+.react-calendar__tile--active {
+  background: linear-gradient(135deg, #14B8A6 0%, #10B981 100%) !important;
+  color: white !important;
+  border-color: transparent !important;
+  font-weight: 700 !important;
+  box-shadow: 
+    0 10px 20px -5px rgba(20, 184, 166, 0.4),
+    0 4px 6px -2px rgba(20, 184, 166, 0.2) !important;
+  transform: scale(1.05) !important;
+}
+
+.react-calendar__tile--active:hover {
+  background: linear-gradient(135deg, #0D9488 0%, #059669 100%) !important;
+}
+
+/* ==============================================
+   DIA SELECIONADO COM HOVER
+   ============================================== */
+
+.react-calendar__tile--hasActive {
+  background: linear-gradient(135deg, #14B8A6 0%, #10B981 100%) !important;
+  color: white !important;
+}
+
+/* ==============================================
+   DIAS DE OUTROS MESES
+   ============================================== */
+
+.react-calendar__month-view__days__day--neighboringMonth {
+  color: #CBD5E1 !important;
+  opacity: 0.6 !important;
+}
+
+.react-calendar__month-view__days__day--neighboringMonth:hover {
+  opacity: 0.9 !important;
+}
+
+/* ==============================================
+   FINS DE SEMANA
+   ============================================== */
+
+.react-calendar__month-view__days__day--weekend {
+  color: #0D9488 !important;
+}
+
+.react-calendar__month-view__days__day--weekend.react-calendar__tile--active {
+  color: white !important;
+}
+
+/* ==============================================
+   DIAS COM EVENTOS (INDICADOR)
+   ============================================== */
+
+.react-calendar__tile.has-evento::after {
+  content: '';
+  position: absolute !important;
+  bottom: 6px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 6px !important;
+  height: 6px !important;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
+  animation: pulse-dot 2s infinite;
+}
+
+.react-calendar__tile.has-evento.react-calendar__tile--active::after {
+  background: white !important;
+  box-shadow: 0 2px 4px rgba(255, 255, 255, 0.4) !important;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* ==============================================
+   VIEWS ALTERNATIVAS (ANO, DÉCADA)
+   ============================================== */
+
+.react-calendar__year-view__months,
+.react-calendar__decade-view__years,
+.react-calendar__century-view__decades {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+}
+
+.react-calendar__year-view .react-calendar__tile,
+.react-calendar__decade-view .react-calendar__tile,
+.react-calendar__century-view .react-calendar__tile {
+  aspect-ratio: auto !important;
+  padding: 1rem !important;
+}
+
+/* ==============================================
+   RESPONSIVIDADE - COMPACTO
+   ============================================== */
+
+/* Container compacto para sidebar/agenda */
+.calendar-container-compact .react-calendar {
+  font-size: 0.8rem !important;
+}
+
+.calendar-container-compact .react-calendar__navigation {
+  margin-bottom: 0.75rem !important;
+  padding: 0.4rem 0.5rem !important;
+  border-radius: 10px !important;
+}
+
+.calendar-container-compact .react-calendar__navigation button {
+  padding: 0.3rem 0.4rem !important;
+  font-size: 0.75rem !important;
+  min-width: 28px !important;
+}
+
+.calendar-container-compact .react-calendar__navigation__label {
+  font-size: 0.85rem !important;
+}
+
+.calendar-container-compact .react-calendar__tile {
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+  padding: 0.15rem !important;
+}
+
+.calendar-container-compact .react-calendar__month-view__weekdays__weekday abbr {
+  font-size: 0.6rem !important;
+}
+
+.calendar-container-compact .react-calendar__month-view__days {
+  gap: 1px !important;
+}
+
+@media (max-width: 640px) {
+  .react-calendar__navigation {
+    padding: 0.5rem !important;
+    border-radius: 12px !important;
+  }
+
+  .react-calendar__navigation button {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  .react-calendar__tile {
+    font-size: 0.8rem !important;
+    border-radius: 8px !important;
+  }
+
+  .react-calendar__month-view__weekdays__weekday abbr {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* XL screens - calendário na sidebar */
+@media (min-width: 1280px) {
+  .calendar-container-compact .react-calendar__tile {
+    font-size: 0.7rem !important;
+  }
+  
+  .calendar-container-compact .react-calendar__month-view__days {
+    gap: 1px !important;
+  }
+}
+
+/* ==============================================
+   DARK MODE DISABLED (Light Only)
+   ============================================== */
+
+/* Removido - Sistema é Light Mode Only */
+
+/* ==============================================
+   ANIMAÇÕES EXTRAS
+   ============================================== */
+
+.react-calendar__tile {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Focus states para acessibilidade */
+.react-calendar__tile:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.4) !important;
+}
+
+.react-calendar__navigation button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4) !important;
+}

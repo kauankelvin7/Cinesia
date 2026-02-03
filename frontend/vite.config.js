@@ -10,14 +10,16 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Cinesia - Estudos de Fisioterapia',
+        name: 'Cinesia Fisio',
         short_name: 'Cinesia',
-        description: 'Sistema de estudos com resumos e flashcards para Fisioterapia',
-        theme_color: '#4A90E2',
+        description: 'Sistema de estudos com resumos, flashcards e simulados para Fisioterapia',
+        theme_color: '#0d9488',
         background_color: '#ffffff',
         display: 'standalone',
+        orientation: 'any',
         scope: '/',
         start_url: '/',
+        categories: ['education', 'medical'],
         icons: [
           {
             src: 'pwa-192x192.png',

@@ -1,58 +1,152 @@
+﻿/**
+ *  RESUMOS - Biblioteca de Estudos Premium
+ * 
+ * Editor rico com React Quill para criação de resumos formatados
+ * Features:
+ * - Editor de texto rico (bold, listas, cores)
+ * - Busca em tempo real
+ * - Filtro por matéria
+ * - Grid responsivo com preview
+ * - Modal full-screen para edição
+ */
+
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { listarResumos, criarResumo, atualizarResumo, deletarResumo, listarMaterias } from '../services/firebaseService';
+import { 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Search,
+  FileText,
+  Sparkles,
+  X,
+  Calendar,
+  ClipboardList
+} from 'lucide-react';
+import { 
+  listarResumos, 
+  criarResumo, 
+  atualizarResumo, 
+  deletarResumo, 
+  listarMaterias 
+} from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
-import { FiPlus, FiEdit2, FiTrash2, FiEye, FiX } from 'react-icons/fi';
+import Button from '../components/ui/Button';
+import { Input, Select } from '../components/ui/Input';
+import Badge from '../components/ui/Badge';
+import ConfirmModal from '../components/ui/ConfirmModal';
+
+// Configuração do Editor Quill
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic'],
+    [{ list: 'ordered'}, { list: 'bullet' }],
+    [{ color: [] }],
+    ['clean']
+  ],
+};
+
+const quillFormats = ['header', 'bold', 'italic', 'list', 'bullet', 'color'];
+
+// Template de Caso Clínico para Fisioterapia
+const TEMPLATE_CASO_CLINICO = `<h2>📋 Caso Clínico</h2>
+
+<h3>Queixa Principal</h3>
+<p>Descreva a queixa principal do paciente...</p>
+
+<h3>Histórico da Moléstia Atual (HMA)</h3>
+<p>Evolução dos sintomas, início, fatores de melhora/piora...</p>
+
+<h3>Avaliação Física</h3>
+<ul>
+<li><strong>Inspeção:</strong> </li>
+<li><strong>Palpação:</strong> </li>
+<li><strong>Amplitude de Movimento:</strong> </li>
+<li><strong>Força Muscular:</strong> </li>
+<li><strong>Testes Especiais:</strong> </li>
+</ul>
+
+<h3>Diagnóstico Cinético-Funcional</h3>
+<p>Conclusão baseada na avaliação...</p>
+
+<h3>Objetivos de Tratamento</h3>
+<ul>
+<li><strong>Curto Prazo:</strong> </li>
+<li><strong>Médio Prazo:</strong> </li>
+<li><strong>Longo Prazo:</strong> </li>
+</ul>
+
+<h3>Plano de Tratamento</h3>
+<p>Condutas e intervenções planejadas...</p>
+`;
+
+// Função auxiliar para remover HTML tags
+const stripHtml = (html) => {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+};
+
+// Função para formatar data
+const formatDate = (timestamp) => {
+  if (!timestamp) return '';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+};
 
 function Resumos() {
   const { user } = useAuth();
-  const { materiaId } = useParams();
   const [resumos, setResumos] = useState([]);
+  const [resumosFiltrados, setResumosFiltrados] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [viewingResumo, setViewingResumo] = useState(null);
-  const [formData, setFormData] = useState({
-    titulo: '',
-    conteudo: '',
-    materiaId: materiaId || ''
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMateria, setSelectedMateria] = useState('all');
+  const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
+  const [error, setError] = useState(null);
 
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'color': [] }, { 'background': [] }],
-      ['link', 'image'],
-      ['clean']
-    ],
-  };
+  // Estado do Modal de Confirmação
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      carregarDados();
+    if (user) carregarDados();
+  }, [user]);
+
+  useEffect(() => {
+    let filtered = [...resumos];
+    if (searchTerm) {
+      filtered = filtered.filter(resumo => 
+        resumo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        stripHtml(resumo.conteudo).toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-  }, [materiaId, user]);
+    if (selectedMateria !== 'all') {
+      filtered = filtered.filter(resumo => resumo.materiaId === selectedMateria);
+    }
+    setResumosFiltrados(filtered);
+  }, [searchTerm, selectedMateria, resumos]);
 
   const carregarDados = async () => {
     try {
       setLoading(true);
+      const userId = user?.id || user?.uid;
       const [resumosData, materiasData] = await Promise.all([
-        listarResumos(user.id, materiaId || null),
-        listarMaterias(user.id)
+        listarResumos(userId),
+        listarMaterias(userId)
       ]);
       setResumos(resumosData);
+      setResumosFiltrados(resumosData);
       setMaterias(materiasData);
       setError(null);
     } catch (err) {
-      setError('Erro ao carregar dados: ' + err.message);
-      console.error('Erro ao carregar dados:', err);
+      setError('Erro ao carregar dados');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -60,321 +154,265 @@ function Resumos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.titulo.trim()) {
-      setError('Título é obrigatório');
+    if (!formData.titulo.trim() || !formData.conteudo.trim()) {
+      setError('Título e conteúdo são obrigatórios');
       return;
     }
-
     try {
+      const userId = user?.id || user?.uid;
       if (editingId) {
         await atualizarResumo(editingId, formData);
       } else {
-        await criarResumo(formData, user.id);
+        await criarResumo(formData, userId);
       }
       await carregarDados();
       resetForm();
       setError(null);
     } catch (err) {
-      setError('Erro ao salvar resumo: ' + err.message);
-      console.error('Erro ao salvar:', err);
+      setError('Erro ao salvar resumo');
+      console.error(err);
     }
   };
 
   const handleEdit = (resumo) => {
-    setFormData({
-      titulo: resumo.titulo,
-      conteudo: resumo.conteudo || '',
-      materiaId: resumo.materiaId || ''
-    });
+    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '' });
     setEditingId(resumo.id);
-    setShowForm(true);
+    setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Deseja realmente excluir este resumo?')) {
-      try {
-        await deletarResumo(id);
-        await carregarDados();
-        setError(null);
-      } catch (err) {
-        setError('Erro ao excluir resumo: ' + err.message);
-        console.error('Erro ao excluir:', err);
-      }
+  const handleDelete = (resumo) => {
+    setConfirmDelete({
+      isOpen: true,
+      id: resumo.id,
+      nome: resumo.titulo
+    });
+  };
+
+  const confirmarExclusao = async () => {
+    if (!confirmDelete.id) return;
+    
+    setIsDeleting(true);
+    try {
+      await deletarResumo(confirmDelete.id);
+      await carregarDados();
+      setError(null);
+    } catch (err) {
+      setError('Erro ao excluir resumo');
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete({ isOpen: false, id: null, nome: '' });
     }
   };
 
   const resetForm = () => {
-    setFormData({ titulo: '', conteudo: '', materiaId: materiaId || '' });
+    setFormData({ titulo: '', conteudo: '', materiaId: '' });
     setEditingId(null);
-    setShowForm(false);
+    setShowModal(false);
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="spinner"></div>
-    </div>
-  );
+  const getMateriaInfo = (materiaId) => {
+    const materia = materias.find(m => m.id === materiaId);
+    return materia || { nome: 'Sem matéria', cor: '#94A3B8' };
+  };
 
-  // VIEW MODE
-  if (viewingResumo) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-32 pt-8 px-4 transition-colors duration-200">
-        <div className="max-w-4xl mx-auto">
-          <motion.button 
-            className="bg-surface text-brand-primary px-6 py-3 rounded-2xl font-semibold border-2 border-border hover:border-brand-primary hover:bg-brand-light transition-all mb-6 flex items-center gap-2"
-            onClick={() => setViewingResumo(null)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <FiX size={20} />
-            Fechar
-          </motion.button>
-          <motion.div 
-            className="bg-surface rounded-2xl shadow-sm border border-border p-8 transition-all"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h1 className="text-4xl font-bold text-text-primary mb-4">
-              {viewingResumo.titulo}
-            </h1>
-            <div className="flex items-center gap-4 mb-6 text-sm text-text-secondary">
-              <span 
-                className="px-3 py-1 rounded-full font-semibold"
-                style={{
-                  backgroundColor: `${viewingResumo.materiaCor}20`,
-                  color: viewingResumo.materiaCor || '#0D9488'
-                }}
-              >
-                {viewingResumo.materiaNome}
-              </span>
-              <span>Atualizado em: {viewingResumo.atualizadoEm}</span>
-            </div>
-            <div 
-              className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: viewingResumo.conteudo }} 
-            />
-          </motion.div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="spinner"></div>
       </div>
     );
   }
 
-  // LIST MODE
   return (
-    <div className="min-h-screen bg-background pb-32 pt-8 px-4 transition-colors duration-200">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <motion.div 
-          className="mb-8 flex items-center justify-between flex-wrap gap-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div>
-            <h1 className="text-4xl font-bold text-text-primary">Resumos</h1>
-            {materiaId && materias.find(m => m.id == materiaId) && (
-              <p className="text-text-secondary mt-2">
-                {materias.find(m => m.id == materiaId).nome}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 pb-32 pt-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        <motion.div className="mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+            <div className="flex-1">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <FileText size={28} className="text-white" />
+                </div>
+                Biblioteca de Resumos
+              </h1>
+              <p className="text-slate-600 flex items-center gap-2">
+                <Sparkles size={16} className="text-purple-500" />
+                Organize e revise seus estudos com resumos formatados
               </p>
-            )}
+            </div>
+            <Button variant="primary" size="lg" leftIcon={<Plus size={20} />} onClick={() => setShowModal(true)}>
+              Novo Resumo
+            </Button>
           </div>
-          <motion.button 
-            className="btn-primary flex items-center gap-2"
-            onClick={() => setShowForm(!showForm)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <FiPlus size={20} />
-            Novo Resumo
-          </motion.button>
+
+          <div className="flex flex-col sm:flex-row gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                <Input type="text" placeholder="Buscar resumos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              </div>
+            </div>
+            <div className="w-full sm:w-64">
+              <Select value={selectedMateria} onChange={(e) => setSelectedMateria(e.target.value)}>
+                <option value="all">Todas as Matérias</option>
+                {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
+              <FileText size={16} className="text-purple-500" />
+              <span className="font-bold text-slate-900">{resumosFiltrados.length}</span> 
+              {resumosFiltrados.length === 1 ? 'resumo' : 'resumos'}
+            </div>
+          </div>
         </motion.div>
 
-        {/* Error */}
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-2xl mb-6"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              {error}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Form */}
-        <AnimatePresence>
-          {showForm && (
-            <motion.div 
-              className="card mb-8"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              <h2 className="text-2xl font-bold text-text-primary mb-6">
-                {editingId ? 'Editar Resumo' : 'Novo Resumo'}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-2">
-                    Título
-                  </label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Ex: Sistema Muscular"
-                    value={formData.titulo}
-                    onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-2">
-                    Matéria
-                  </label>
-                  <select
-                    className="input-field"
-                    value={formData.materiaId}
-                    onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })}
-                    required
-                  >
-                    <option value="">Selecione uma matéria</option>
-                    {materias.map((materia) => (
-                      <option key={materia.id} value={materia.id}>
-                        {materia.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-2">
-                    Conteúdo
-                  </label>
-                  <div className="bg-surface rounded-xl overflow-hidden border-2 border-border">
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.conteudo}
-                      onChange={(value) => setFormData({ ...formData, conteudo: value })}
-                      modules={modules}
-                      placeholder="Escreva seu resumo aqui..."
-                      style={{ minHeight: '300px' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <motion.button 
-                    type="submit" 
-                    className="btn-primary"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {editingId ? 'Atualizar' : 'Criar Resumo'}
-                  </motion.button>
-                  <motion.button 
-                    type="button" 
-                    className="btn-secondary"
-                    onClick={resetForm}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Cancelar
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Lista de Resumos */}
-        <motion.div className="space-y-4" layout>
-          {resumos.map((resumo, index) => (
-            <motion.div
-              key={resumo.id}
-              className="card-interactive flex items-start justify-between gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              layout
-            >
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-text-primary mb-2">
-                  {resumo.titulo}
-                </h3>
-                <div className="flex items-center gap-3 mb-2">
-                  <span 
-                    className="px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{
-                      backgroundColor: `${resumo.materiaCor}20`,
-                      color: resumo.materiaCor || '#0D9488'
-                    }}
-                  >
-                    {resumo.materiaNome}
-                  </span>
-                  <span className="text-xs text-text-tertiary">
-                    Atualizado em: {resumo.atualizadoEm}
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-2 flex-shrink-0">
-                <motion.button
-                  className="text-brand-primary hover:text-brand-hover p-2 hover:bg-brand-light rounded-xl transition-colors"
-                  onClick={() => setViewingResumo(resumo)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FiEye size={20} />
-                </motion.button>
-                <motion.button
-                  className="text-brand-primary hover:text-brand-hover p-2 hover:bg-brand-light rounded-xl transition-colors"
-                  onClick={() => handleEdit(resumo)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FiEdit2 size={18} />
-                </motion.button>
-                <motion.button
-                  className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-xl transition-colors"
-                  onClick={() => handleDelete(resumo.id)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FiTrash2 size={18} />
-                </motion.button>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Empty State */}
-        {resumos.length === 0 && !showForm && (
-          <motion.div 
-            className="text-center py-20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <div className="text-6xl mb-4">📝</div>
-            <h3 className="text-2xl font-bold text-text-primary mb-2">
-              Nenhum resumo ainda
+        {resumosFiltrados.length === 0 ? (
+          <motion.div className="text-center py-20" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <FileText size={48} className="text-purple-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+              {searchTerm || selectedMateria !== 'all' ? 'Nenhum resumo encontrado' : 'Nenhum resumo criado ainda'}
             </h3>
-            <p className="text-text-secondary mb-6">
-              Crie seu primeiro resumo para começar a estudar
+            <p className="text-slate-600 mb-8">
+              {searchTerm || selectedMateria !== 'all' ? 'Tente ajustar os filtros de busca' : 'Comece criando seu primeiro resumo de estudos'}
             </p>
-            <motion.button 
-              className="btn-primary"
-              onClick={() => setShowForm(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <FiPlus className="inline mr-2" />
-              Criar Primeiro Resumo
-            </motion.button>
+            {!searchTerm && selectedMateria === 'all' && (
+              <Button variant="primary" size="lg" leftIcon={<Plus size={20} />} onClick={() => setShowModal(true)}>
+                Criar Primeiro Resumo
+              </Button>
+            )}
           </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {resumosFiltrados.map((resumo, index) => {
+              const materiaInfo = getMateriaInfo(resumo.materiaId);
+              const preview = stripHtml(resumo.conteudo);
+              return (
+                <motion.div key={resumo.id} className="group" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
+                  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 h-full flex flex-col min-h-[280px]">
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-3">
+                        <Badge color={materiaInfo.cor} size="sm">
+                          <span className="truncate block max-w-[140px]">{materiaInfo.nome}</span>
+                        </Badge>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEdit(resumo)} className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors" title="Editar">
+                            <Edit2 size={16} />
+                          </button>
+                          <button onClick={() => handleDelete(resumo)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Excluir">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-3 truncate">{resumo.titulo}</h3>
+                      <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed flex-1">{preview}</p>
+                    </div>
+                    <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Calendar size={14} />
+                        <span>{formatDate(resumo.createdAt)}</span>
+                      </div>
+                      <button onClick={() => handleEdit(resumo)} className="text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors">
+                        Abrir 
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         )}
+
+        <AnimatePresence>
+          {showModal && (
+            <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
+              <motion.div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
+                <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <FileText size={20} className="text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Resumo' : 'Novo Resumo'}</h2>
+                  </div>
+                  <button onClick={resetForm} className="p-2 rounded-lg hover:bg-white/50 text-slate-500 hover:text-slate-700 transition-colors">
+                    <X size={24} />
+                  </button>
+                </div>
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
+                      <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
+                        <option value="">Selecione uma matéria</option>
+                        {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-semibold text-slate-700">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
+                        {!editingId && (
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setFormData({ ...formData, conteudo: TEMPLATE_CASO_CLINICO })}
+                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                          >
+                            <ClipboardList size={16} />
+                            Usar Template Caso Clínico
+                          </motion.button>
+                        )}
+                      </div>
+                      <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all">
+                        <ReactQuill theme="snow" value={formData.conteudo} onChange={(content) => setFormData({ ...formData, conteudo: content })} modules={quillModules} formats={quillFormats} placeholder="Escreva seu resumo aqui... Use a barra de ferramentas para formatar o texto." className="quill-editor-custom" style={{ minHeight: '320px' }} />
+                      </div>
+                      <p className="mt-2 text-xs text-slate-500">Use as ferramentas acima para formatar seu texto (negrito, listas, cores, etc.)</p>
+                    </div>
+                    {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+                  </div>
+                  <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex gap-3">
+                    <Button type="submit" variant="primary" size="lg" className="flex-1">{editingId ? 'Atualizar Resumo' : 'Salvar Resumo'}</Button>
+                    <Button type="button" variant="secondary" size="lg" onClick={resetForm}>Cancelar</Button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      <style>{`
+        .quill-editor-custom .ql-container { border: none !important; font-family: 'Inter', -apple-system, sans-serif; font-size: 15px; min-height: 280px; }
+        .quill-editor-custom .ql-toolbar { border: none !important; border-bottom: 1px solid #E2E8F0 !important; background: #F8FAFC; padding: 12px !important; }
+        .quill-editor-custom .ql-editor { padding: 20px !important; min-height: 280px; line-height: 1.7; }
+        .quill-editor-custom .ql-editor.ql-blank::before { color: #94A3B8; font-style: normal; }
+        .quill-editor-custom .ql-stroke { stroke: #64748B !important; }
+        .quill-editor-custom .ql-fill { fill: #64748B !important; }
+        .quill-editor-custom .ql-picker-label { color: #64748B !important; }
+        .quill-editor-custom .ql-toolbar button:hover, .quill-editor-custom .ql-toolbar button.ql-active { background: #E0E7FF !important; }
+        .quill-editor-custom .ql-toolbar button:hover .ql-stroke, .quill-editor-custom .ql-toolbar button.ql-active .ql-stroke { stroke: #7C3AED !important; }
+        .quill-editor-custom .ql-toolbar button:hover .ql-fill, .quill-editor-custom .ql-toolbar button.ql-active .ql-fill { fill: #7C3AED !important; }
+        .quill-editor-custom .ql-editor h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.5em; color: #1E293B; }
+        .quill-editor-custom .ql-editor h2 { font-size: 1.5em; font-weight: 600; margin-bottom: 0.5em; color: #334155; }
+        .quill-editor-custom .ql-editor h3 { font-size: 1.25em; font-weight: 600; margin-bottom: 0.5em; color: #475569; }
+        .quill-editor-custom .ql-editor ul, .quill-editor-custom .ql-editor ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .quill-editor-custom .ql-editor li { margin-bottom: 0.5em; }
+        .quill-editor-custom .ql-editor strong { font-weight: 600; }
+      `}</style>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false, id: null, nome: '' })}
+        onConfirm={confirmarExclusao}
+        title="Excluir Resumo"
+        itemName={confirmDelete.nome}
+        confirmText="Excluir"
+        isLoading={isDeleting}
+        type="danger"
+      />
     </div>
   );
 }

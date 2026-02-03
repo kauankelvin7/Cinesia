@@ -9,15 +9,15 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
 
   return (
     <motion.div
-      className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden transition-all hover:shadow-md hover:-translate-y-1"
+      className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.01 }}
+      whileHover={{ y: -2 }}
     >
       {/* Color Bar */}
       <div 
         className="h-1.5 w-full"
-        style={{ backgroundColor: materia.cor || '#0D9488' }}
+        style={{ backgroundColor: materia.cor || '#14B8A6' }}
       />
 
       <div className="p-5">
@@ -26,20 +26,20 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div 
               className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: `${materia.cor || '#0D9488'}15` }}
+              style={{ backgroundColor: `${materia.cor || '#14B8A6'}15` }}
             >
               <SafeIcon 
                 name={materia.icone || materia.icon}
                 size={24} 
-                color={materia.cor || '#0D9488'}
+                color={materia.cor || '#14B8A6'}
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-text-primary truncate">
+              <h3 className="text-lg font-bold text-slate-900 truncate">
                 {materia.nome}
               </h3>
               {materia.descricao && (
-                <p className="text-sm text-text-secondary line-clamp-1">
+                <p className="text-sm text-slate-500 line-clamp-1">
                   {materia.descricao}
                 </p>
               )}
@@ -52,8 +52,8 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
               onClick={() => onToggleConcluida?.(materia)}
               className={
                 isConcluida
-                  ? 'p-2 text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg transition-colors'
-                  : 'p-2 text-text-secondary hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors'
+                  ? 'p-2 text-emerald-600 bg-emerald-50 rounded-lg transition-colors'
+                  : 'p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors'
               }
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -63,7 +63,7 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
             </motion.button>
             <motion.button
               onClick={() => onEdit(materia)}
-              className="p-2 text-text-secondary hover:text-brand-primary hover:bg-brand-light rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               title="Editar"
@@ -72,7 +72,7 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
             </motion.button>
             <motion.button
               onClick={() => onDelete(materia.id)}
-              className="p-2 text-text-secondary hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               title="Excluir"
@@ -84,17 +84,17 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
 
         {isConcluida && (
           <div className="mb-3">
-            <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-full">
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
               Concluída
             </span>
           </div>
         )}
 
         {/* Stats */}
-        <div className="flex items-center gap-4 pt-3 border-t border-border">
+        <div className="flex items-center gap-4 pt-3 border-t border-slate-100">
           <div className="flex items-center gap-1.5 text-sm">
-            <span className="text-text-secondary">Criada em:</span>
-            <span className="font-medium text-text-primary">
+            <span className="text-slate-500">Criada em:</span>
+            <span className="font-medium text-slate-900">
               {formatTimestamp(materia.createdAt)}
             </span>
           </div>

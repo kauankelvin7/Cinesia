@@ -1,113 +1,95 @@
 @import "tailwindcss";
 
 /* ==============================================
-   GOOGLE FONTS - TIPOGRAFIA MODERNA
+   GOOGLE FONTS - TIPOGRAFIA PREMIUM
    ============================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 /* ==============================================
-   DESIGN SYSTEM 2.0 - DEEP SLATE DARK MODE
+   DESIGN SYSTEM 2.0 - HEALTHTECH PREMIUM 
+   Light Mode Only - Glassmorphism Edition
    ============================================== */
 
 @layer base {
   /* Reset Global */
   * {
-    @apply border-slate-700;
+    @apply border-slate-200;
   }
   
   body {
     @apply font-sans antialiased;
   }
 
-  /* Light Mode (Medical Minimalist Clean) */
+  /* Light Mode Only - Premium HealthTech */
   :root {
-    /* Backgrounds */
-    --bg-app: 248 250 252; /* Slate 50 - Off-white suave */
-    --bg-surface: 255 255 255; /* White - Cards limpos */
+    /* Backgrounds - Gradientes sutis */
+    --bg-app: 248 250 252; /* Slate 50 */
+    --bg-surface: 255 255 255; /* Pure White */
     --bg-surface-elevated: 255 255 255;
     
-    /* Text */
+    /* Text - Alta legibilidade */
     --text-primary: 15 23 42; /* Slate 900 */
     --text-secondary: 100 116 139; /* Slate 500 */
     --text-tertiary: 148 163 184; /* Slate 400 */
     
-    /* Brand */
+    /* Brand - Teal Premium */
     --brand-primary: 13 148 136; /* Teal 600 */
     --brand-hover: 15 118 110; /* Teal 700 */
     --brand-light: 240 253 250; /* Teal 50 */
     
-    /* Borders */
+    /* Borders - Leves e elegantes */
     --border-color: 226 232 240; /* Slate 200 */
     --border-light: 241 245 249; /* Slate 100 */
+    
+    /* States */
+    --success: 34 197 94; /* Green 500 */
+    --error: 239 68 68; /* Red 500 */
+    --warning: 245 158 11; /* Amber 500 */
   }
 
-  /* Dark Mode (Deep Slate - Moderno & Profissional) */
-  .dark {
-    /* Backgrounds - NÃO use preto puro! */
-    --bg-app: 2 6 23; /* #020617 - Slate 950 */
-    --bg-surface: 15 23 42; /* #0F172A - Slate 900 */
-    --bg-surface-elevated: 30 41 59; /* #1E293B - Slate 800 */
-    
-    /* Text - Alta legibilidade */
-    --text-primary: 226 232 240; /* #E2E8F0 - Slate 200 */
-    --text-secondary: 148 163 184; /* #94A3B8 - Slate 400 */
-    --text-tertiary: 100 116 139; /* #64748B - Slate 500 */
-    
-    /* Brand - Teal vibrante */
-    --brand-primary: 45 212 191; /* #2DD4BF - Teal 400 */
-    --brand-hover: 94 234 212; /* #5EEAD4 - Teal 300 */
-    --brand-light: 19 78 74; /* #134E4A - Teal 900 */
-    
-    /* Borders - Sutis */
-    --border-color: 51 65 85; /* #334155 - Slate 700 */
-    --border-light: 71 85 105; /* #475569 - Slate 600 */
-    
-    /* States - Cores vibrantes para contraste */
-    --success: 74 222 128; /* #4ADE80 - Green 400 */
-    --error: 248 113 113; /* #F87171 - Red 400 */
-    --warning: 251 191 36; /* #FBBF24 - Amber 400 */
-  }
-
-  /* Base Styles - TIPOGRAFIA MODERNA */
+  /* Base Styles - TIPOGRAFIA PREMIUM */
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    background-color: rgb(var(--bg-app));
-    color: rgb(var(--text-primary));
-    letter-spacing: -0.011em; /* Inter optical sizing */
+    background: linear-gradient(135deg, #f8fafc 0%, #f0fdfa 50%, #f1f5f9 100%);
+    background-attachment: fixed;
+    color: #0f172a;
+    letter-spacing: -0.011em;
+    min-height: 100vh;
   }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
     font-weight: 700;
     letter-spacing: -0.025em;
+    color: #0f172a;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Premium Light */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: rgb(var(--bg-surface));
+  background-color: #f1f5f9;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--border-color));
+  background: linear-gradient(135deg, #14b8a6, #10b981);
   border-radius: 10px;
-  border: 2px solid rgb(var(--bg-surface));
+  border: 2px solid #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--brand-primary));
+  background: linear-gradient(135deg, #0d9488, #059669);
 }
 
-/* Loading Spinner */
+/* Loading Spinner Premium */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -117,8 +99,8 @@
   width: 2rem;
   height: 2rem;
   border-width: 3px;
-  border-color: rgb(var(--brand-light));
-  border-top-color: rgb(var(--brand-primary));
+  border-color: #ccfbf1;
+  border-top-color: #14b8a6;
   border-radius: 9999px;
   animation: spin 0.6s linear infinite;
 }
@@ -175,3 +157,7 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+/* ==============================================
+   FIM DOS ESTILOS GLOBAIS
+   ============================================== */

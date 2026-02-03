@@ -1,44 +1,96 @@
+/**
+ * MATÉRIAS - Gerenciamento Premium de Disciplinas
+ * 
+ * Grid de cards gerenciais com visual Clean HealthTech
+ * Features:
+ * - Grid responsivo de cards
+ * - Modal de criação/edição
+ * - Ações no hover (Editar/Excluir)
+ * - Indicador de progresso
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { listarMaterias, criarMateria, atualizarMateria, deletarMateria, salvarEvento } from '../services/firebaseService';
+import { 
+  Plus, 
+  BookOpen, 
+  Edit2, 
+  Trash2, 
+  Sparkles,
+  CreditCard,
+  FileText,
+  Palette,
+  Target,
+  TrendingUp
+} from 'lucide-react';
+import { listarMaterias, criarMateria, atualizarMateria, deletarMateria } from '../services/firebaseService';
+import { getDashboardStats } from '../services/dashboardService';
 import { useAuth } from '../contexts/AuthContext-firebase';
-import { FiPlus, FiX, FiCheck } from 'react-icons/fi';
-import { BookOpen, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
-import MateriaCard from '../components/MateriaCard';
-import CalendarWidget from '../components/Dashboard/CalendarWidget';
-import PomodoroWidget from '../components/Dashboard/PomodoroWidget';
+import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
+import { Input, Textarea } from '../components/ui/Input';
+import ConfirmModal from '../components/ui/ConfirmModal';
+
+const CORES_DISPONIVEIS = [
+  { nome: 'Teal', valor: '#14B8A6' },
+  { nome: 'Blue', valor: '#3B82F6' },
+  { nome: 'Purple', valor: '#A855F7' },
+  { nome: 'Pink', valor: '#EC4899' },
+  { nome: 'Orange', valor: '#F97316' },
+  { nome: 'Green', valor: '#10B981' },
+  { nome: 'Indigo', valor: '#6366F1' },
+  { nome: 'Red', valor: '#EF4444' },
+];
 
 function Materias() {
   const { user } = useAuth();
   const [materias, setMaterias] = useState([]);
-  const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
-    cor: '#0D9488'
+    cor: '#14B8A6'
   });
+  const [error, setError] = useState(null);
 
-  const cores = [
-    '#0D9488', '#3B82F6', '#8B5CF6', '#EC4899', 
-    '#F59E0B', '#10B981', '#6366F1', '#EF4444'
-  ];
+  // Estado do Modal de Confirmação
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Estado da Meta Mensal (Questões Resolvidas)
+  const [metaMensal, setMetaMensal] = useState({ atual: 0, meta: 50, porcentagem: 0 });
 
   useEffect(() => {
     if (user) {
       carregarMaterias();
+      carregarMetaMensal();
     }
   }, [user]);
+
+  const carregarMetaMensal = async () => {
+    try {
+      const userId = user?.id || user?.uid;
+      if (!userId) return;
+      const data = await getDashboardStats(userId);
+      if (data?.metaMensal) {
+        setMetaMensal(data.metaMensal);
+      }
+    } catch (err) {
+      // Silenciar erro - meta não é crítica
+    }
+  };
 
   const carregarMaterias = async () => {
     try {
       setLoading(true);
       const data = await listarMaterias(user.id || user.uid);
       setMaterias(data);
+      setError(null);
     } catch (err) {
-      console.error('Erro ao carregar matérias:', err);
+      setError('Erro ao carregar matérias');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -46,342 +98,352 @@ function Materias() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.nome.trim()) {
+      setError('Nome da matéria é obrigatório');
+      return;
+    }
+
     try {
       if (editingId) {
         await atualizarMateria(editingId, formData);
       } else {
         await criarMateria(formData, user.id || user.uid);
       }
-      carregarMaterias();
+      
+      await carregarMaterias();
       resetForm();
+      setError(null);
     } catch (err) {
-      console.error('Erro ao salvar matéria:', err);
+      setError('Erro ao salvar matéria');
+      console.error(err);
     }
   };
 
   const handleEdit = (materia) => {
-    setEditingId(materia.id);
     setFormData({
       nome: materia.nome,
       descricao: materia.descricao || '',
-      cor: materia.cor || '#0D9488'
+      cor: materia.cor || '#14B8A6'
     });
-    setShowForm(true);
+    setEditingId(materia.id);
+    setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta matéria?')) {
-      try {
-        await deletarMateria(id);
-        carregarMaterias();
-      } catch (err) {
-        console.error('Erro ao deletar matéria:', err);
-      }
+  const handleDelete = (materia) => {
+    setConfirmDelete({
+      isOpen: true,
+      id: materia.id,
+      nome: materia.nome
+    });
+  };
+
+  const confirmarExclusao = async () => {
+    if (!confirmDelete.id) return;
+    
+    setIsDeleting(true);
+    try {
+      await deletarMateria(confirmDelete.id);
+      await carregarMaterias();
+      setError(null);
+    } catch (err) {
+      setError('Erro ao excluir matéria');
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete({ isOpen: false, id: null, nome: '' });
     }
   };
 
   const resetForm = () => {
-    setFormData({ nome: '', descricao: '', cor: '#0D9488' });
+    setFormData({ nome: '', descricao: '', cor: '#14B8A6' });
     setEditingId(null);
-    setShowForm(false);
+    setShowModal(false);
   };
-
-  const handleToggleConcluida = async (materia) => {
-    try {
-      const novaConcluida = !materia.concluida;
-      await atualizarMateria(materia.id, { concluida: novaConcluida });
-      setMaterias(prev => prev.map(item =>
-        item.id === materia.id ? { ...item, concluida: novaConcluida } : item
-      ));
-    } catch (err) {
-      console.error('Erro ao atualizar status:', err);
-    }
-  };
-
-  const handleAddEvento = async (novoEvento) => {
-    try {
-      await salvarEvento(novoEvento, user.id || user.uid);
-      setEventos([...eventos, novoEvento]);
-    } catch (err) {
-      console.error('Erro ao adicionar evento:', err);
-    }
-  };
-
-  const materiasAtivas = materias.filter(m => !m.concluida);
-  const materiasConcluidas = materias.filter(m => m.concluida);
-  
-  const totalMaterias = materias.length;
-  const percentualConclusao = totalMaterias > 0 ? Math.round((materiasConcluidas.length / totalMaterias) * 100) : 0;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-500">Carregando matérias...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-32">
-      {/* Header com Estatísticas */}
-      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Título */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Matérias
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 pb-32 pt-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+            <div className="flex-1">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg">
+                  <BookOpen size={28} className="text-white" />
+                </div>
+                Minhas Disciplinas
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Organize suas disciplinas de estudo
+              <p className="text-slate-600 flex items-center gap-2">
+                <Sparkles size={16} className="text-teal-500" />
+                Gerencie suas matérias e acompanhe seu progresso
               </p>
             </div>
-            <motion.button
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-6 py-3 bg-teal-600 dark:bg-teal-500 text-black dark:text-white rounded-xl hover:bg-teal-700 dark:hover:bg-teal-600 transition-colors shadow-sm font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={20} />}
+              onClick={() => setShowModal(true)}
             >
-              {showForm ? <FiX size={20} /> : <FiPlus size={20} />}
-              {showForm ? 'Cancelar' : 'Nova Matéria'}
-            </motion.button>
+              Nova Matéria
+            </Button>
           </div>
 
-          {/* Cards de Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
-                  <p className="text-2xl font-bold text-gray-700 dark:text-gray-200">{totalMaterias}</p>
-                </div>
-                <BookOpen className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          {/* Stats Rápidas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
+              <p className="text-sm text-slate-600 mb-1">Total de Matérias</p>
+              <p className="text-2xl font-bold text-slate-900">{materias.length}</p>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
+              <p className="text-sm text-slate-600 mb-1">Matérias Ativas</p>
+              <p className="text-2xl font-bold text-teal-600">{materias.filter(m => m.ativa !== false).length}</p>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-600 flex items-center gap-1.5">
+                  {Target && <Target size={14} className="text-emerald-500" />}
+                  Questões Resolvidas
+                </p>
+                <span className="text-xs font-medium text-slate-500">
+                  {metaMensal.mesNome || 'Este mês'}
+                </span>
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white dark:bg-slate-800/50 border border-amber-200 dark:border-amber-700/30 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">A Fazer</p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{materiasAtivas.length}</p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400" />
+              <div className="flex items-baseline gap-2 mb-2">
+                <p className="text-2xl font-bold text-emerald-600">{metaMensal.atual}</p>
+                <span className="text-sm text-slate-400">/ {metaMensal.meta}</span>
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-slate-800/50 border border-green-200 dark:border-green-700/30 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Concluídas</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">{materiasConcluidas.length}</p>
-                </div>
-                <CheckCircle2 className="w-8 h-8 text-green-500 dark:text-green-400" />
+              {/* Barra de Progresso */}
+              <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${metaMensal.porcentagem}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
               </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white dark:bg-slate-800/50 border border-teal-200 dark:border-teal-700/30 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-teal-600 dark:text-teal-400">Progresso</p>
-                  <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">{percentualConclusao}%</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-teal-500 dark:text-teal-400" />
-              </div>
-            </motion.div>
+              <p className="text-xs text-slate-500 mt-1">
+                {metaMensal.porcentagem >= 100 
+                  ? '🎉 Meta atingida!' 
+                  : `${metaMensal.porcentagem}% concluído`}
+              </p>
+            </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-8 py-8">
-        {/* Formulário */}
-        <AnimatePresence>
-          {showForm && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-8"
+        {/* Grid de Cards */}
+        {materias.length === 0 ? (
+          <motion.div
+            className="text-center py-20"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <BookOpen size={48} className="text-teal-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+              Nenhuma matéria cadastrada
+            </h3>
+            <p className="text-slate-600 mb-8">
+              Crie sua primeira matéria para começar a organizar seus estudos
+            </p>
+            <Button
+              variant="primary"
+              size="lg"
+              leftIcon={<Plus size={20} />}
+              onClick={() => setShowModal(true)}
             >
-              <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                  {editingId ? 'Editar Matéria' : 'Nova Matéria'}
-                </h3>
+              Criar Primeira Matéria
+            </Button>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {materias.map((materia, index) => (
+              <motion.div
+                key={materia.id}
+                className="group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div 
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-t-4 min-h-[220px] h-full flex flex-col"
+                  style={{ borderTopColor: materia.cor || '#14B8A6' }}
+                >
+                  {/* Card Header */}
+                  <div className="p-6 flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <div 
+                        className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${materia.cor}dd, ${materia.cor})` 
+                        }}
+                      >
+                        <BookOpen size={28} className="text-white" />
+                      </div>
+                      
+                      {/* Ações (aparecem no hover) */}
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(materia)}
+                          className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(materia)}
+                          className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Nome da Matéria *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.nome}
-                      onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
-                      placeholder="Ex: Anatomia Humana"
-                      required
-                    />
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 truncate">
+                      {materia.nome}
+                    </h3>
+                    
+                    {materia.descricao && (
+                      <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+                        {materia.descricao}
+                      </p>
+                    )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Cor
-                    </label>
-                    <div className="flex gap-2">
-                      {cores.map((cor) => (
-                        <button
-                          key={cor}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, cor })}
-                          className={`w-10 h-10 rounded-lg transition-all ${
-                            formData.cor === cor 
-                              ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-500 scale-110' 
-                              : 'hover:scale-105'
-                          }`}
-                          style={{ backgroundColor: cor }}
-                        />
-                      ))}
+                  {/* Card Footer - Info Extras */}
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                          <CreditCard size={16} />
+                          <p className="text-xs font-medium">Flashcards</p>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900">
+                          {materia.totalFlashcards || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                          <FileText size={16} />
+                          <p className="text-xs font-medium">Resumos</p>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900">
+                          {materia.totalResumos || 0}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Descrição (Opcional)
-                  </label>
-                  <textarea
-                    value={formData.descricao}
-                    onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all resize-none"
-                    rows="3"
-                    placeholder="Breve descrição da matéria"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <motion.button
-                    type="submit"
-                    className="flex-1 px-6 py-2.5 bg-teal-600 dark:bg-teal-500 text-black dark:text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition-colors font-medium"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    {editingId ? 'Salvar Alterações' : 'Criar Matéria'}
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-6 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors font-medium"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    Cancelar
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Grid Principal com Calendário e Pomodoro */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Coluna Esquerda: Materias */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Matérias Ativas */}
-            {materiasAtivas.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <AlertCircle className="w-5 h-5 text-orange-500" />
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    A Fazer ({materiasAtivas.length})
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {materiasAtivas.map((materia) => (
-                    <MateriaCard
-                      key={materia.id}
-                      materia={materia}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onToggleConcluida={handleToggleConcluida}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Matérias Concluídas */}
-            {materiasConcluidas.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Concluídas ({materiasConcluidas.length})
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-75">
-                  {materiasConcluidas.map((materia) => (
-                    <MateriaCard
-                      key={materia.id}
-                      materia={materia}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      onToggleConcluida={handleToggleConcluida}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Nenhuma matéria */}
-            {totalMaterias === 0 && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-16 text-center shadow-sm">
-                <BookOpen className="w-20 h-20 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Nenhuma matéria cadastrada
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Comece criando sua primeira matéria de estudo
-                </p>
-                <motion.button
-                  onClick={() => setShowForm(true)}
-                  className="px-6 py-2.5 bg-teal-600 dark:bg-teal-500 text-black dark:text-white rounded-lg hover:bg-teal-700 dark:hover:bg-teal-600 transition-colors font-medium"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Criar Primeira Matéria
-                </motion.button>
-              </div>
-            )}
+              </motion.div>
+            ))}
           </div>
+        )}
 
-          {/* Coluna Direita: Calendário e Pomodoro */}
-          <div className="space-y-6">
-            <CalendarWidget 
-              eventos={eventos}
-              onAddEvento={handleAddEvento}
+        {/* Modal de Criação/Edição */}
+        <Modal
+          isOpen={showModal}
+          onClose={resetForm}
+          title={editingId ? 'Editar Matéria' : 'Nova Matéria'}
+          size="md"
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Input
+              label="Nome da Matéria"
+              placeholder="Ex: Anatomia Humana"
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              required
             />
-            <PomodoroWidget />
-          </div>
-        </div>
+
+            <Textarea
+              label="Descrição (Opcional)"
+              placeholder="Breve descrição sobre a matéria..."
+              value={formData.descricao}
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              rows={3}
+            />
+
+            {/* Seletor de Cor */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                <Palette size={16} className="text-teal-600" />
+                Cor da Matéria
+              </label>
+              <div className="grid grid-cols-4 gap-3">
+                {CORES_DISPONIVEIS.map((cor) => (
+                  <button
+                    key={cor.valor}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, cor: cor.valor })}
+                    className={`
+                      h-12 rounded-xl transition-all duration-200
+                      ${formData.cor === cor.valor 
+                        ? 'ring-4 ring-offset-2 scale-105' 
+                        : 'hover:scale-105'
+                      }
+                    `}
+                    style={{ 
+                      backgroundColor: cor.valor,
+                      ringColor: `${cor.valor}40`
+                    }}
+                    title={cor.nome}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="flex-1"
+              >
+                {editingId ? 'Atualizar Matéria' : 'Criar Matéria'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={resetForm}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Modal de Confirmação de Exclusão */}
+        <ConfirmModal
+          isOpen={confirmDelete.isOpen}
+          onClose={() => setConfirmDelete({ isOpen: false, id: null, nome: '' })}
+          onConfirm={confirmarExclusao}
+          title="Excluir Matéria"
+          itemName={confirmDelete.nome}
+          confirmText="Excluir"
+          isLoading={isDeleting}
+          type="danger"
+        />
       </div>
     </div>
   );

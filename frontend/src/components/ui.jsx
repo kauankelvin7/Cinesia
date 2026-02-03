@@ -12,8 +12,8 @@ export const Button = ({
   const baseClasses = 'px-6 py-3.5 rounded-xl font-semibold transition-all duration-200';
   
   const variants = {
-    primary: 'bg-teal-600 dark:bg-teal-500 text-black dark:text-white hover:bg-teal-700 dark:hover:bg-teal-600 shadow-md hover:shadow-lg',
-    secondary: 'bg-surface-elevated text-text-primary hover:bg-brand-light border border-border',
+    primary: 'bg-teal-600 text-black hover:bg-teal-700 shadow-md hover:shadow-lg',
+    secondary: 'bg-white text-slate-900 hover:bg-teal-50 border border-slate-200',
   };
 
   return (
@@ -31,7 +31,7 @@ export const Button = ({
 };
 
 export const Card = ({ children, className = '', interactive = false, as: Component = 'div', ...props }) => {
-  const baseClasses = 'bg-surface rounded-2xl shadow-sm border border-border p-6 transition-all duration-300';
+  const baseClasses = 'bg-white rounded-2xl shadow-sm border border-slate-200 p-6 transition-all duration-300';
   const interactiveClasses = interactive ? 'cursor-pointer hover:shadow-md hover:border-brand-primary hover:scale-[1.01] active:scale-[0.99]' : '';
 
   return (
@@ -44,7 +44,7 @@ export const Card = ({ children, className = '', interactive = false, as: Compon
 export const Input = ({ className = '', ...props }) => {
   return (
     <input
-      className={`w-full px-4 py-3 rounded-xl border border-border bg-surface text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all ${className}`}
+      className={`w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all ${className}`}
       {...props}
     />
   );
@@ -53,7 +53,7 @@ export const Input = ({ className = '', ...props }) => {
 export const TextArea = ({ className = '', ...props }) => {
   return (
     <textarea
-      className={`w-full px-4 py-3 rounded-xl border border-border bg-surface text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all resize-none ${className}`}
+      className={`w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all resize-none ${className}`}
       {...props}
     />
   );

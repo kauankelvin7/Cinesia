@@ -85,8 +85,6 @@ export const listarMaterias = async (userId) => {
  * @returns {Promise<Object>} - Totais (ativas/concluídas), matérias recentes e eventos
  */
 export const getDashboardStats = async (userId) => {
-  console.log('🔥 getDashboardStats chamado para UID:', userId);
-  
   try {
     const materiasQuery = query(
       collection(db, 'materias'),
@@ -109,19 +107,12 @@ export const getDashboardStats = async (userId) => {
       orderBy('data', 'asc')
     );
 
-    console.log('📡 Buscando dados do Firestore...');
     const [snapshotMaterias, snapshotResumos, snapshotFlashcards, snapshotEventos] = await Promise.all([
       getDocs(materiasQuery),
       getDocs(resumosQuery),
       getDocs(flashcardsQuery),
       getDocs(eventosQuery)
     ]);
-
-    console.log('📦 Snapshots recebidos:');
-    console.log('  - Matérias:', snapshotMaterias.size);
-    console.log('  - Resumos:', snapshotResumos.size);
-    console.log('  - Flashcards:', snapshotFlashcards.size);
-    console.log('  - Eventos:', snapshotEventos.size);
 
     // Mapear matérias
     const materiasList = snapshotMaterias.docs.map(docSnap => ({
@@ -132,11 +123,6 @@ export const getDashboardStats = async (userId) => {
     // Filtrar ativas e concluídas (JAVASCRIPT FILTER)
     const ativas = materiasList.filter(m => !m.concluida).length;
     const concluidas = materiasList.filter(m => m.concluida === true).length;
-
-    console.log('🔢 Contagem de matérias:');
-    console.log('  - Total:', materiasList.length);
-    console.log('  - Ativas:', ativas);
-    console.log('  - Concluídas:', concluidas);
 
     // Matérias recentes (ordenar por createdAt)
     const materiasRecentes = materiasList
@@ -162,7 +148,6 @@ export const getDashboardStats = async (userId) => {
       eventos
     };
 
-    console.log('✅ Retornando resultado:', resultado);
     return resultado;
   } catch (error) {
     console.error('❌ Erro ao buscar estatísticas do dashboard:', error);
@@ -239,7 +224,7 @@ export const deletarMateria = async (materiaId) => {
 
 /**
  * Cria um novo flashcard no Firestore com imagem hospedada no Cloudinary
- * @param {Object} flashcard - { pergunta, resposta, materiaId }
+ * @param {Object} flashcard - { pergunta, resposta, materiaId, materiaNome, materiaCor }
  * @param {File|null} imageFile - Arquivo de imagem (opcional)
  * @param {string} userId - UID do usuário autenticado
  * @returns {Promise<Object>} - Flashcard criado com ID
@@ -250,6 +235,8 @@ export const criarFlashcard = async (flashcard, imageFile, userId) => {
       pergunta: flashcard.pergunta,
       resposta: flashcard.resposta,
       materiaId: flashcard.materiaId,
+      materiaNome: flashcard.materiaNome || null,  // CORREÇÃO: Salvar nome da matéria
+      materiaCor: flashcard.materiaCor || null,    // CORREÇÃO: Salvar cor da matéria
       imagemUrl: null,  // Será preenchido com URL do Cloudinary se houver imagem
       uid: userId,
       createdAt: serverTimestamp(),
@@ -259,10 +246,8 @@ export const criarFlashcard = async (flashcard, imageFile, userId) => {
     // Se houver imagem, fazer upload para Cloudinary
     if (imageFile) {
       try {
-        console.log('🖼️ Fazendo upload da imagem para Cloudinary...');
         const imageUrl = await uploadImage(imageFile);
         flashcardData.imagemUrl = imageUrl;
-        console.log('✅ Imagem enviada com sucesso:', imageUrl);
       } catch (imageError) {
         console.error('⚠️ Erro ao fazer upload da imagem:', imageError);
         throw new Error(`Erro ao processar imagem: ${imageError.message}`);
@@ -335,10 +320,8 @@ export const atualizarFlashcard = async (flashcardId, updates, imageFile = null)
     // Se houver nova imagem, fazer upload para Cloudinary
     if (imageFile) {
       try {
-        console.log('🖼️ Fazendo upload da imagem para Cloudinary...');
         const imageUrl = await uploadImage(imageFile);
         updateData.imagemUrl = imageUrl;
-        console.log('✅ Imagem enviada com sucesso:', imageUrl);
       } catch (imageError) {
         console.error('⚠️ Erro ao fazer upload da imagem:', imageError);
         throw new Error(`Erro ao processar imagem: ${imageError.message}`);

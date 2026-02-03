@@ -140,10 +140,10 @@ const Logo = ({ className = '', size = 'medium' }) => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <span className={`${currentSize.text} font-bold text-primary-700 leading-none`}>
+        <span className={`${currentSize.text} font-bold text-teal-700 leading-none`}>
           Cinesia
         </span>
-        <span className="text-xs text-secondary-500 font-medium tracking-wide uppercase">
+        <span className="text-xs text-slate-500 font-medium tracking-wide uppercase">
           Fisioterapia
         </span>
       </motion.div>

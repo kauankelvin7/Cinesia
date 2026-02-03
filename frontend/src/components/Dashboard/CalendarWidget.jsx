@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, CalendarDays, Trash2 } from 'lucide-react';
 
-const CalendarWidget = ({ eventos = [], onAddEvento }) => {
+const CalendarWidget = ({ eventos = [], onAddEvento, onOpenAddModal, onClickDay, onDeleteEvento }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Verifica se uma data tem eventos
@@ -43,23 +43,18 @@ const CalendarWidget = ({ eventos = [], onAddEvento }) => {
     .sort((a, b) => a.dataObj - b.dataObj)
     .slice(0, 3);
 
-  // Handler para adicionar evento
+  // Handler para adicionar evento - Abre o modal customizado
   const handleAddEvento = () => {
-    const titulo = window.prompt('Título do evento:');
-    if (!titulo) return;
+    if (onOpenAddModal) {
+      onOpenAddModal(selectedDate);
+    }
+  };
 
-    const data = window.prompt('Data (DD/MM/YYYY):');
-    if (!data) return;
-
-    const [dia, mes, ano] = data.split('/');
-    const novaData = new Date(ano, mes - 1, dia);
-
-    if (onAddEvento) {
-      onAddEvento({
-        titulo,
-        data: novaData,
-        tipo: 'estudo'
-      });
+  // Handler para clique em um dia específico
+  const handleDayClick = (date) => {
+    setSelectedDate(date);
+    if (onClickDay) {
+      onClickDay(date);
     }
   };
 
@@ -72,38 +67,39 @@ const CalendarWidget = ({ eventos = [], onAddEvento }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 transition-colors">
+    <div className="bg-white rounded-lg shadow-md p-6 transition-colors">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            Calendário
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          <CalendarDays className="w-4 h-4 text-teal-600" />
+          <h3 className="text-sm font-semibold text-slate-800">
+            Calendario
           </h3>
         </div>
         <button
           onClick={handleAddEvento}
-          className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          className="p-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg transition-all shadow-sm"
           title="Adicionar Evento"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Calendar */}
-      <div className="calendar-widget mb-6">
+      <div className="agenda-calendar text-xs">
         <Calendar
           onChange={setSelectedDate}
+          onClickDay={handleDayClick}
           value={selectedDate}
           tileContent={tileContent}
           locale="pt-BR"
-          className="w-full border-none"
+          className="w-full border-none text-xs"
         />
       </div>
 
       {/* Próximos Eventos */}
-      <div className="border-t border-gray-200 dark:border-slate-700 pt-4">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+      <div className="border-t border-gray-200 pt-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">
           Próximos Eventos
         </h4>
         
@@ -112,28 +108,40 @@ const CalendarWidget = ({ eventos = [], onAddEvento }) => {
             {proximosEventos.map((evento, index) => (
               <div
                 key={evento.id || index}
-                className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                className="group flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex-shrink-0 w-12 text-center">
-                  <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                  <div className="text-xs font-semibold text-blue-600">
                     {formatarData(evento.dataObj)}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-white truncate">
+                  <p className="text-sm font-medium text-gray-800 truncate">
                     {evento.titulo || evento.title}
                   </p>
                   {evento.tipo && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500">
                       {evento.tipo}
                     </p>
                   )}
                 </div>
+                {onDeleteEvento && evento.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteEvento(evento);
+                    }}
+                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 text-red-500 hover:text-red-600 transition-all"
+                    title="Excluir evento"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+          <p className="text-sm text-gray-500 text-center py-4">
             Nenhum evento próximo
           </p>
         )}

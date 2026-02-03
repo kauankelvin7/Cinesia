@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiBook, FiFileText, FiLayers, FiArrowRight, FiPlus } from 'react-icons/fi';
+import { FiBook, FiFileText, FiLayers, FiArrowRight, FiPlus, FiTarget, FiAward } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import api from '../services/api';
+import { getDashboardStats } from '../services/dashboardService';
 import IconWrapper from '../components/IconWrapper';
 
 const Dashboard = () => {
@@ -13,6 +14,7 @@ const Dashboard = () => {
     resumos: 0,
     flashcards: 0
   });
+  const [metaMensal, setMetaMensal] = useState(null);
   const [recentMaterias, setRecentMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +35,12 @@ const Dashboard = () => {
         resumos: resumosRes.data.length || 0,
         flashcards: flashcardsRes.data.length || 0
       });
+
+      // Calcula Meta Mensal
+      const dashStats = await getDashboardStats(user?.uid);
+      if (dashStats?.metaMensal) {
+        setMetaMensal(dashStats.metaMensal);
+      }
 
       // Pega as 6 matérias mais recentes
       const materias = materiasRes.data || [];
@@ -143,6 +151,59 @@ const Dashboard = () => {
           );
         })}
       </div>
+
+      {/* Meta Mensal Card */}
+      {metaMensal && (
+        <motion.div
+          className="mb-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className={`rounded-2xl p-6 shadow-lg ${
+            metaMensal.metaAtingida 
+              ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+              : 'bg-gradient-to-br from-amber-500 to-orange-500'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  {metaMensal.metaAtingida ? (
+                    <FiAward className="text-white" size={28} />
+                  ) : (
+                    <FiTarget className="text-white" size={28} />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-white text-lg font-bold">Meta de {metaMensal.mesNome}</h3>
+                  <p className="text-white/80 text-sm">
+                    {metaMensal.metaAtingida ? '🎉 Parabéns! Meta atingida!' : 'Continue estudando!'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-white text-3xl font-bold">{metaMensal.atual}/{metaMensal.meta}</p>
+                <p className="text-white/80 text-sm">materiais criados</p>
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="relative">
+              <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-white rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(metaMensal.porcentagem, 100)}%` }}
+                  transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
+                />
+              </div>
+              <p className="text-white/90 text-sm mt-2 text-center font-medium">
+                {metaMensal.porcentagem}% concluído
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Acesso Rápido */}
       <div className="mb-6">

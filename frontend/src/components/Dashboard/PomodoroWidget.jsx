@@ -77,20 +77,20 @@ const PomodoroWidget = () => {
     : ((STUDY_TIME - time) / STUDY_TIME) * 100;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 transition-colors">
+    <div className="bg-white rounded-lg shadow-md p-6 transition-colors">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-800">
             Pomodoro Timer
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             {isBreak ? '☕ Pausa' : '📚 Estude'}
           </p>
         </div>
         <button
           onClick={() => setIsMuted(!isMuted)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           {isMuted ? (
             <VolumeX className="w-5 h-5 text-gray-500" />
@@ -113,7 +113,7 @@ const PomodoroWidget = () => {
               fill="none"
               stroke="currentColor"
               strokeWidth="8"
-              className="text-gray-200 dark:text-slate-700"
+              className="text-gray-200"
             />
             {/* Progresso */}
             <circle
@@ -136,7 +136,7 @@ const PomodoroWidget = () => {
             <div className={`text-5xl font-bold ${isBreak ? 'text-green-600' : 'text-blue-600'}`}>
               {formatTime(time)}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            <div className="text-sm text-gray-500 mt-2">
               {isBreak ? 'Sessões: ' : 'Sessão: '} {sessions}
             </div>
           </div>
@@ -172,7 +172,7 @@ const PomodoroWidget = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={resetTimer}
-          className="px-4 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white rounded-lg transition-colors"
+          className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors"
         >
           <RotateCcw size={20} />
         </motion.button>
@@ -180,14 +180,14 @@ const PomodoroWidget = () => {
 
       {/* Info Cards */}
       <div className="space-y-2">
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs text-blue-600 font-medium">
             25 min de estudo + 5 min de pausa
           </p>
         </div>
         {sessions > 0 && (
-          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+          <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-xs text-green-600 font-medium">
               ✅ {sessions} {sessions === 1 ? 'sessão' : 'sessões'} concluídas
             </p>
           </div>
