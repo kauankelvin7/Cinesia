@@ -55,23 +55,60 @@ export const criarMateria = async (materia, userId) => {
 };
 
 /**
- * Lista todas as matérias do usuário
+ * Lista todas as matérias do usuário COM contadores de resumos e flashcards
  * @param {string} userId - UID do usuário autenticado
- * @returns {Promise<Array>} - Lista de matérias
+ * @returns {Promise<Array>} - Lista de matérias com totalResumos e totalFlashcards
  */
 export const listarMaterias = async (userId) => {
   try {
-    const q = query(
+    // Buscar matérias
+    const materiasQuery = query(
       collection(db, 'materias'),
       where('uid', '==', userId),
       orderBy('createdAt', 'desc')
     );
     
-    const querySnapshot = await getDocs(q);
+    // Buscar resumos e flashcards em paralelo para contar por matéria
+    const resumosQuery = query(
+      collection(db, 'resumos'),
+      where('uid', '==', userId)
+    );
     
-    return querySnapshot.docs.map(doc => ({
+    const flashcardsQuery = query(
+      collection(db, 'flashcards'),
+      where('uid', '==', userId)
+    );
+    
+    const [materiasSnapshot, resumosSnapshot, flashcardsSnapshot] = await Promise.all([
+      getDocs(materiasQuery),
+      getDocs(resumosQuery),
+      getDocs(flashcardsQuery)
+    ]);
+    
+    // Contar resumos por matéria
+    const resumosPorMateria = {};
+    resumosSnapshot.docs.forEach(doc => {
+      const materiaId = doc.data().materiaId;
+      if (materiaId) {
+        resumosPorMateria[materiaId] = (resumosPorMateria[materiaId] || 0) + 1;
+      }
+    });
+    
+    // Contar flashcards por matéria
+    const flashcardsPorMateria = {};
+    flashcardsSnapshot.docs.forEach(doc => {
+      const materiaId = doc.data().materiaId;
+      if (materiaId) {
+        flashcardsPorMateria[materiaId] = (flashcardsPorMateria[materiaId] || 0) + 1;
+      }
+    });
+    
+    // Retornar matérias com contadores
+    return materiasSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      totalResumos: resumosPorMateria[doc.id] || 0,
+      totalFlashcards: flashcardsPorMateria[doc.id] || 0
     }));
   } catch (error) {
     console.error('Erro ao listar matérias:', error);
