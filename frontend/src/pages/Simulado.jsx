@@ -9,7 +9,7 @@
  * - Explicação após resposta
  * - Placar final
  * 
- * v2.0 - Upload de PDF com pdfjs-dist
+ * v4.1 - FIXED JSON PARSING (Fevereiro 2025)
  */
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -42,13 +42,11 @@ import { Input } from '../components/ui/Input';
 // 📄 Configurar worker do PDF.js v5+ para Vite
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-// 🤖 MULTI-MODEL FALLBACK ARRAY (Zero Config Strategy)
-// Modelos estáveis ordenados por preferência - SEM systemInstruction
-// Se um modelo falhar (429/404/400), tenta o próximo automaticamente
+// 🤖 MODELOS CORRETOS para API v1beta (Fevereiro 2025)
 const MODEL_CANDIDATES = [
-  'gemini-1.5-flash',           // Mais estável e compatível
-  'gemini-1.5-flash-001',       // Versão específica
-  'gemini-pro'                  // Fallback clássico
+  'gemini-2.5-flash',          // Modelo 2.5 estável mais recente
+  'gemini-1.5-flash',          // Fallback 1.5 estável
+  'gemini-1.5-pro',            // Pro como último recurso
 ];
 
 // Prompt para gerar questões por TEMA
@@ -254,15 +252,11 @@ function Simulado() {
   };
 
   /**
-   * 🔥 HIGHLANDER STRATEGY: Gera conteúdo tentando múltiplos modelos
-   * Se um falhar (429/404), tenta o próximo automaticamente
-   * Só lança erro se TODOS falharem
-   * LÓGICA IDÊNTICA AO KAKABOT
+   * 🔥 MULTI-MODEL FALLBACK: Tenta múltiplos modelos
    */
   const generateWithFallback = async (prompt) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    // 🔍 DEBUG: Log visual da API Key
     console.log('🔑 [Simulado] API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'AUSENTE');
     
     if (!apiKey) {
@@ -275,40 +269,45 @@ function Simulado() {
     for (const modelName of MODEL_CANDIDATES) {
       try {
         console.log(`🤖 [Simulado] Tentando modelo: ${modelName}`);
-        const model = genAI.getGenerativeModel({ model: modelName });
+        
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4096, // Aumentado de 2048 para 4096
+          }
+        });
+        
         const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
         console.log(`✅ [Simulado] Modelo ${modelName} funcionou!`);
-        // Modelo funcionou! Retorna o texto
-        return result.response.text();
+        console.log(`📏 [Simulado] Tamanho da resposta:`, text.length, 'chars');
+        console.log(`🔍 [Simulado] Resposta começa com:`, text.substring(0, 100));
+        console.log(`🔍 [Simulado] Resposta termina com:`, text.substring(text.length - 100));
+        
+        return text;
+        
       } catch (err) {
         const status = err?.status || err?.code || '';
         const message = err?.message || 'erro desconhecido';
         console.warn(`❌ [Simulado] Modelo ${modelName} falhou:`, status, message);
-        errors.push(`${modelName}: ${status} - ${message}`);
+        errors.push(`${modelName}: ${message}`);
         
-        // Erros que indicam "tente o próximo modelo"
-        const isRecoverable = 
-          status === 400 ||  // Bad Request - modelo incompatível
-          status === 429 || 
-          status === 404 || 
-          status === 503 ||
-          message.includes('quota') || 
-          message.includes('not found') ||
-          message.includes('not supported') ||
-          message.includes('unavailable') ||
-          message.includes('invalid');
-        
-        if (isRecoverable) {
-          // Pula para o próximo modelo silenciosamente
-          continue;
-        }
-        // Para outros erros, também tenta o próximo
+        // Continua tentando o próximo modelo
         continue;
       }
     }
     
     // Se chegou aqui, todos falharam
-    throw new Error(`Todos os ${MODEL_CANDIDATES.length} modelos falharam. Aguarde alguns minutos e tente novamente.`);
+    throw new Error(
+      `Todos os ${MODEL_CANDIDATES.length} modelos falharam.\n\n` +
+      `Erros:\n${errors.slice(0, 2).join('\n')}\n\n` +
+      'Aguarde alguns minutos e tente novamente.'
+    );
   };
 
   // Gerar questões (suporta tema OU PDF)
@@ -339,49 +338,105 @@ function Simulado() {
       if (activeTab === 'arquivo' && pdfFile) {
         setTema(pdfFile.name.replace('.pdf', '').replace(/_/g, ' '));
       }
+      
       const responseText = await generateWithFallback(prompt);
       
-      // 🧹 Limpar a resposta (remover possíveis marcadores markdown)
+      console.log('📝 [Simulado] Resposta recebida, tamanho:', responseText.length, 'chars');
+      
+      // 🧹 LIMPEZA INTELIGENTE: remover apenas marcadores markdown
       let cleanedResponse = responseText
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
         .trim();
       
-      // 🔍 Tentar fazer parse do JSON (com extração segura)
+      // Remover texto ANTES do JSON (mas preservar o JSON completo)
+      const jsonStartMatch = cleanedResponse.match(/^[^[\{]*/);
+      if (jsonStartMatch && jsonStartMatch[0].length > 0) {
+        cleanedResponse = cleanedResponse.substring(jsonStartMatch[0].length);
+      }
+      
+      // Remover texto DEPOIS do JSON (mas preservar o JSON completo)
+      // Encontrar o último ] ou } e manter tudo até ali
+      const lastBracket = Math.max(
+        cleanedResponse.lastIndexOf(']'),
+        cleanedResponse.lastIndexOf('}')
+      );
+      if (lastBracket !== -1) {
+        cleanedResponse = cleanedResponse.substring(0, lastBracket + 1);
+      }
+      
+      console.log('🧹 [Simulado] JSON limpo, tamanho:', cleanedResponse.length, 'chars');
+      
+      // 🔍 PARSING COM MÚLTIPLAS TENTATIVAS
       let parsedQuestions;
+      
+      // Tentativa 1: Parse direto (caso mais comum)
       try {
         parsedQuestions = JSON.parse(cleanedResponse);
+        console.log('✅ [Simulado] Parse direto funcionou!');
       } catch (parseError) {
-        // Regex robusto para extrair array JSON de qualquer posição
-        const jsonMatch = cleanedResponse.match(/\[\s*\{[\s\S]*\}\s*\]/);
-        if (jsonMatch) {
-          try {
-            parsedQuestions = JSON.parse(jsonMatch[0]);
-          } catch (innerError) {
-            throw new Error('A IA retornou JSON malformado. Tente novamente.');
+        console.log('⚠️ [Simulado] Parse direto falhou:', parseError.message);
+        console.log('📊 [Simulado] Tamanho do JSON limpo:', cleanedResponse.length);
+        console.log('🔍 [Simulado] Primeiros 300 chars:', cleanedResponse.substring(0, 300));
+        console.log('🔍 [Simulado] Últimos 300 chars:', cleanedResponse.substring(cleanedResponse.length - 300));
+        
+        // Tentativa 2: Extrair array JSON completo
+        try {
+          // Encontrar início e fim do array
+          const arrayStart = cleanedResponse.indexOf('[');
+          const arrayEnd = cleanedResponse.lastIndexOf(']');
+          
+          console.log('📍 [Simulado] Array encontrado de:', arrayStart, 'até:', arrayEnd);
+          
+          if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
+            const jsonArray = cleanedResponse.substring(arrayStart, arrayEnd + 1);
+            console.log('📏 [Simulado] Tamanho do array extraído:', jsonArray.length);
+            parsedQuestions = JSON.parse(jsonArray);
+            console.log('✅ [Simulado] Extração de array funcionou!');
+          } else {
+            throw new Error('Nenhum array JSON encontrado');
           }
-        } else {
-          throw new Error('A IA não retornou um formato válido. Tente outro tema.');
+        } catch (innerError) {
+          console.error('❌ [Simulado] Todas as tentativas falharam');
+          console.error('💥 [Simulado] Erro:', innerError.message);
+          console.error('📄 [Simulado] JSON completo (primeiros 1000 chars):', cleanedResponse.substring(0, 1000));
+          throw new Error('A IA retornou um formato inválido. Tente novamente.');
         }
       }
 
+      console.log('📊 [Simulado] Questões parseadas:', parsedQuestions?.length || 0);
+
       // Validar estrutura
       if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
-        throw new Error('Nenhuma questão foi gerada. Tente outro tema.');
+        throw new Error('Nenhuma questão foi gerada. Tente novamente.');
       }
 
-      // Validar cada questão
-      const validQuestions = parsedQuestions.filter(q => 
-        q.pergunta && 
-        Array.isArray(q.opcoes) && 
-        q.opcoes.length >= 2 &&
-        typeof q.correta === 'number' &&
-        q.explicacao
-      );
+      // Validar e limpar cada questão
+      const validQuestions = parsedQuestions
+        .filter(q => {
+          const isValid = q.pergunta && 
+                         Array.isArray(q.opcoes) && 
+                         q.opcoes.length >= 2 &&
+                         typeof q.correta === 'number' &&
+                         q.explicacao;
+          
+          if (!isValid) {
+            console.warn('⚠️ Questão inválida:', q);
+          }
+          return isValid;
+        })
+        .map(q => ({
+          pergunta: String(q.pergunta).trim(),
+          opcoes: q.opcoes.map(o => String(o).trim()),
+          correta: Number(q.correta),
+          explicacao: String(q.explicacao).trim()
+        }));
 
       if (validQuestions.length === 0) {
-        throw new Error('As questões geradas estão em formato inválido.');
+        throw new Error('As questões geradas estão em formato inválido. Tente novamente.');
       }
+
+      console.log('✅ [Simulado] Questões válidas:', validQuestions.length);
 
       setQuestoes(validQuestions);
       setFase('quiz');
@@ -391,7 +446,7 @@ function Simulado() {
       setHasAnswered(false);
       
     } catch (err) {
-      console.error('Erro ao gerar questões:', err);
+      console.error('❌ [Simulado] Erro final:', err);
       setError(err.message || 'Erro ao gerar questões. Verifique sua conexão e tente novamente.');
     } finally {
       setIsLoading(false);
@@ -504,7 +559,7 @@ function Simulado() {
 
         {/* === FASE: SETUP === */}
         <AnimatePresence mode="wait">
-          {fase === 'setup' && (
+          {fase === 'setup' && !isLoading && (
             <motion.div
               key="setup"
               initial={{ opacity: 0, y: 20 }}
@@ -690,6 +745,115 @@ function Simulado() {
                 >
                   {isLoading ? 'Gerando Questões...' : 'Iniciar Simulado'}
                 </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* === FASE: LOADING === */}
+          {isLoading && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-slate-200/50 p-12"
+            >
+              <div className="text-center">
+                {/* Animação de loading */}
+                <div className="relative w-32 h-32 mx-auto mb-8">
+                  {/* Círculo externo girando */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-4 border-indigo-200 border-t-indigo-600"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  
+                  {/* Círculo interno girando */}
+                  <motion.div
+                    className="absolute inset-4 rounded-full border-4 border-purple-200 border-t-purple-600"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                  />
+                  
+                  {/* Ícone central pulsando */}
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Sparkles size={40} className="text-indigo-600" />
+                  </motion.div>
+                </div>
+
+                {/* Textos animados */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                    Gerando suas questões...
+                  </h3>
+                  <p className="text-slate-600 mb-6">
+                    A IA está criando questões personalizadas sobre{' '}
+                    <span className="font-semibold text-indigo-600">{tema || 'seu conteúdo'}</span>
+                  </p>
+                </motion.div>
+
+                {/* Etapas do processo (animadas sequencialmente) */}
+                <div className="space-y-3 max-w-md mx-auto">
+                  <motion.div
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-indigo-600"
+                      animate={{ scale: [1, 1.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                    <span className="text-sm text-slate-700">Analisando o tema...</span>
+                  </motion.div>
+
+                  <motion.div
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-purple-600"
+                      animate={{ scale: [1, 1.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                    />
+                    <span className="text-sm text-slate-700">Criando perguntas relevantes...</span>
+                  </motion.div>
+
+                  <motion.div
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-indigo-600"
+                      animate={{ scale: [1, 1.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
+                    />
+                    <span className="text-sm text-slate-700">Gerando alternativas e explicações...</span>
+                  </motion.div>
+                </div>
+
+                {/* Mensagem de paciência */}
+                <motion.p
+                  className="text-xs text-slate-500 mt-8"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                >
+                  Isso pode levar alguns segundos... ⏱️
+                </motion.p>
               </div>
             </motion.div>
           )}
