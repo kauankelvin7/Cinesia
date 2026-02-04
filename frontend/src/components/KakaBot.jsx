@@ -6,13 +6,13 @@
  * 
  * Features:
  * - Chat flutuante minimalista
- * - Modelo: Gemini 2.0 Flash-Lite (otimizado para baixo uso de cota)
- * - Fallback automático: gemini-flash-latest
- * - Histórico de conversa
+ * - Modelo: Gemini 1.5 Flash (estável)
+ * - Fallback automático: gemini-2.0-flash-lite
+ * - History Injection Pattern para persona
  * - Renderização Markdown
  * - Tratamento robusto de erros
  * 
- * VERSÃO: 7.0 - Flash-Lite Edition
+ * VERSÃO: 8.0 - History Injection Edition
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -67,7 +67,6 @@ const KakaBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [geminiModel, setGeminiModel] = useState(null);
   const [activeModelName, setActiveModelName] = useState(null);
-  const [conversationHistory, setConversationHistory] = useState([]);
   const [connectionError, setConnectionError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const messagesEndRef = useRef(null);
@@ -102,20 +101,35 @@ const KakaBot = () => {
       const genAI = new GoogleGenerativeAI(apiKey);
       
       let model = null;
+      let chat = null;
       let usedModel = null;
 
-      // ⚡ MODELO PRIMÁRIO: Gemini 2.0 Flash-Lite
-      const PRIMARY_MODEL = 'gemini-2.0-flash-lite';
-      const FALLBACK_MODEL = 'gemini-flash-latest';
+      // ⚡ MODELOS (History Injection Pattern - mais compatível)
+      const PRIMARY_MODEL = 'gemini-1.5-flash';
+      const FALLBACK_MODEL = 'gemini-2.0-flash-lite';
+      
+      // History Injection: injetar persona como primeira mensagem do histórico
+      const createChatWithPersona = (genModel) => {
+        return genModel.startChat({
+          history: [
+            {
+              role: 'user',
+              parts: [{ text: `Aja como o seguinte personagem em todas as respostas:\n\n${SYSTEM_PROMPT}` }]
+            },
+            {
+              role: 'model', 
+              parts: [{ text: 'Entendido! Serei o Kaka, parceiro de estudos de Fisioterapia. Vou seguir todas as diretrizes de adaptabilidade e tom de voz. Estou pronto para ajudar! 💪' }]
+            }
+          ]
+        });
+      };
       
       try {
-        model = genAI.getGenerativeModel({ 
-          model: PRIMARY_MODEL,
-          systemInstruction: SYSTEM_PROMPT,
-        });
+        model = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
+        chat = createChatWithPersona(model);
         
         // Teste de conectividade
-        const testResult = await model.generateContent('Responda apenas: OK');
+        const testResult = await chat.sendMessage('Responda apenas: OK');
         await testResult.response;
         
         usedModel = PRIMARY_MODEL;
@@ -123,13 +137,11 @@ const KakaBot = () => {
       } catch (primaryError) {
         // Tentar fallback silenciosamente
         try {
-          model = genAI.getGenerativeModel({ 
-            model: FALLBACK_MODEL,
-            systemInstruction: SYSTEM_PROMPT,
-          });
+          model = genAI.getGenerativeModel({ model: FALLBACK_MODEL });
+          chat = createChatWithPersona(model);
           
           // Teste do fallback
-          const fallbackTest = await model.generateContent('Responda apenas: OK');
+          const fallbackTest = await chat.sendMessage('Responda apenas: OK');
           await fallbackTest.response;
           usedModel = FALLBACK_MODEL;
           
@@ -138,7 +150,7 @@ const KakaBot = () => {
         }
       }
       
-      setGeminiModel(model);
+      setGeminiModel(chat);
       setActiveModelName(usedModel);
       setConnectionError(null);
       
@@ -200,24 +212,13 @@ const KakaBot = () => {
         throw new Error('Modelo não inicializado. Clique em reconectar.');
       }
 
-      // Construir prompt com contexto
-      const historyContext = conversationHistory.slice(-6).map(msg => 
-        `${msg.role === 'user' ? 'Usuário' : 'Kaka'}: ${msg.content}`
-      ).join('\n');
-
-      const fullPrompt = historyContext 
-        ? `Histórico recente:\n${historyContext}\n\nUsuário: ${userMessage}`
-        : userMessage;
-
-      const result = await geminiModel.generateContent(fullPrompt);
+      // Chat já mantém histórico internamente via startChat()
+      // Enviar apenas a mensagem atual
+      const result = await geminiModel.sendMessage(userMessage);
       const response = await result.response;
       const text = response.text();
 
-      setConversationHistory(prev => [...prev, 
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: text }
-      ]);
-
+      // Chat do Gemini já mantém histórico interno via startChat()
       setMessages(prev => [...prev, { role: 'assistant', content: text }]);
       
     } catch (error) {

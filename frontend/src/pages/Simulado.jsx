@@ -44,15 +44,13 @@ import { Input } from '../components/ui/Input';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // 🤖 MULTI-MODEL FALLBACK ARRAY (Highlander Strategy)
-// Lista EXATA de candidatos - idêntica ao KakaBot
+// Modelos estáveis ordenados por preferência
 // Se um modelo falhar (429/404), tenta o próximo automaticamente
 const MODEL_CANDIDATES = [
-  'gemini-2.0-flash-lite-preview-02-05',
-  'gemini-2.0-flash-lite',
-  'gemini-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-001',
-  'gemini-pro'
+  'gemini-1.5-flash',           // Mais estável e compatível
+  'gemini-1.5-flash-001',       // Versão específica
+  'gemini-2.0-flash-lite',      // Lite para economia
+  'gemini-pro'                  // Fallback clássico
 ];
 
 // Prompt para gerar questões por TEMA
@@ -285,13 +283,15 @@ function Simulado() {
         
         // Erros que indicam "tente o próximo modelo"
         const isRecoverable = 
+          status === 400 ||  // Bad Request - modelo incompatível
           status === 429 || 
           status === 404 || 
           status === 503 ||
           message.includes('quota') || 
           message.includes('not found') ||
           message.includes('not supported') ||
-          message.includes('unavailable');
+          message.includes('unavailable') ||
+          message.includes('invalid');
         
         if (isRecoverable) {
           // Pula para o próximo modelo silenciosamente
