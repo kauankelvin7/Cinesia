@@ -43,13 +43,12 @@ import { Input } from '../components/ui/Input';
 // 📄 Configurar worker do PDF.js v5+ para Vite
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-// 🤖 MULTI-MODEL FALLBACK ARRAY (Highlander Strategy)
-// Modelos estáveis ordenados por preferência
-// Se um modelo falhar (429/404), tenta o próximo automaticamente
+// 🤖 MULTI-MODEL FALLBACK ARRAY (Zero Config Strategy)
+// Modelos estáveis ordenados por preferência - SEM systemInstruction
+// Se um modelo falhar (429/404/400), tenta o próximo automaticamente
 const MODEL_CANDIDATES = [
   'gemini-1.5-flash',           // Mais estável e compatível
   'gemini-1.5-flash-001',       // Versão específica
-  'gemini-2.0-flash-lite',      // Lite para economia
   'gemini-pro'                  // Fallback clássico
 ];
 

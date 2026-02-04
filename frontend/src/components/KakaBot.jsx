@@ -6,13 +6,13 @@
  * 
  * Features:
  * - Chat flutuante minimalista
- * - Modelo: Gemini 2.5 Flash (estável)
- * - Fallback automático: gemini-2.5-flash-lite
- * - History Injection Pattern para persona
+ * - Modelo: gemini-1.5-flash (máxima compatibilidade)
+ * - Fallback: gemini-pro
+ * - History Injection Pattern (SEM systemInstruction)
  * - Renderização Markdown
  * - Tratamento robusto de erros
  * 
- * VERSÃO: 8.1 - Atualização modelos Gemini (Fev 2026)
+ * VERSÃO: 9.0 - Zero Config (Vercel Fix)
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -30,8 +30,8 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-// Prompt do Sistema (Persona do Kaka)
-const SYSTEM_PROMPT = `Você é o Kaka, um parceiro de estudos de Fisioterapia paciente e natural.
+// Prompt do Sistema (Persona do Kaka) - Injetado via histórico
+const KAKA_PERSONA = `Você é o Kaka, um parceiro de estudos de Fisioterapia paciente e natural.
 
 REGRA DE OURO (ADAPTABILIDADE):
 O tamanho da sua resposta deve espelhar a intenção do usuário:
@@ -51,9 +51,14 @@ TOM DE VOZ:
 - Natural, acolhedor e paciente.
 - Aceite o ritmo dela. Sem textões desnecessários.
 - Use **negrito** para termos-chave quando explicar conceitos.
-- Nunca invente informações médicas.
+- Nunca invente informações médicas.`;
 
-Comece toda primeira interação se apresentando brevemente (1-2 frases).`;
+// 🔥 MODELOS - Ordem de preferência (máxima compatibilidade)
+const MODEL_CANDIDATES = [
+  'gemini-1.5-flash',      // Mais estável e compatível
+  'gemini-1.5-flash-001',  // Versão específica
+  'gemini-pro'             // Fallback clássico
+];
 
 const KakaBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -100,56 +105,48 @@ const KakaBot = () => {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(apiKey);
       
-      let model = null;
       let chat = null;
       let usedModel = null;
-
-      // ⚡ MODELOS ATUALIZADOS (Fev 2026)
-      // gemini-2.5-flash = modelo estável, gratuito e performático
-      // gemini-2.5-flash-lite = versão ultra-rápida e econômica
-      const PRIMARY_MODEL = 'gemini-2.5-flash';
-      const FALLBACK_MODEL = 'gemini-2.5-flash-lite';
       
-      // History Injection: injetar persona como primeira mensagem do histórico
+      // 🔥 ZERO CONFIG: Injeção de persona no histórico (SEM systemInstruction)
       const createChatWithPersona = (genModel) => {
         return genModel.startChat({
           history: [
             {
               role: 'user',
-              parts: [{ text: `Aja como o seguinte personagem em todas as respostas:\n\n${SYSTEM_PROMPT}` }]
+              parts: [{ text: `Aja como o seguinte personagem em TODAS as suas respostas a partir de agora:\n\n${KAKA_PERSONA}` }]
             },
             {
               role: 'model', 
-              parts: [{ text: 'Entendido! Serei o Kaka, parceiro de estudos de Fisioterapia. Vou seguir todas as diretrizes de adaptabilidade e tom de voz. Estou pronto para ajudar! 💪' }]
+              parts: [{ text: 'Entendido! Sou o Kaka, seu parceiro de estudos de Fisioterapia. 💪 Vou seguir todas as diretrizes - sendo breve em saudações e detalhado quando você precisar. Me conta, o que quer estudar hoje?' }]
             }
           ]
         });
       };
       
-      try {
-        model = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
-        chat = createChatWithPersona(model);
-        
-        // Teste de conectividade
-        const testResult = await chat.sendMessage('Responda apenas: OK');
-        await testResult.response;
-        
-        usedModel = PRIMARY_MODEL;
-        
-      } catch (primaryError) {
-        // Tentar fallback silenciosamente
+      // 🔥 MULTI-MODEL FALLBACK: Tenta cada modelo até um funcionar
+      for (const modelName of MODEL_CANDIDATES) {
         try {
-          model = genAI.getGenerativeModel({ model: FALLBACK_MODEL });
+          // SEM systemInstruction - apenas model name
+          const model = genAI.getGenerativeModel({ model: modelName });
           chat = createChatWithPersona(model);
           
-          // Teste do fallback
-          const fallbackTest = await chat.sendMessage('Responda apenas: OK');
-          await fallbackTest.response;
-          usedModel = FALLBACK_MODEL;
+          // Teste de conectividade simples
+          const testResult = await chat.sendMessage('Responda apenas: OK');
+          await testResult.response;
           
-        } catch (fallbackError) {
-          throw new Error(`Nenhum modelo disponível. Verifique sua API Key.`);
+          usedModel = modelName;
+          break; // Modelo funcionou!
+          
+        } catch (err) {
+          // Erro recuperável - tenta próximo modelo
+          console.warn(`Modelo ${modelName} falhou:`, err.message);
+          continue;
         }
+      }
+      
+      if (!chat || !usedModel) {
+        throw new Error('Nenhum modelo disponível. Verifique sua API Key.');
       }
       
       setGeminiModel(chat);
