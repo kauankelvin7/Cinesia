@@ -22,11 +22,11 @@ import {
   Send, 
   User,
   Loader2,
-  Stethoscope,
+  MessageCircle,
   AlertTriangle,
   RefreshCw,
   Zap,
-  CheckCircle2
+  CheckCircle
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -280,7 +280,7 @@ const KakaBot = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Stethoscope size={26} />
+            <MessageCircle size={26} />
             <motion.div
               className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full"
               animate={{ scale: [1, 1.2, 1] }}
@@ -304,14 +304,14 @@ const KakaBot = () => {
             <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <Stethoscope className="text-white" size={22} />
+                  <MessageCircle className="text-white" size={22} />
                 </div>
                 <div>
                   <h3 className="text-white font-bold flex items-center gap-2">
                     Kaka
                     {isInitializing && <Loader2 size={14} className="animate-spin" />}
                     {geminiModel && !isInitializing && (
-                      <CheckCircle2 size={14} className="text-green-300" />
+                      <CheckCircle size={14} className="text-green-300" />
                     )}
                     {connectionError && !isInitializing && (
                       <AlertTriangle size={14} className="text-amber-300" />
@@ -357,7 +357,7 @@ const KakaBot = () => {
                       message.isSuccess ? 'bg-green-100' :
                       'bg-gradient-to-br from-teal-500 to-emerald-500'
                     }`}>
-                      <Stethoscope className={
+                      <MessageCircle className={
                         message.isError ? 'text-red-500' : 
                         message.isSuccess ? 'text-green-600' :
                         'text-white'
@@ -423,7 +423,7 @@ const KakaBot = () => {
               {isLoading && (
                 <motion.div className="flex items-start" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-full flex items-center justify-center mr-2">
-                    <Stethoscope className="text-white" size={16} />
+                    <MessageCircle className="text-white" size={16} />
                   </div>
                   <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-slate-100">
                     <div className="flex items-center gap-2">

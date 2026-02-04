@@ -21,7 +21,7 @@ import {
   Settings,
   ChevronRight,
   Sparkles,
-  BrainCircuit,
+  Brain,
   ClipboardList,
   PenTool
 } from 'lucide-react';
@@ -46,7 +46,7 @@ const Sidebar = memo(() => {
     { to: '/materias', icon: BookOpen, label: 'Matérias' },
     { to: '/resumos', icon: FileText, label: 'Resumos' },
     { to: '/flashcards', icon: Layers, label: 'Flashcards' },
-    { to: '/simulado', icon: BrainCircuit, label: 'Simulados' },
+    { to: '/simulado', icon: Brain, label: 'Simulados' },
     { to: '/consulta-rapida', icon: ClipboardList, label: 'Consulta Rápida' },
     { to: '/quadro-branco', icon: PenTool, label: 'Quadro Branco' },
   ];

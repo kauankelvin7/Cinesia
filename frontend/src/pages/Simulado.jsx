@@ -15,11 +15,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BrainCircuit,
+  BookOpen,
   Play,
   ArrowRight,
   ArrowLeft,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
   Sparkles,
   RotateCcw,
@@ -28,7 +28,6 @@ import {
   AlertTriangle,
   Target,
   Zap,
-  BookOpen,
   FileText,
   Upload,
   X,
@@ -482,7 +481,7 @@ function Simulado() {
               className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"
               whileHover={{ scale: 1.05, rotate: 5 }}
             >
-              <BrainCircuit size={32} className="text-white" />
+              <BookOpen size={32} className="text-white" />
             </motion.div>
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -775,7 +774,7 @@ function Simulado() {
                               : 'bg-slate-100 text-slate-600'
                           }`}>
                             {showFeedback && isCorrect ? (
-                              <CheckCircle2 size={18} />
+                              <CheckCircle size={18} />
                             ) : showFeedback && isSelected && !isCorrect ? (
                               <XCircle size={18} />
                             ) : (
