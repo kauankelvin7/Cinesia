@@ -90,11 +90,14 @@ const KakaBot = () => {
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
+    // 🔍 DEBUG: Log visual da API Key (primeiros 10 chars)
+    console.log('🔑 [KakaBot] API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'AUSENTE');
+    
     if (!apiKey) {
       setConnectionError('API Key não configurada');
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ **Erro de Configuração**\n\nA API Key do Gemini não foi encontrada.\n\n**Como resolver:**\n1. Crie um arquivo `.env` na pasta `frontend/`\n2. Adicione: `VITE_GEMINI_API_KEY=sua_chave_aqui`\n3. Reinicie o servidor com `npm run dev`',
+        content: '⚠️ **Erro de Configuração**\n\nA API Key do Gemini não foi encontrada.\n\n**Como resolver (Vercel):**\n1. Acesse Settings → Environment Variables\n2. Adicione: `VITE_GEMINI_API_KEY`\n3. Cole sua chave do Google AI Studio\n4. Clique **Redeploy** (sem cache)',
         isError: true
       }]);
       setIsInitializing(false);
@@ -136,17 +139,18 @@ const KakaBot = () => {
           await testResult.response;
           
           usedModel = modelName;
+          console.log(`✅ [KakaBot] Modelo ${modelName} conectado com sucesso!`);
           break; // Modelo funcionou!
           
         } catch (err) {
           // Erro recuperável - tenta próximo modelo
-          console.warn(`Modelo ${modelName} falhou:`, err.message);
+          console.warn(`❌ [KakaBot] Modelo ${modelName} falhou:`, err.message, err);
           continue;
         }
       }
       
       if (!chat || !usedModel) {
-        throw new Error('Nenhum modelo disponível. Verifique sua API Key.');
+        throw new Error('Todos os modelos falharam (gemini-1.5-flash, gemini-1.5-flash-001, gemini-pro). Verifique sua API Key no Google AI Studio.');
       }
       
       setGeminiModel(chat);

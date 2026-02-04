@@ -261,8 +261,12 @@ function Simulado() {
    */
   const generateWithFallback = async (prompt) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    
+    // 🔍 DEBUG: Log visual da API Key
+    console.log('🔑 [Simulado] API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'AUSENTE');
+    
     if (!apiKey) {
-      throw new Error('API Key do Gemini não configurada. Adicione VITE_GEMINI_API_KEY no .env');
+      throw new Error('API Key do Gemini não configurada. Adicione VITE_GEMINI_API_KEY no Vercel (Settings → Environment Variables) e faça Redeploy.');
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -270,13 +274,16 @@ function Simulado() {
     
     for (const modelName of MODEL_CANDIDATES) {
       try {
+        console.log(`🤖 [Simulado] Tentando modelo: ${modelName}`);
         const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent(prompt);
+        console.log(`✅ [Simulado] Modelo ${modelName} funcionou!`);
         // Modelo funcionou! Retorna o texto
         return result.response.text();
       } catch (err) {
         const status = err?.status || err?.code || '';
         const message = err?.message || 'erro desconhecido';
+        console.warn(`❌ [Simulado] Modelo ${modelName} falhou:`, status, message);
         errors.push(`${modelName}: ${status} - ${message}`);
         
         // Erros que indicam "tente o próximo modelo"
