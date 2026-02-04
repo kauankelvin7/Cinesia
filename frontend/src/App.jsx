@@ -19,6 +19,7 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import { initPWA } from './utils/pwaUtils';
 import { useFontSize } from './utils/useFontSize';
+import SignatureFooter from './components/SignatureFooter';
 
 // 🔥 LAZY LOADING - Páginas carregadas sob demanda
 // Cada página vira um chunk separado no build
@@ -96,6 +97,7 @@ function App() {
           <AppContent />
           {/* Banner de instalação PWA */}
           <PWAInstallBanner />
+          <SignatureFooter />
         </AuthProvider>
       </ThemeProvider>
     </Router>
