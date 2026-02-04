@@ -253,7 +253,7 @@ const Home = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 mb-8">
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
@@ -286,26 +286,26 @@ const Home = () => {
               delay={0.2}
             />
             <motion.div
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300 p-6 border border-white/50 group flex flex-col items-start z-[9999]"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300 p-6 border border-white/50 group flex flex-col items-start"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4, type: 'spring', stiffness: 100 }}
               whileHover={{ y: -5 }}
               style={{ willChange: 'transform, opacity' }}
             >
-              <div className="flex items-start gap-4 w-full">
+              <div className="flex flex-col items-center w-full sm:flex-row sm:items-start sm:gap-4">
                 <StreakIndicator
                   currentStreak={dashboardData?.offensiveStreak || 0}
                   longestStreak={dashboardData?.longestStreak || 0}
                   totalLoginDays={dashboardData?.totalLoginDays || 0}
                   // isAtRisk pode ser implementado depois com lógica de risco
                 />
-                <div className="flex-1">
+                <div className="mt-2 text-center sm:mt-0 sm:text-left">
                   <p className="text-sm font-medium text-slate-500 mb-1">Dias de Ofensiva</p>
                   <p className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1">
                     {dashboardData?.offensiveStreak || 0}
                   </p>
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
                     <Sparkles size={12} className="text-teal-500" />
                     {dashboardData?.offensiveStreak === 0 ? 'Comece sua sequência!' : 'Continue assim!'}
                   </p>

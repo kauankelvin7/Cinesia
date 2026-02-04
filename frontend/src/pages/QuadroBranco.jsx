@@ -138,22 +138,22 @@ function QuadroBranco() {
     }
   }, [corAtual, espessura, ferramenta, opacidade]);
 
-  // Obter coordenadas do evento (mouse ou touch)
+  // Obter coordenadas do evento (mouse ou touch), corrigindo para zoom e pan
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    
+    let clientX, clientY;
     if (e.touches && e.touches.length > 0) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-      };
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
     }
-    
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
+    // Ajustar para pan e zoom
+    const x = (clientX - rect.left - panOffset.x) / scale;
+    const y = (clientY - rect.top - panOffset.y) / scale;
+    return { x, y };
   };
 
   // Iniciar desenho
@@ -386,7 +386,7 @@ function QuadroBranco() {
             {/* Dropdown de Cores */}
             {showPalette && (
               <motion.div
-                className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 min-w-[280px]"
+                className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 min-w-[280px]"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >

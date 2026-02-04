@@ -8,7 +8,8 @@
  * - Aviso se em risco de perder streak
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame, TrendingUp, Award, Info, Zap } from 'lucide-react';
 
@@ -20,6 +21,60 @@ const StreakIndicator = ({
   showTooltip = true 
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  const cardRef = useRef(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+
+  // Detecta se é mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      console.log('CheckMobile:', mobile, 'Width:', window.innerWidth); // Debug
+      setIsMobile(mobile);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Captura a posição do mouse e atualiza tooltip
+  const handleMouseMove = (e) => {
+    if (!isMobile) {
+      // Desktop: tooltip segue o mouse com offset
+      setTooltipPosition({
+        top: e.clientY + 15,
+        left: e.clientX + 15
+      });
+    }
+  };
+
+  // Atualiza posição inicial do tooltip
+  const updateTooltipPosition = () => {
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      
+      console.log('UpdateTooltip - isMobile:', isMobile, 'rect:', rect); // Debug
+      
+      if (isMobile) {
+        // Mobile/Tablet: aparece no canto esquerdo do card
+        const newPos = {
+          top: rect.top,
+          left: rect.left - 280 // Largura do tooltip (256px) + espaço (24px)
+        };
+        console.log('Setting mobile position:', newPos); // Debug
+        setTooltipPosition(newPos);
+      } else {
+        // Desktop: inicia próximo ao ícone
+        setTooltipPosition({
+          top: rect.bottom + 8,
+          left: rect.left + rect.width / 2
+        });
+      }
+    }
+  };
 
   // Cor baseada no streak
   const getStreakColor = () => {
@@ -78,14 +133,58 @@ const StreakIndicator = ({
     return `${currentStreak} dias seguidos!`;
   };
 
+
+
+  useEffect(() => {
+    if (showDetails) {
+      updateTooltipPosition();
+      window.addEventListener('scroll', updateTooltipPosition);
+      window.addEventListener('resize', updateTooltipPosition);
+      return () => {
+        window.removeEventListener('scroll', updateTooltipPosition);
+        window.removeEventListener('resize', updateTooltipPosition);
+      };
+    }
+  }, [showDetails]);
+
   return (
     <div className="relative">
       <motion.div
+        ref={cardRef}
         className="relative cursor-pointer"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onMouseEnter={() => showTooltip && setShowDetails(true)}
-        onMouseLeave={() => setShowDetails(false)}
+        onMouseEnter={() => {
+          if (showTooltip && !isMobile) {
+            setShowDetails(true);
+            updateTooltipPosition();
+          }
+        }}
+        onClick={(e) => {
+          if (showTooltip && isMobile) {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowDetails(true);
+            updateTooltipPosition();
+            // Em mobile, fecha após 4 segundos
+            setTimeout(() => setShowDetails(false), 4000);
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (showTooltip && isMobile) {
+            e.preventDefault();
+            setShowDetails(true);
+            updateTooltipPosition();
+            // Em mobile, fecha após 4 segundos
+            setTimeout(() => setShowDetails(false), 4000);
+          }
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          if (!isMobile) {
+            setShowDetails(false);
+          }
+        }}
       >
         {/* Ícone Principal */}
         <motion.div 
@@ -157,21 +256,41 @@ const StreakIndicator = ({
         )}
       </motion.div>
 
-      {/* Tooltip com estatísticas */}
-      <AnimatePresence>
-        {showDetails && (
+      {/* Tooltip com estatísticas - Renderizado via Portal */}
+      {showDetails && createPortal(
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 z-[9999]"
+            className="fixed w-64 max-w-[calc(100vw-3rem)] z-[9999]"
+            style={{ 
+              top: `${tooltipPosition.top}px`,
+              left: isMobile ? `${Math.max(16, tooltipPosition.left)}px` : `${tooltipPosition.left}px`,
+              transform: 'none',
+              zIndex: 9999,
+              maxWidth: 'calc(100vw - 3rem)'
+            }}
           >
             <div className={`bg-white rounded-2xl shadow-2xl border-2 ${classes.text} border-current/20 p-4`}>
               {/* Header */}
-              <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100">
-                <Flame className={classes.text} size={20} />
-                <h3 className="font-bold text-slate-900">Dias de Ofensiva</h3>
+              <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Flame className={classes.text} size={20} />
+                  <h3 className="font-bold text-slate-900">Dias de Ofensiva</h3>
+                </div>
+                {isMobile && (
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* Stats */}
@@ -247,8 +366,9 @@ const StreakIndicator = ({
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l-2 border-t-2 border-current/20 rotate-45" />
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

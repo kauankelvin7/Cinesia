@@ -14,11 +14,10 @@ import {
   query, 
   where,
   doc,
-  getDoc,
-  updateDoc,
-  serverTimestamp
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase-config';
+import { updateStreak, getStreakStats } from './streakService';
 
 /**
  * 🎯 META MENSAL - Calcula o progresso da meta de estudos do mês
@@ -92,76 +91,6 @@ const calculateMonthlyGoal = async (userId, resumosSnapshot, flashcardsSnapshot)
   }
 };
 
-/**
- * Calcula o streak (ofensiva) de dias consecutivos de estudo
- * @param {string} userId - UID do usuário
- * @returns {Promise<number>} - Número de dias consecutivos
- */
-const calculateStudyStreak = async (userId) => {
-  try {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-
-    if (!userDoc.exists()) {
-      // Primeiro acesso, cria o documento
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        studyStreak: 1
-      }).catch(() => {
-        // Se o documento não existe, não faz nada (será criado no cadastro)
-      });
-      return 1;
-    }
-
-    const userData = userDoc.data();
-    const lastLogin = userData.lastLogin?.toDate();
-    const currentStreak = userData.studyStreak || 0;
-
-    if (!lastLogin) {
-      // Primeira vez com lastLogin
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        studyStreak: 1
-      });
-      return 1;
-    }
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const lastLoginDate = new Date(lastLogin.getFullYear(), lastLogin.getMonth(), lastLogin.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const diffTime = today - lastLoginDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    let newStreak = currentStreak;
-
-    if (diffDays === 0) {
-      // Login no mesmo dia, mantém streak
-      newStreak = currentStreak;
-    } else if (diffDays === 1) {
-      // Login em dia consecutivo, aumenta streak
-      newStreak = currentStreak + 1;
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        studyStreak: newStreak
-      });
-    } else {
-      // Login após quebra de sequência, reseta
-      newStreak = 1;
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        studyStreak: 1
-      });
-    }
-
-    return newStreak;
-  } catch (error) {
-    console.error('❌ Erro ao calcular streak:', error);
-    return 1; // Fallback seguro
-  }
-};
 
 /**
  * Busca estatísticas completas do dashboard
@@ -170,14 +99,16 @@ const calculateStudyStreak = async (userId) => {
  */
 export const getDashboardStats = async (userId) => {
   try {
+    // Atualiza streak automaticamente e obtém stats completos
+    const streakData = await updateStreak(userId);
+    const streakStats = await getStreakStats(userId);
+
     // Queries paralelas para performance
-    // Nota: eventos SEM orderBy para evitar necessidade de índice composto
-    const [materiasSnapshot, resumosSnapshot, flashcardsSnapshot, eventosSnapshot, streakDays] = await Promise.all([
+    const [materiasSnapshot, resumosSnapshot, flashcardsSnapshot, eventosSnapshot] = await Promise.all([
       getDocs(query(collection(db, 'materias'), where('uid', '==', userId))),
       getDocs(query(collection(db, 'resumos'), where('uid', '==', userId))),
       getDocs(query(collection(db, 'flashcards'), where('uid', '==', userId))),
-      getDocs(query(collection(db, 'eventos'), where('uid', '==', userId))),
-      calculateStudyStreak(userId)
+      getDocs(query(collection(db, 'eventos'), where('uid', '==', userId)))
     ]);
 
     // Mapear matérias
@@ -232,7 +163,11 @@ export const getDashboardStats = async (userId) => {
       concluidas: materiasConcluidas.length,
       totalResumos: resumosSnapshot.size,
       totalFlashcards: flashcardsSnapshot.size,
-      offensiveStreak: streakDays,
+      offensiveStreak: streakStats?.currentStreak || 0,
+      longestStreak: streakStats?.longestStreak || 0,
+      totalLoginDays: streakStats?.totalLoginDays || 0,
+      streakHistory: streakStats?.history || [],
+      lastLogin: streakStats?.lastLogin,
 
       // Meta Mensal
       metaMensal,
