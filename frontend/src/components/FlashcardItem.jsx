@@ -3,14 +3,21 @@
  * 
  * Componente individual de flashcard com efeito de virar
  * Design Clean com sombras e cores da matéria
+ * 
+ * OTIMIZAÇÕES v2.0:
+ * - React.memo para evitar re-renders desnecessários
+ * - useCallback para handlers estáveis
+ * - Animações GPU-accelerated (transform only)
+ * - Lazy loading de imagens
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import Badge from './ui/Badge';
+import OptimizedImage from './ui/OptimizedImage';
 
-const FlashcardItem = ({ 
+const FlashcardItem = memo(({ 
   flashcard, 
   onEdit, 
   onDelete,
@@ -18,9 +25,20 @@ const FlashcardItem = ({
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped);
-  };
+  // useCallback para evitar recriação de funções
+  const handleFlip = useCallback(() => {
+    setIsFlipped(prev => !prev);
+  }, []);
+
+  const handleEdit = useCallback((e) => {
+    e.stopPropagation();
+    onEdit(flashcard);
+  }, [onEdit, flashcard]);
+
+  const handleDelete = useCallback((e) => {
+    e.stopPropagation();
+    onDelete(flashcard);
+  }, [onDelete, flashcard]);
 
   return (
     <div 
@@ -49,10 +67,7 @@ const FlashcardItem = ({
               {showActions && (
                 <div className="flex gap-1">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(flashcard);
-                    }}
+                    onClick={handleEdit}
                     className="p-1.5 rounded-lg hover:bg-teal-50 text-slate-400 hover:text-teal-600 transition-colors"
                     title="Editar"
                     aria-label="Editar flashcard"
@@ -60,10 +75,7 @@ const FlashcardItem = ({
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(flashcard);
-                    }}
+                    onClick={handleDelete}
                     className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
                     title="Excluir"
                     aria-label="Excluir flashcard"
@@ -109,10 +121,11 @@ const FlashcardItem = ({
 
             {flashcard.imagemUrl && (
               <div className="mt-3 rounded-xl overflow-hidden border-2 border-white shadow-md">
-                <img 
+                <OptimizedImage 
                   src={flashcard.imagemUrl} 
                   alt="Imagem do flashcard"
-                  className="w-full h-24 sm:h-32 object-cover"
+                  className="w-full h-24 sm:h-32"
+                  height={128}
                 />
               </div>
             )}
@@ -127,6 +140,8 @@ const FlashcardItem = ({
       </motion.div>
     </div>
   );
-};
+});
+
+FlashcardItem.displayName = 'FlashcardItem';
 
 export default FlashcardItem;

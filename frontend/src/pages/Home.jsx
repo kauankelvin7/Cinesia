@@ -8,9 +8,14 @@
  * - Animações fluidas com Framer Motion
  * - Skeleton loaders elegantes
  * - Lucide icons modernos
+ * 
+ * OTIMIZAÇÕES v2.0:
+ * - React.memo em componentes estáticos
+ * - useMemo/useCallback para handlers
+ * - Animações GPU-accelerated only
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -19,12 +24,12 @@ import {
   CreditCard, 
   Flame, 
   Plus,
-  BookMarked,
-  ArrowRight,
+  Sparkles,
+  Calendar,
   TrendingUp,
   ChevronRight,
-  Sparkles,
-  Calendar
+  ArrowRight,
+  Bookmark
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { getDashboardStats } from '../services/dashboardService';
@@ -43,8 +48,8 @@ const getGreeting = () => {
   return 'Boa noite';
 };
 
-// Skeleton Loader Premium
-const SkeletonCard = () => (
+// Skeleton Loader Premium - Memoizado
+const SkeletonCard = memo(() => (
   <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 p-6 animate-pulse border border-white/50">
     <div className="flex items-start gap-4">
       <div className="w-14 h-14 bg-gradient-to-br from-teal-200 to-emerald-200 rounded-2xl flex-shrink-0"></div>
@@ -55,31 +60,35 @@ const SkeletonCard = () => (
       </div>
     </div>
   </div>
-);
+));
 
-// Stat Card Premium
-const StatCard = ({ title, value, icon: Icon, subtitle, delay = 0, color = 'teal' }) => {
+SkeletonCard.displayName = 'SkeletonCard';
+
+// Color presets (definido fora para evitar recriação)
+const colorPresets = {
+  teal: 'from-teal-400 to-emerald-500 shadow-teal-500/25',
+  blue: 'from-blue-400 to-cyan-500 shadow-blue-500/25',
+  purple: 'from-purple-400 to-pink-500 shadow-purple-500/25',
+  orange: 'from-orange-400 to-amber-500 shadow-orange-500/25',
+};
+
+// Stat Card Premium - Memoizado
+const StatCard = memo(({ title, value, icon: Icon, subtitle, delay = 0, color = 'teal' }) => {
   // Fallback icon protection - prevents SVG undefined error
   const SafeIcon = Icon || BookOpen;
-  
-  const colors = {
-    teal: 'from-teal-400 to-emerald-500 shadow-teal-500/25',
-    blue: 'from-blue-400 to-cyan-500 shadow-blue-500/25',
-    purple: 'from-purple-400 to-pink-500 shadow-purple-500/25',
-    orange: 'from-orange-400 to-amber-500 shadow-orange-500/25',
-  };
 
   return (
     <motion.div
-      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-300 p-6 border border-white/50 group"
-      initial={{ opacity: 0, y: 30, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300 p-6 border border-white/50 group"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, type: 'spring', stiffness: 100 }}
       whileHover={{ y: -5 }}
+      style={{ willChange: 'transform, opacity' }}
     >
       <div className="flex items-start gap-4">
         <motion.div 
-          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colors[color]} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}
+          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colorPresets[color]} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}
           whileHover={{ rotate: 10, scale: 1.1 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
@@ -100,7 +109,9 @@ const StatCard = ({ title, value, icon: Icon, subtitle, delay = 0, color = 'teal
       </div>
     </motion.div>
   );
-};
+});
+
+StatCard.displayName = 'StatCard';
 
 const Home = () => {
   const { user } = useAuth();
@@ -318,7 +329,7 @@ const Home = () => {
                   className="text-center py-12"
                 >
                   <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-teal-500/10">
-                    <BookMarked size={48} className="text-teal-600" />
+                    <Bookmark size={48} className="text-teal-600" />
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">
                     Nenhuma matéria criada ainda

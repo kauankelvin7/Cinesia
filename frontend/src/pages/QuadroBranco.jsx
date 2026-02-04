@@ -51,6 +51,12 @@ function QuadroBranco() {
   const [histIndex, setHistIndex] = useState(-1);
   const [showPalette, setShowPalette] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // 🔍 Pinch-to-Zoom state
+  const [scale, setScale] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const lastTouchDistance = useRef(null);
+  const lastPanPoint = useRef(null);
 
   // Salvar estado para undo/redo (definido antes do useEffect que o usa)
   const salvarEstado = useCallback(() => {
@@ -177,6 +183,89 @@ function QuadroBranco() {
       setIsDrawing(false);
       salvarEstado();
     }
+  };
+
+  // 🔍 PINCH-TO-ZOOM - Calcular distância entre dois toques
+  const getTouchDistance = (touches) => {
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // 🔍 PINCH-TO-ZOOM - Calcular ponto médio entre dois toques
+  const getTouchMidpoint = (touches) => {
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
+    };
+  };
+
+  // 🔍 PINCH-TO-ZOOM - Handler para gestos multi-touch
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      // Dois dedos = pinch zoom (não desenhar)
+      e.preventDefault();
+      lastTouchDistance.current = getTouchDistance(e.touches);
+      lastPanPoint.current = getTouchMidpoint(e.touches);
+    } else if (e.touches.length === 1) {
+      // Um dedo = desenhar
+      startDrawing(e);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2) {
+      // Pinch zoom
+      e.preventDefault();
+      
+      const currentDistance = getTouchDistance(e.touches);
+      const currentMidpoint = getTouchMidpoint(e.touches);
+      
+      if (lastTouchDistance.current && lastPanPoint.current) {
+        // Calcular mudança de escala
+        const scaleChange = currentDistance / lastTouchDistance.current;
+        const newScale = Math.min(Math.max(0.5, scale * scaleChange), 3); // Limite: 0.5x a 3x
+        
+        // Calcular mudança de pan
+        const panDelta = {
+          x: currentMidpoint.x - lastPanPoint.current.x,
+          y: currentMidpoint.y - lastPanPoint.current.y,
+        };
+        
+        setScale(newScale);
+        setPanOffset(prev => ({
+          x: prev.x + panDelta.x,
+          y: prev.y + panDelta.y,
+        }));
+        
+        lastTouchDistance.current = currentDistance;
+        lastPanPoint.current = currentMidpoint;
+      }
+    } else if (e.touches.length === 1 && isDrawing) {
+      // Continuar desenhando
+      draw(e);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      lastTouchDistance.current = null;
+      lastPanPoint.current = null;
+    }
+    
+    if (e.touches.length === 0) {
+      stopDrawing();
+    }
+  };
+
+  // Reset zoom
+  const resetZoom = () => {
+    setScale(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   // Undo
@@ -454,15 +543,37 @@ function QuadroBranco() {
         <canvas
           ref={canvasRef}
           className="absolute inset-0 cursor-crosshair bg-white"
+          style={{
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
+            transformOrigin: 'center center',
+            transition: 'transform 0.05s ease-out',
+          }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onTouchCancel={stopDrawing}
         />
+
+        {/* Indicador de Zoom */}
+        {scale !== 1 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute top-4 right-4 flex items-center gap-2 bg-violet-500 text-white px-4 py-2 rounded-full shadow-lg"
+          >
+            <span className="text-sm font-bold">{Math.round(scale * 100)}%</span>
+            <button
+              onClick={resetZoom}
+              className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors"
+            >
+              Resetar
+            </button>
+          </motion.div>
+        )}
 
         {/* Indicador de ferramenta atual */}
         <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-slate-200">
@@ -481,7 +592,7 @@ function QuadroBranco() {
           </span>
         </div>
 
-        {/* Dica inicial */}
+        {/* Dica inicial - atualizada com dica de pinça */}
         <motion.div
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
           initial={{ opacity: 1 }}
@@ -490,6 +601,7 @@ function QuadroBranco() {
           <Sparkles size={48} className="text-violet-300 mx-auto mb-4" />
           <p className="text-slate-400 text-lg">Comece a desenhar!</p>
           <p className="text-slate-300 text-sm">Use o dedo, mouse ou Apple Pencil</p>
+          <p className="text-slate-300 text-xs mt-2">🤏 Use dois dedos para zoom</p>
         </motion.div>
       </div>
     </div>

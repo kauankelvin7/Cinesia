@@ -1,20 +1,24 @@
 /**
- * 🚀 CINESIA APP - Performance Optimized
+ * 🚀 CINESIA APP - Performance Optimized + PWA
  * 
  * Otimizações aplicadas:
  * - Route-based Code Splitting (React.lazy)
  * - Suspense com LoadingScreen elegante
  * - Transições suaves entre páginas
+ * - PWA com suporte offline
  * 
- * Resultado: Bundle inicial menor, navegação 60fps
+ * Resultado: Bundle inicial menor, navegação 60fps, instalável
  */
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext-firebase';
 import Layout from './components/Layout';
 import LoadingScreen from './components/ui/LoadingScreen';
+import PWAInstallBanner from './components/PWAInstallBanner';
+import { initPWA } from './utils/pwaUtils';
+import { useFontSize } from './utils/useFontSize';
 
 // 🔥 LAZY LOADING - Páginas carregadas sob demanda
 // Cada página vira um chunk separado no build
@@ -40,6 +44,10 @@ const ProtectedRoute = ({ children }) => {
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  
+  // 🔍 Hook de Acessibilidade - Controle de tamanho de fonte
+  // Inicializa o hook para aplicar font-size no <html> element
+  useFontSize();
 
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -76,11 +84,18 @@ function AppContent() {
 }
 
 function App() {
+  // Inicializar PWA (listeners de instalação e status)
+  useEffect(() => {
+    initPWA();
+  }, []);
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider>
         <AuthProvider>
           <AppContent />
+          {/* Banner de instalação PWA */}
+          <PWAInstallBanner />
         </AuthProvider>
       </ThemeProvider>
     </Router>

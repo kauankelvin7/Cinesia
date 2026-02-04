@@ -4,9 +4,15 @@
  * Timer Pomodoro integrado: 25min Foco / 5min Pausa
  * Incrementa horas estudadas no dashboard
  * Design minimalista e não-intrusivo
+ * 
+ * OTIMIZAÇÕES v2.0:
+ * - React.memo para evitar re-renders
+ * - useCallback para handlers estáveis
+ * - useMemo para cálculos derivados
+ * - Animações GPU-accelerated
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Timer, 
@@ -15,8 +21,6 @@ import {
   RotateCcw, 
   Coffee, 
   Brain,
-  X,
-  ChevronUp,
   ChevronDown
 } from 'lucide-react';
 import { doc, updateDoc, increment, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -27,7 +31,7 @@ import { useAuth } from '../contexts/AuthContext-firebase';
 const FOCUS_TIME = 25 * 60; // 25 minutos em segundos
 const BREAK_TIME = 5 * 60;  // 5 minutos em segundos
 
-const PomodoroTimer = () => {
+const PomodoroTimer = memo(() => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -150,52 +154,55 @@ const PomodoroTimer = () => {
     }
   };
 
-  const toggleTimer = () => {
-    if (!isRunning && timeLeft === (mode === 'focus' ? FOCUS_TIME : BREAK_TIME)) {
-      // Solicitar permissão de notificação na primeira vez
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-    setIsRunning(!isRunning);
-  };
+  // useMemo para cálculos derivados (evita recálculo a cada render)
+  const progress = useMemo(() => {
+    return mode === 'focus' 
+      ? ((FOCUS_TIME - timeLeft) / FOCUS_TIME) * 100
+      : ((BREAK_TIME - timeLeft) / BREAK_TIME) * 100;
+  }, [mode, timeLeft]);
 
-  const resetTimer = () => {
-    setIsRunning(false);
-    setTimeLeft(mode === 'focus' ? FOCUS_TIME : BREAK_TIME);
-  };
-
-  const switchMode = (newMode) => {
-    setIsRunning(false);
-    setMode(newMode);
-    setTimeLeft(newMode === 'focus' ? FOCUS_TIME : BREAK_TIME);
-  };
-
-  const formatTime = (seconds) => {
+  // useCallback para funções estáveis
+  const formatTime = useCallback((seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  const progress = mode === 'focus' 
-    ? ((FOCUS_TIME - timeLeft) / FOCUS_TIME) * 100
-    : ((BREAK_TIME - timeLeft) / BREAK_TIME) * 100;
-
-  const formatHours = (minutes) => {
+  const formatHours = useCallback((minutes) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     if (hours > 0) {
       return `${hours}h ${mins}min`;
     }
     return `${mins}min`;
-  };
+  }, []);
+
+  const toggleTimer = useCallback(() => {
+    if (!isRunning && timeLeft === (mode === 'focus' ? FOCUS_TIME : BREAK_TIME)) {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+    setIsRunning(prev => !prev);
+  }, [isRunning, timeLeft, mode]);
+
+  const resetTimer = useCallback(() => {
+    setIsRunning(false);
+    setTimeLeft(mode === 'focus' ? FOCUS_TIME : BREAK_TIME);
+  }, [mode]);
+
+  const switchMode = useCallback((newMode) => {
+    setIsRunning(false);
+    setMode(newMode);
+    setTimeLeft(newMode === 'focus' ? FOCUS_TIME : BREAK_TIME);
+  }, []);
 
   if (!user) return null;
 
   return (
     <>
       {/* Som de notificação */}
-      <audio ref={audioRef} preload="auto">
+      <audio ref={audioRef} preload="none">
         <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAgAj9teleAgAMbS0rVwLxsdaK/k4pdmGwBAt9fQpE8EDkOE0+nGjT4AAIzL5tCMRQAAZqbl57aHMAAA" />
       </audio>
 
@@ -367,6 +374,8 @@ const PomodoroTimer = () => {
       </motion.div>
     </>
   );
-};
+});
+
+PomodoroTimer.displayName = 'PomodoroTimer';
 
 export default PomodoroTimer;

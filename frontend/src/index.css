@@ -159,5 +159,83 @@
 }
 
 /* ==============================================
+   🚀 OTIMIZAÇÕES DE PERFORMANCE - LOW-END DEVICES
+   ============================================== */
+
+/* GPU Acceleration - Promove elementos para camada de composição */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Contain para otimização de layout/paint */
+.contain-layout {
+  contain: layout style;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+.contain-content {
+  contain: content;
+}
+
+/* Content Visibility - Lazy rendering de elementos fora da viewport */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Reduz animações em modo de economia de energia */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Desabilita efeitos pesados em dispositivos com pouca memória */
+@media (max-width: 480px) {
+  /* Reduz blur em mobile para melhor performance */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+/* Smooth scrolling apenas em dispositivos potentes */
+@media (min-width: 768px) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Safe Area - Bottom Navigation */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Touch targets - Mínimo 44x44px para mobile */
+@media (max-width: 768px) {
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ==============================================
    FIM DOS ESTILOS GLOBAIS
    ============================================== */

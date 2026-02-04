@@ -17,6 +17,8 @@ import { updateProfile } from 'firebase/auth';
 import { auth } from '../config/firebase-config';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from './ui/Button';
+import FontSizeControl from './FontSizeControl';
+import { hapticSuccess, hapticError } from '../utils/haptics';
 import { 
   X, 
   User, 
@@ -24,7 +26,9 @@ import {
   Sparkles, 
   Check, 
   Loader2,
-  Camera 
+  Camera,
+  Type,
+  Eye
 } from 'lucide-react';
 
 const ProfileModal = ({ isOpen, onClose }) => {
@@ -77,6 +81,8 @@ const ProfileModal = ({ isOpen, onClose }) => {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
 
+      // Haptic feedback de sucesso
+      hapticSuccess();
       setSuccess(true);
       
       // Fechar após 1.5s de sucesso
@@ -86,6 +92,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
 
     } catch (err) {
       console.error('Erro ao atualizar perfil:', err);
+      hapticError();
       setError('Erro ao salvar. Tente novamente.');
     } finally {
       setLoading(false);
@@ -232,6 +239,15 @@ const ProfileModal = ({ isOpen, onClose }) => {
                     className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
                   />
                 </div>
+              </div>
+
+              {/* Seção de Acessibilidade */}
+              <div className="pt-4 border-t border-slate-200">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
+                  <Eye className="w-4 h-4 text-teal-500" />
+                  Acessibilidade
+                </label>
+                <FontSizeControl />
               </div>
 
               {/* Mensagens de erro/sucesso */}

@@ -1,22 +1,27 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, lazy, Suspense, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 import Sidebar from './Sidebar';
 import BottomNavigation from './BottomNavigation';
-import PomodoroTimer from './PomodoroTimer';
-import KakaBot from './KakaBot';
+
+// 🔥 LAZY LOADING - Widgets pesados carregados sob demanda
+// Reduz o bundle inicial e melhora TBT em mobile
+const PomodoroTimer = lazy(() => import('./PomodoroTimer'));
+const KakaBot = lazy(() => import('./KakaBot'));
 
 const Layout = memo(({ children }) => {
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+
+  // useCallback para handler estável
+  const handleResize = useCallback(() => {
+    setIsDesktop(window.innerWidth >= 1024);
+  }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-
-    window.addEventListener('resize', handleResize);
+    // Passive listener para melhor performance de scroll
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [handleResize]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -41,7 +46,7 @@ const Layout = memo(({ children }) => {
       <main
         className={`
           transition-all duration-200
-          ${isDesktop ? 'ml-64' : 'mt-16'}
+          ${isDesktop ? 'ml-64' : 'mt-16 pb-20'}
         `}
       >
         {children}
@@ -50,9 +55,11 @@ const Layout = memo(({ children }) => {
       {/* Mobile/Tablet: Bottom Navigation */}
       {!isDesktop && <BottomNavigation />}
 
-      {/* Widgets Flutuantes */}
-      <PomodoroTimer />
-      <KakaBot />
+      {/* Widgets Flutuantes - Lazy Loaded */}
+      <Suspense fallback={null}>
+        <PomodoroTimer />
+        <KakaBot />
+      </Suspense>
     </div>
   );
 });

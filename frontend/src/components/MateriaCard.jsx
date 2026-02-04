@@ -3,16 +3,34 @@ import { motion } from 'framer-motion';
 import { FiEdit2, FiTrash2, FiCheckCircle, FiCircle } from 'react-icons/fi';
 import SafeIcon from './SafeIcon';
 import { formatTimestamp } from '../utils/dateHelper';
+import { hapticClick, hapticSuccess, hapticHeavy } from '../utils/haptics';
 
 const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
   const isConcluida = Boolean(materia.concluida);
+
+  const handleToggle = () => {
+    hapticSuccess();
+    onToggleConcluida?.(materia);
+  };
+
+  const handleEdit = () => {
+    hapticClick();
+    onEdit(materia);
+  };
+
+  const handleDelete = () => {
+    hapticHeavy();
+    onDelete(materia.id);
+  };
 
   return (
     <motion.div
       className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -2, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       {/* Color Bar */}
       <div 
@@ -49,32 +67,32 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
           {/* Actions */}
           <div className="flex items-center gap-2 ml-2">
             <motion.button
-              onClick={() => onToggleConcluida?.(materia)}
+              onClick={handleToggle}
               className={
                 isConcluida
                   ? 'p-2 text-emerald-600 bg-emerald-50 rounded-lg transition-colors'
                   : 'p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors'
               }
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.9 }}
               title={isConcluida ? 'Marcar como não concluída' : 'Marcar como concluída'}
             >
               {isConcluida ? <FiCheckCircle size={18} /> : <FiCircle size={18} />}
             </motion.button>
             <motion.button
-              onClick={() => onEdit(materia)}
+              onClick={handleEdit}
               className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.9 }}
               title="Editar"
             >
               <FiEdit2 size={18} />
             </motion.button>
             <motion.button
-              onClick={() => onDelete(materia.id)}
+              onClick={handleDelete}
               className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.9 }}
               title="Excluir"
             >
               <FiTrash2 size={18} />

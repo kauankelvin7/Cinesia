@@ -3,25 +3,84 @@
   "short_name": "Cinesia",
   "description": "Sistema de estudos com resumos, flashcards e simulados para Fisioterapia",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#ffffff",
   "theme_color": "#0d9488",
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "/pwa-64x64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
       "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
-  "categories": ["education", "medical"],
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cinesia - Tela inicial"
+    },
+    {
+      "src": "/screenshots/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Cinesia - Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Simulados",
+      "short_name": "Simulados",
+      "description": "Iniciar um novo simulado",
+      "url": "/simulados",
+      "icons": [{ "src": "/icons/simulado-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Flashcards",
+      "short_name": "Flashcards",
+      "description": "Estudar com flashcards",
+      "url": "/flashcards",
+      "icons": [{ "src": "/icons/flashcard-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Resumos",
+      "short_name": "Resumos",
+      "description": "Ver resumos de matérias",
+      "url": "/resumos",
+      "icons": [{ "src": "/icons/resumo-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "categories": ["education", "medical", "productivity"],
   "lang": "pt-BR",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "handle_links": "preferred"
 }

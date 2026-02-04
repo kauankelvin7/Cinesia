@@ -105,6 +105,7 @@ const Sidebar = memo(() => {
 
         {/* User Card */}
         <div className="p-4 border-t border-slate-100">
+          {/* User Profile Card */}
           <motion.button
             onClick={() => setIsProfileOpen(true)}
             className="w-full p-4 bg-gradient-to-br from-slate-50 to-teal-50/50 hover:from-teal-50 hover:to-emerald-50 rounded-2xl border border-slate-100 hover:border-teal-200 transition-all duration-300 group text-left"
