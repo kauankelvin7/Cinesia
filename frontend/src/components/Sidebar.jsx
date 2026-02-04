@@ -168,9 +168,14 @@ const Sidebar = memo(() => {
               Feito com{' '}
               <span className="inline-block text-red-500 animate-pulse">❤️</span>
               {' '}por{' '}
+                const [showDedication, setShowDedication] = useState(false);
               <span 
                 className="font-medium text-slate-500 hover:text-teal-600 cursor-pointer transition-colors duration-300"
                 title="Para a futura melhor Fisioterapeuta do mundo!"
+                onClick={() => alert('Feito para a futura melhor Fisioterapeuta do mundo! 🩺✨')}
+                tabIndex={0}
+                role="button"
+                aria-label="Mensagem especial"
               >
                 Kauan Kelvin
               </span>
