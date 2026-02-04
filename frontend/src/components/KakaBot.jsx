@@ -6,13 +6,13 @@
  * 
  * Features:
  * - Chat flutuante minimalista
- * - Modelo: Gemini 1.5 Flash (estável)
- * - Fallback automático: gemini-2.0-flash-lite
+ * - Modelo: Gemini 2.5 Flash (estável)
+ * - Fallback automático: gemini-2.5-flash-lite
  * - History Injection Pattern para persona
  * - Renderização Markdown
  * - Tratamento robusto de erros
  * 
- * VERSÃO: 8.0 - History Injection Edition
+ * VERSÃO: 8.1 - Atualização modelos Gemini (Fev 2026)
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -104,9 +104,11 @@ const KakaBot = () => {
       let chat = null;
       let usedModel = null;
 
-      // ⚡ MODELOS (History Injection Pattern - mais compatível)
-      const PRIMARY_MODEL = 'gemini-1.5-flash';
-      const FALLBACK_MODEL = 'gemini-2.0-flash-lite';
+      // ⚡ MODELOS ATUALIZADOS (Fev 2026)
+      // gemini-2.5-flash = modelo estável, gratuito e performático
+      // gemini-2.5-flash-lite = versão ultra-rápida e econômica
+      const PRIMARY_MODEL = 'gemini-2.5-flash';
+      const FALLBACK_MODEL = 'gemini-2.5-flash-lite';
       
       // History Injection: injetar persona como primeira mensagem do histórico
       const createChatWithPersona = (genModel) => {
