@@ -239,8 +239,17 @@ function Resumos() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="spinner"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 transition-opacity duration-700 opacity-100">
+        <div className="relative flex flex-col items-center justify-center">
+          <div className="w-20 h-20 flex items-center justify-center">
+            <span className="absolute w-20 h-20 rounded-full border-4 border-purple-200 border-t-purple-400" style={{opacity:0.5}} />
+            <span className="absolute w-12 h-12 rounded-full border-4 border-pink-200 border-t-pink-400" style={{opacity:0.3}} />
+            <span className="relative flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg transition-all duration-700">
+              <FileText size={28} className="text-purple-500" />
+            </span>
+          </div>
+          <span className="mt-8 text-lg font-semibold text-purple-600 text-center drop-shadow-sm transition-opacity duration-700 opacity-80">Carregando resumos...</span>
+        </div>
       </div>
     );
   }

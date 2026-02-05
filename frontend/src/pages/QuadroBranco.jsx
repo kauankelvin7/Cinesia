@@ -1,3 +1,14 @@
+// Cores temáticas para anatomia
+const CORES = [
+  { id: 'preto', cor: '#1e293b', nome: 'Preto', desc: 'Contornos' },
+  { id: 'vermelho', cor: '#dc2626', nome: 'Vermelho', desc: 'Artérias' },
+  { id: 'azul', cor: '#2563eb', nome: 'Azul', desc: 'Veias' },
+  { id: 'amarelo', cor: '#eab308', nome: 'Amarelo', desc: 'Nervos' },
+  { id: 'verde', cor: '#16a34a', nome: 'Verde', desc: 'Linfático' },
+  { id: 'laranja', cor: '#ea580c', nome: 'Laranja', desc: 'Músculos' },
+  { id: 'roxo', cor: '#9333ea', nome: 'Roxo', desc: 'Ossos' },
+  { id: 'branco', cor: '#ffffff', nome: 'Branco', desc: 'Apagar' },
+];
 /**
  * 🎨 QUADRO BRANCO - Canvas de Anatomia
  * 
@@ -24,18 +35,6 @@ import {
   Palette,
   Sparkles
 } from 'lucide-react';
-
-// Cores temáticas para anatomia
-const CORES = [
-  { id: 'preto', cor: '#1e293b', nome: 'Preto', desc: 'Contornos' },
-  { id: 'vermelho', cor: '#dc2626', nome: 'Vermelho', desc: 'Artérias' },
-  { id: 'azul', cor: '#2563eb', nome: 'Azul', desc: 'Veias' },
-  { id: 'amarelo', cor: '#eab308', nome: 'Amarelo', desc: 'Nervos' },
-  { id: 'verde', cor: '#16a34a', nome: 'Verde', desc: 'Linfático' },
-  { id: 'laranja', cor: '#ea580c', nome: 'Laranja', desc: 'Músculos' },
-  { id: 'roxo', cor: '#9333ea', nome: 'Roxo', desc: 'Ossos' },
-  { id: 'branco', cor: '#ffffff', nome: 'Branco', desc: 'Apagar' },
-];
 
 function QuadroBranco() {
   const canvasRef = useRef(null);
@@ -101,8 +100,8 @@ function QuadroBranco() {
       contextRef.current = ctx;
       
       // Preencher com branco
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, rect.width, rect.height);
+      // ctx.fillStyle = '#ffffff';
+      // ctx.fillRect(0, 0, rect.width, rect.height);
       
       // Marcar como inicializado
       if (!isInitialized) {
@@ -386,7 +385,7 @@ function QuadroBranco() {
             {/* Dropdown de Cores */}
             {showPalette && (
               <motion.div
-                className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 min-w-[280px]"
+                className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 min-w-[280px] z-20"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -540,23 +539,26 @@ function QuadroBranco() {
         className="flex-1 relative overflow-hidden touch-none"
         style={{ minHeight: 'calc(100vh - 180px)' }}
       >
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 cursor-crosshair bg-white"
-          style={{
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
-            transformOrigin: 'center center',
-            transition: 'transform 0.05s ease-out',
-          }}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={stopDrawing}
-        />
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 cursor-crosshair"
+            style={{
+              background: 'transparent',
+              zIndex: 10,
+              pointerEvents: showPalette ? 'none' : 'auto',
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${scale})`,
+              transformOrigin: 'center center',
+              transition: 'transform 0.05s ease-out',
+            }}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={stopDrawing}
+          />
 
         {/* Indicador de Zoom */}
         {scale !== 1 && (

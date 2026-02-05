@@ -1,11 +1,16 @@
 import React, { memo, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext-firebase';
+import ProfileModal from './ProfileModal';
+import { FiUser } from 'react-icons/fi';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiHome, FiBookOpen, FiLayers, FiCreditCard, FiEdit3, FiClipboard, FiCpu, FiMoreHorizontal, FiX } from 'react-icons/fi';
 
 const BottomNavigation = memo(() => {
   const [showMore, setShowMore] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   // Itens principais (sempre visíveis na barra)
   const mainNavItems = [
@@ -119,6 +124,17 @@ const BottomNavigation = memo(() => {
           </NavLink>
         ))}
 
+        {/* Botão de Perfil/Avatar */}
+        <button
+          onClick={() => setIsProfileOpen(true)}
+          className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl relative transition-all duration-200 min-w-[60px] text-slate-500 hover:text-teal-600"
+        >
+          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 text-white font-bold text-base shadow">
+            {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || <FiUser size={18} />}
+          </span>
+          <span className="text-[10px] font-semibold whitespace-nowrap">Perfil</span>
+        </button>
+
         {/* Botão "Mais" para abrir menu extra */}
         <button
           onClick={() => setShowMore(!showMore)}
@@ -150,6 +166,7 @@ const BottomNavigation = memo(() => {
           </motion.div>
         </button>
       </motion.nav>
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>
   );
 });
