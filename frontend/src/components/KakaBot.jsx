@@ -90,9 +90,7 @@ const KakaBot = () => {
     setConnectionError(null);
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    
-    console.log('🔑 [KakaBot] API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'AUSENTE');
-    
+    // REMOVIDO LOG DE API KEY
     if (!apiKey) {
       setConnectionError('API Key não configurada');
       setMessages(prev => [...prev, {
@@ -193,13 +191,15 @@ const KakaBot = () => {
         '1. Verifique sua chave em [AI Studio](https://aistudio.google.com/)\n' +
         '2. Crie uma nova API Key\n' +
         '3. Aguarde alguns minutos e tente novamente';
-      
       setConnectionError(error.message);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: errorMsg,
         isError: true
       }]);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[KakaBot] Erro ao conectar:', error);
+      }
     } finally {
       setIsInitializing(false);
     }
@@ -241,7 +241,6 @@ const KakaBot = () => {
       
     } catch (error) {
       let errorMessage = 'Ops! Tive um probleminha técnico. 😅 Pode tentar novamente?';
-      
       if (error.message?.includes('API key') || error.message?.includes('API_KEY')) {
         errorMessage = '⚠️ Problema com a API Key. Verifique a configuração.';
       } else if (error.message?.includes('blocked') || error.message?.includes('SAFETY')) {
@@ -252,12 +251,14 @@ const KakaBot = () => {
         errorMessage = '🔄 Preciso me reconectar. Use o botão abaixo.';
         setConnectionError('Desconectado');
       }
-
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: errorMessage,
         isError: true
       }]);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[KakaBot] Erro ao enviar mensagem:', error);
+      }
     } finally {
       setIsLoading(false);
     }
