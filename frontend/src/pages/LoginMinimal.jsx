@@ -42,7 +42,10 @@ const LoginMinimal = () => {
     }
 
     if (!result.success) {
-      setError(result.error);
+      setError(result.error || 'Não foi possível autenticar. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Login] Erro:', result.error);
+      }
     }
     setLoading(false);
   };
@@ -52,9 +55,11 @@ const LoginMinimal = () => {
     setError('');
     
     const result = await loginWithGoogle();
-    
     if (!result.success) {
-      setError(result.error);
+      setError(result.error || 'Não foi possível autenticar com o Google. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Login] Erro Google:', result.error);
+      }
     }
     setLoading(false);
   };

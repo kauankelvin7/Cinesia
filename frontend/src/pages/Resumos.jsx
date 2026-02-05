@@ -10,9 +10,9 @@
  * - Modal full-screen para edição
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ReactQuill from 'react-quill';
+const ReactQuill = lazy(() => import('react-quill'));
 import 'react-quill/dist/quill.snow.css';
 import { 
   Plus, 
@@ -105,6 +105,9 @@ function Resumos() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [viewingResumo, setViewingResumo] = useState(null); // Novo estado para visualização
+  const [modalMode, setModalMode] = useState('edit'); // 'edit' ou 'view'
+  const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualização
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMateria, setSelectedMateria] = useState('all');
   const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
@@ -145,8 +148,10 @@ function Resumos() {
       setMaterias(materiasData);
       setError(null);
     } catch (err) {
-      setError('Erro ao carregar dados');
-      console.error(err);
+      setError('Não foi possível carregar os dados. Tente novamente mais tarde.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Resumos] Erro ao carregar dados:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -169,14 +174,26 @@ function Resumos() {
       resetForm();
       setError(null);
     } catch (err) {
-      setError('Erro ao salvar resumo');
-      console.error(err);
+      setError('Não foi possível salvar o resumo. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Resumos] Erro ao salvar resumo:', err);
+      }
     }
   };
 
   const handleEdit = (resumo) => {
     setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '' });
     setEditingId(resumo.id);
+    setModalMode('edit');
+    setViewingResumo(null);
+    setShowModal(true);
+  };
+
+  const handleView = (resumo) => {
+    setViewingResumo(resumo);
+    setModalMode('view');
+    setEditingId(resumo.id); // Garante que ao voltar para editar, pega o mesmo resumo
+    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '' });
     setShowModal(true);
   };
 
@@ -197,8 +214,10 @@ function Resumos() {
       await carregarDados();
       setError(null);
     } catch (err) {
-      setError('Erro ao excluir resumo');
-      console.error(err);
+      setError('Não foi possível excluir o resumo. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Resumos] Erro ao excluir resumo:', err);
+      }
     } finally {
       setIsDeleting(false);
       setConfirmDelete({ isOpen: false, id: null, nome: '' });
@@ -209,6 +228,8 @@ function Resumos() {
     setFormData({ titulo: '', conteudo: '', materiaId: '' });
     setEditingId(null);
     setShowModal(false);
+    setViewingResumo(null);
+    setModalMode('edit');
   };
 
   const getMateriaInfo = (materiaId) => {
@@ -301,6 +322,9 @@ function Resumos() {
                           <button onClick={() => handleEdit(resumo)} className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors" title="Editar">
                             <Edit2 size={16} />
                           </button>
+                          <button onClick={() => handleView(resumo)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Visualizar/Salvar PDF">
+                            <FileText size={16} />
+                          </button>
                           <button onClick={() => handleDelete(resumo)} className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Excluir">
                             <Trash2 size={16} />
                           </button>
@@ -314,9 +338,14 @@ function Resumos() {
                         <Calendar size={14} />
                         <span>{formatDate(resumo.createdAt)}</span>
                       </div>
-                      <button onClick={() => handleEdit(resumo)} className="text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors">
-                        Abrir 
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEdit(resumo)} className="text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors">
+                          Editar
+                        </button>
+                        <button onClick={() => handleView(resumo)} className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                          Visualizar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -328,55 +357,137 @@ function Resumos() {
         <AnimatePresence>
           {showModal && (
             <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
-              <motion.div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
-                <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
+              <motion.div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none print:shadow-none" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
+                <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 print:bg-white print:border-none">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <FileText size={20} className="text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center print:bg-white print:shadow-none print:text-purple-700">
+                      <FileText size={20} className="text-white print:text-purple-700" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Resumo' : 'Novo Resumo'}</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualização do Resumo'}</h2>
                   </div>
-                  <button onClick={resetForm} className="p-2 rounded-lg hover:bg-white/50 text-slate-500 hover:text-slate-700 transition-colors">
-                    <X size={24} />
-                  </button>
-                </div>
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-                  <div className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
-                      <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
-                        <option value="">Selecione uma matéria</option>
-                        {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
-                      </Select>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-semibold text-slate-700">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
-                        {!editingId && (
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setFormData({ ...formData, conteudo: TEMPLATE_CASO_CLINICO })}
-                            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                  <div className="flex gap-2">
+                    {modalMode === 'edit' && (
+                      <button
+                        onClick={() => {
+                          setModalMode('view');
+                          setViewingResumo({
+                            titulo: formData.titulo,
+                            conteudo: formData.conteudo,
+                            materiaId: formData.materiaId,
+                            createdAt: viewingResumo?.createdAt // mantém data se já existia
+                          });
+                        }}
+                        className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors print:hidden"
+                        title="Visualizar"
+                      >
+                        <FileText size={20} />
+                      </button>
+                    )}
+                    {modalMode === 'view' && (
+                      <>
+                        <div className="flex items-center gap-1 mr-2">
+                          <button
+                            onClick={() => setViewFontSize(f => Math.max(0.8, +(f - 0.1).toFixed(2)))}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                            title="Diminuir fonte"
+                            style={{fontSize: '1em'}}
+                            aria-label="Diminuir fonte"
+                            disabled={viewFontSize <= 0.8}
                           >
-                            <ClipboardList size={16} />
-                            Usar Template Caso Clínico
-                          </motion.button>
-                        )}
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                          </button>
+                          <span className="text-xs text-slate-400 select-none" style={{minWidth:32,display:'inline-block',textAlign:'center'}}>{Math.round(viewFontSize*100)}%</span>
+                          <button
+                            onClick={() => setViewFontSize(f => Math.min(2, +(f + 0.1).toFixed(2)))}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                            title="Aumentar fonte"
+                            style={{fontSize: '1em'}}
+                            aria-label="Aumentar fonte"
+                            disabled={viewFontSize >= 2}
+                          >
+                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setModalMode('edit');
+                            setFormData({
+                              titulo: viewingResumo?.titulo || '',
+                              conteudo: viewingResumo?.conteudo || '',
+                              materiaId: viewingResumo?.materiaId || ''
+                            });
+                            setViewingResumo(null);
+                          }}
+                          className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors print:hidden"
+                          title="Editar"
+                        >
+                          <Edit2 size={20} />
+                        </button>
+                      </>
+                    )}
+                    <button onClick={resetForm} className="p-2 rounded-lg hover:bg-white/50 text-slate-500 hover:text-slate-700 transition-colors print:hidden">
+                      <X size={24} />
+                    </button>
+                  </div>
+                </div>
+                {modalMode === 'edit' ? (
+                  <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
+                        <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
+                          <option value="">Selecione uma matéria</option>
+                          {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
+                        </Select>
                       </div>
-                      <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all">
-                        <ReactQuill theme="snow" value={formData.conteudo} onChange={(content) => setFormData({ ...formData, conteudo: content })} modules={quillModules} formats={quillFormats} placeholder="Escreva seu resumo aqui... Use a barra de ferramentas para formatar o texto." className="quill-editor-custom" style={{ minHeight: '320px' }} />
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-semibold text-slate-700">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
+                          {!editingId && (
+                            <motion.button
+                              type="button"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => setFormData({ ...formData, conteudo: TEMPLATE_CASO_CLINICO })}
+                              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                            >
+                              <ClipboardList size={16} />
+                              Usar Template Caso Clínico
+                            </motion.button>
+                          )}
+                        </div>
+                        <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all">
+                          <Suspense fallback={<div className='text-center py-10 text-slate-400'>Carregando editor...</div>}>
+                            <ReactQuill theme="snow" value={formData.conteudo} onChange={(content) => setFormData({ ...formData, conteudo: content })} modules={quillModules} formats={quillFormats} placeholder="Escreva seu resumo aqui... Use a barra de ferramentas para formatar o texto." className="quill-editor-custom" style={{ minHeight: '320px' }} />
+                          </Suspense>
+                        </div>
+                        <p className="mt-2 text-xs text-slate-500">Use as ferramentas acima para formatar seu texto (negrito, listas, cores, etc.)</p>
                       </div>
-                      <p className="mt-2 text-xs text-slate-500">Use as ferramentas acima para formatar seu texto (negrito, listas, cores, etc.)</p>
+                      {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
                     </div>
-                    {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+                    <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex gap-3 print:hidden">
+                      <Button type="submit" variant="primary" size="lg" className="flex-1">{editingId ? 'Atualizar Resumo' : 'Salvar Resumo'}</Button>
+                      <Button type="button" variant="secondary" size="lg" onClick={resetForm}>Cancelar</Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex-1 overflow-y-auto print:overflow-visible">
+                    <div className="p-8 print:p-0 max-w-3xl mx-auto" style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}>
+                      <h1 className="text-3xl font-bold text-slate-900 mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem título'}</h1>
+                      <div className="mb-4 flex gap-2 items-center print:mb-2">
+                        <Badge color={getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).cor} size="sm">
+                          <span>{getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).nome}</span>
+                        </Badge>
+                        <span className="text-xs text-slate-500">{formatDate(viewingResumo?.createdAt)}</span>
+                      </div>
+                      <div 
+                        className="prose prose-purple max-w-none print:prose print:prose-sm"
+                        style={{ wordBreak: 'break-word', fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}
+                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conteúdo</p>' }}
+                      />
+                    </div>
                   </div>
-                  <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex gap-3">
-                    <Button type="submit" variant="primary" size="lg" className="flex-1">{editingId ? 'Atualizar Resumo' : 'Salvar Resumo'}</Button>
-                    <Button type="button" variant="secondary" size="lg" onClick={resetForm}>Cancelar</Button>
-                  </div>
-                </form>
+                )}
               </motion.div>
             </motion.div>
           )}
@@ -400,6 +511,19 @@ function Resumos() {
         .quill-editor-custom .ql-editor ul, .quill-editor-custom .ql-editor ol { padding-left: 1.5em; margin-bottom: 1em; }
         .quill-editor-custom .ql-editor li { margin-bottom: 0.5em; }
         .quill-editor-custom .ql-editor strong { font-weight: 600; }
+
+        /* Garante formatação na visualização do resumo */
+        .prose, .prose * {
+          font-family: 'Inter', -apple-system, sans-serif;
+        }
+        .prose h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.5em; color: #1E293B; }
+        .prose h2 { font-size: 1.5em; font-weight: 600; margin-bottom: 0.5em; color: #334155; }
+        .prose h3 { font-size: 1.25em; font-weight: 600; margin-bottom: 0.5em; color: #475569; }
+        .prose p { margin-bottom: 1em; line-height: 1.7; }
+        .prose ul, .prose ol { padding-left: 1.5em; margin-bottom: 1em; }
+        .prose li { margin-bottom: 0.5em; }
+        .prose strong { font-weight: 600; }
+        .prose { color: #334155; /* font-size: 1rem; */ }
       `}</style>
 
       {/* Modal de Confirmação de Exclusão */}

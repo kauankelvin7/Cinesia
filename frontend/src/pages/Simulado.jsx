@@ -184,6 +184,9 @@ function Simulado() {
     } catch (err) {
       const errorMsg = err.message || 'Erro ao ler o PDF. Verifique se o arquivo não está protegido.';
       setError(errorMsg);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Simulado] Erro ao extrair PDF:', err);
+      }
       throw new Error(errorMsg);
     } finally {
       setIsExtractingPdf(false);
@@ -211,8 +214,12 @@ function Simulado() {
     
     try {
       await extractTextFromPdf(file);
-    } catch {
+    } catch (err) {
       setPdfFile(null);
+      setError('Não foi possível extrair o texto do PDF. Tente outro arquivo.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Simulado] Erro ao selecionar arquivo:', err);
+      }
     }
   };
 
@@ -446,8 +453,10 @@ function Simulado() {
       setHasAnswered(false);
       
     } catch (err) {
-      console.error('❌ [Simulado] Erro final:', err);
       setError(err.message || 'Erro ao gerar questões. Verifique sua conexão e tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Simulado] Erro final:', err);
+      }
     } finally {
       setIsLoading(false);
     }

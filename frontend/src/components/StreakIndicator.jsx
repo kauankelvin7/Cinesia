@@ -11,7 +11,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, TrendingUp, Award, Info, Zap } from 'lucide-react';
+import { Flame, TrendingUp, Award, Zap } from 'lucide-react';
 
 const StreakIndicator = ({ 
   currentStreak = 0, 
@@ -22,7 +22,7 @@ const StreakIndicator = ({
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const cardRef = useRef(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
@@ -58,21 +58,16 @@ const StreakIndicator = ({
       
       console.log('UpdateTooltip - isMobile:', isMobile, 'rect:', rect); // Debug
       
-      if (isMobile) {
-        // Mobile/Tablet: aparece no canto esquerdo do card
-        const newPos = {
-          top: rect.top,
-          left: rect.left - 280 // Largura do tooltip (256px) + espaço (24px)
-        };
-        console.log('Setting mobile position:', newPos); // Debug
-        setTooltipPosition(newPos);
-      } else {
-        // Desktop: inicia próximo ao ícone
-        setTooltipPosition({
-          top: rect.bottom + 8,
-          left: rect.left + rect.width / 2
-        });
-      }
+      // Sempre posiciona o tooltip à esquerda do card, para evitar corte
+      const tooltipWidth = 256;
+      const spacing = 24;
+      let left = rect.left - tooltipWidth - spacing;
+      // Garante que não fique fora da tela
+      if (left < 16) left = 16;
+      setTooltipPosition({
+        top: rect.top,
+        left
+      });
     }
   };
 
@@ -267,10 +262,11 @@ const StreakIndicator = ({
             className="fixed w-64 max-w-[calc(100vw-3rem)] z-[9999]"
             style={{ 
               top: `${tooltipPosition.top}px`,
-              left: isMobile ? `${Math.max(16, tooltipPosition.left)}px` : `${tooltipPosition.left}px`,
+              left: `${tooltipPosition.left}px`,
               transform: 'none',
               zIndex: 9999,
-              maxWidth: 'calc(100vw - 3rem)'
+              maxWidth: 'calc(100vw - 3rem)',
+              // fontSize removido do tooltip
             }}
           >
             <div className={`bg-white rounded-2xl shadow-2xl border-2 ${classes.text} border-current/20 p-4`}>
@@ -280,17 +276,20 @@ const StreakIndicator = ({
                   <Flame className={classes.text} size={20} />
                   <h3 className="font-bold text-slate-900">Dias de Ofensiva</h3>
                 </div>
-                {isMobile && (
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-                )}
+                <div className="flex items-center gap-1">
+                  {/* Nenhum controle de zoom aqui, apenas botão de fechar em mobile */}
+                  {isMobile && (
+                    <button
+                      onClick={() => setShowDetails(false)}
+                      className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Stats */}
@@ -353,7 +352,7 @@ const StreakIndicator = ({
                 {currentStreak === 0 && (
                   <div className="bg-teal-50 border border-teal-200 rounded-lg p-2">
                     <div className="flex items-start gap-2">
-                      <Info size={14} className="text-teal-500 flex-shrink-0 mt-0.5" />
+
                       <p className="text-xs text-teal-700">
                         Faça login todos os dias para construir sua sequência!
                       </p>

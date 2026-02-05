@@ -309,7 +309,7 @@ const Table = ({ headers, children }) => (
 );
 
 function ConsultaRapida() {
-  const [openSections, setOpenSections] = useState(['sinais']);
+  const [openSections, setOpenSections] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   const toggleSection = (section) => {

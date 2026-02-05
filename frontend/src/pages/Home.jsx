@@ -87,7 +87,7 @@ const StatCard = memo(({ title, value, icon: Icon, subtitle, delay = 0, color = 
       whileHover={{ y: -5 }}
       style={{ willChange: 'transform, opacity' }}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col items-center justify-center text-center gap-4 w-full">
         <motion.div 
           className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${colorPresets[color]} flex items-center justify-center text-white flex-shrink-0 shadow-lg`}
           whileHover={{ rotate: 10, scale: 1.1 }}
@@ -95,7 +95,7 @@ const StatCard = memo(({ title, value, icon: Icon, subtitle, delay = 0, color = 
         >
           <SafeIcon size={28} strokeWidth={2} />
         </motion.div>
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col items-center justify-center text-center w-full">
           <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
           <p className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1">
             {value}
@@ -286,21 +286,21 @@ const Home = () => {
               delay={0.2}
             />
             <motion.div
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300 p-6 border border-white/50 group flex flex-col items-start"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 transition-shadow duration-300 p-6 border border-white/50 group"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4, type: 'spring', stiffness: 100 }}
               whileHover={{ y: -5 }}
               style={{ willChange: 'transform, opacity' }}
             >
-              <div className="flex flex-col items-center w-full sm:flex-row sm:items-start sm:gap-4">
+              <div className="flex flex-col items-center justify-center text-center gap-4 w-full">
                 <StreakIndicator
                   currentStreak={dashboardData?.offensiveStreak || 0}
                   longestStreak={dashboardData?.longestStreak || 0}
                   totalLoginDays={dashboardData?.totalLoginDays || 0}
                   // isAtRisk pode ser implementado depois com lógica de risco
                 />
-                <div className="mt-2 text-center sm:mt-0 sm:text-left">
+                <div className="flex-1 flex flex-col items-center justify-center text-center w-full">
                   <p className="text-sm font-medium text-slate-500 mb-1">Dias de Ofensiva</p>
                   <p className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1">
                     {dashboardData?.offensiveStreak || 0}

@@ -51,7 +51,8 @@ function Materias() {
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
-    cor: '#14B8A6'
+    cor: '#14B8A6',
+    concluida: false
   });
   const [error, setError] = useState(null);
 
@@ -89,8 +90,10 @@ function Materias() {
       setMaterias(data);
       setError(null);
     } catch (err) {
-      setError('Erro ao carregar matérias');
-      console.error(err);
+      setError('Não foi possível carregar as matérias. Tente novamente mais tarde.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Materias] Erro ao carregar matérias:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -115,8 +118,10 @@ function Materias() {
       resetForm();
       setError(null);
     } catch (err) {
-      setError('Erro ao salvar matéria');
-      console.error(err);
+      setError('Não foi possível salvar a matéria. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Materias] Erro ao salvar matéria:', err);
+      }
     }
   };
 
@@ -124,10 +129,24 @@ function Materias() {
     setFormData({
       nome: materia.nome,
       descricao: materia.descricao || '',
-      cor: materia.cor || '#14B8A6'
+      cor: materia.cor || '#14B8A6',
+      concluida: !!materia.concluida
     });
     setEditingId(materia.id);
     setShowModal(true);
+  };
+
+  // Marcar/desmarcar matéria como concluída
+  const toggleConcluida = async (materia) => {
+    try {
+      await atualizarMateria(materia.id, { ...materia, concluida: !materia.concluida });
+      await carregarMaterias();
+    } catch (err) {
+      setError('Não foi possível atualizar o status da matéria. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Materias] Erro ao atualizar status:', err);
+      }
+    }
   };
 
   const handleDelete = (materia) => {
@@ -147,8 +166,10 @@ function Materias() {
       await carregarMaterias();
       setError(null);
     } catch (err) {
-      setError('Erro ao excluir matéria');
-      console.error(err);
+      setError('Não foi possível excluir a matéria. Tente novamente.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[Materias] Erro ao excluir matéria:', err);
+      }
     } finally {
       setIsDeleting(false);
       setConfirmDelete({ isOpen: false, id: null, nome: '' });
@@ -156,7 +177,7 @@ function Materias() {
   };
 
   const resetForm = () => {
-    setFormData({ nome: '', descricao: '', cor: '#14B8A6' });
+    setFormData({ nome: '', descricao: '', cor: '#14B8A6', concluida: false });
     setEditingId(null);
     setShowModal(false);
   };
@@ -201,49 +222,21 @@ function Materias() {
             </Button>
           </div>
 
-          {/* Stats Rápidas */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          {/* Cards de estatísticas rápidas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
               <p className="text-sm text-slate-600 mb-1">Total de Matérias</p>
               <p className="text-2xl font-bold text-slate-900">{materias.length}</p>
             </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
               <p className="text-sm text-slate-600 mb-1">Matérias Ativas</p>
-              <p className="text-2xl font-bold text-teal-600">{materias.filter(m => m.ativa !== false).length}</p>
-            </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-slate-600 flex items-center gap-1.5">
-                  {Target && <Target size={14} className="text-emerald-500" />}
-                  Questões Resolvidas
-                </p>
-                <span className="text-xs font-medium text-slate-500">
-                  {metaMensal.mesNome || 'Este mês'}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2 mb-2">
-                <p className="text-2xl font-bold text-emerald-600">{metaMensal.atual}</p>
-                <span className="text-sm text-slate-400">/ {metaMensal.meta}</span>
-              </div>
-              {/* Barra de Progresso */}
-              <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${metaMensal.porcentagem}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {metaMensal.porcentagem >= 100 
-                  ? '🎉 Meta atingida!' 
-                  : `${metaMensal.porcentagem}% concluído`}
-              </p>
+              <p className="text-2xl font-bold text-teal-600">{materias.filter(m => !m.concluida).length}</p>
             </div>
           </div>
         </motion.div>
 
         {/* Grid de Cards */}
+        {/* Separar matérias ativas e concluídas */}
         {materias.length === 0 ? (
           <motion.div
             className="text-center py-20"
@@ -269,88 +262,175 @@ function Materias() {
             </Button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {materias.map((materia, index) => (
-              <motion.div
-                key={materia.id}
-                className="group"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div 
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-t-4 min-h-[220px] h-full flex flex-col"
-                  style={{ borderTopColor: materia.cor || '#14B8A6' }}
+          <>
+            {/* Ativas */}
+            <h2 className="text-lg font-bold text-slate-800 mb-2 mt-8">Matérias Ativas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+              {materias.filter(m => !m.concluida).length === 0 && (
+                <div className="col-span-full text-center text-slate-400 py-8">Nenhuma matéria ativa</div>
+              )}
+              {materias.filter(m => !m.concluida).map((materia, index) => (
+                <motion.div
+                  key={materia.id}
+                  className="group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
                 >
-                  {/* Card Header */}
-                  <div className="p-6 flex-1">
-                    <div className="flex items-start justify-between mb-4">
-                      <div 
-                        className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${materia.cor}dd, ${materia.cor})` 
-                        }}
+                  <div 
+                    className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-t-4 min-h-[180px] h-full flex flex-col"
+                    style={{ borderTopColor: materia.cor || '#14B8A6' }}
+                  >
+                    {/* Card Header */}
+                    <div className="p-4 sm:p-5 flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <div 
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shadow-md"
+                          style={{ background: `linear-gradient(135deg, ${materia.cor}dd, ${materia.cor})` }}
+                        >
+                          <BookOpen size={24} className="text-white" />
+                        </div>
+                        {/* Botão concluir - agora alinhado no rodapé */}
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                          <button
+                            onClick={() => handleEdit(materia)}
+                            className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(materia)}
+                            className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 truncate max-w-full" style={{wordBreak:'break-word'}}>
+                        {materia.nome}
+                      </h3>
+                      {materia.descricao && (
+                        <p className="text-slate-600 text-xs sm:text-sm line-clamp-2 mb-3 max-w-full" style={{wordBreak:'break-word'}}>
+                          {materia.descricao}
+                        </p>
+                      )}
+                    </div>
+                    {/* Card Footer - Info Extras e botão concluir */}
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center">
+                        <div>
+                          <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+                            <CreditCard size={14} />
+                            <p className="text-[10px] sm:text-xs font-medium">Flashcards</p>
+                          </div>
+                          <p className="text-base sm:text-lg font-bold text-slate-900">
+                            {materia.totalFlashcards || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                            <FileText size={14} />
+                            <p className="text-[10px] sm:text-xs font-medium">Resumos</p>
+                          </div>
+                          <p className="text-base sm:text-lg font-bold text-slate-900">
+                            {materia.totalResumos || 0}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Botão concluir */}
+                      <button
+                        onClick={() => toggleConcluida(materia)}
+                        className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors border border-emerald-100 ml-2"
+                        title="Marcar como concluída"
                       >
-                        <BookOpen size={28} className="text-white" />
-                      </div>
-                      
-                      {/* Ações (aparecem no hover) */}
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEdit(materia)}
-                          className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition-colors"
-                          title="Editar"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(materia)}
-                          className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-slate-900 mb-2 truncate">
-                      {materia.nome}
-                    </h3>
-                    
-                    {materia.descricao && (
-                      <p className="text-slate-600 text-sm line-clamp-2 mb-4">
-                        {materia.descricao}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Card Footer - Info Extras */}
-                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
-                          <CreditCard size={16} />
-                          <p className="text-xs font-medium">Flashcards</p>
-                        </div>
-                        <p className="text-lg font-bold text-slate-900">
-                          {materia.totalFlashcards || 0}
-                        </p>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
-                          <FileText size={16} />
-                          <p className="text-xs font-medium">Resumos</p>
-                        </div>
-                        <p className="text-lg font-bold text-slate-900">
-                          {materia.totalResumos || 0}
-                        </p>
-                      </div>
+                        <TrendingUp size={16} />
+                      </button>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Concluídas */}
+            <h2 className="text-lg font-bold text-slate-800 mb-2 mt-10">Matérias Concluídas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+              {materias.filter(m => m.concluida).length === 0 && (
+                <div className="col-span-full text-center text-slate-400 py-8">Nenhuma matéria concluída</div>
+              )}
+              {materias.filter(m => m.concluida).map((materia, index) => (
+                <motion.div
+                  key={materia.id}
+                  className="group opacity-60"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div 
+                    className="bg-white rounded-2xl shadow-lg border-t-4 min-h-[220px] h-full flex flex-col relative"
+                    style={{ borderTopColor: materia.cor || '#14B8A6' }}
+                  >
+                    {/* Selo de concluída ajustado para o canto superior direito, menor e sem sobrepor o ícone */}
+                    <div className="absolute top-3 right-3 flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 rounded-full px-2 py-0.5 shadow border border-emerald-100 text-xs z-10" style={{minHeight:'28px'}}>
+                      <TrendingUp size={14} />
+                      <span>Concluída</span>
+                    </div>
+                    <div className="p-6 flex-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div 
+                          className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md"
+                          style={{ background: `linear-gradient(135deg, ${materia.cor}dd, ${materia.cor})` }}
+                        >
+                          <BookOpen size={28} className="text-white" />
+                        </div>
+                        {/* Botão desfazer conclusão no rodapé */}
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2 truncate line-through">
+                        {materia.nome}
+                      </h3>
+                      {materia.descricao && (
+                        <p className="text-slate-500 text-sm line-clamp-2 mb-4 italic">
+                          {materia.descricao}
+                        </p>
+                      )}
+                    </div>
+                    {/* Card Footer - Info Extras e botão desfazer conclusão */}
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                          <div className="flex items-center justify-center gap-1 text-blue-400 mb-1">
+                            <CreditCard size={16} />
+                            <p className="text-xs font-medium">Flashcards</p>
+                          </div>
+                          <p className="text-lg font-bold text-slate-900">
+                            {materia.totalFlashcards || 0}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-center gap-1 text-purple-400 mb-1">
+                            <FileText size={16} />
+                            <p className="text-xs font-medium">Resumos</p>
+                          </div>
+                          <p className="text-lg font-bold text-slate-900">
+                            {materia.totalResumos || 0}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Botão desfazer conclusão */}
+                      <button
+                        onClick={() => toggleConcluida(materia)}
+                        className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors border border-slate-200 ml-2"
+                        title="Desfazer conclusão"
+                      >
+                        <TrendingUp size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
         )}
 
         {/* Modal de Criação/Edição */}

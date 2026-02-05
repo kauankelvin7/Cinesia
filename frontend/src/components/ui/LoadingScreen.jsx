@@ -21,11 +21,11 @@ const LoadingScreen = () => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Logo Container com Pulse */}
+      {/* Logo Container com Pulse (smaller) */}
       <motion.div
         className="relative"
         animate={{
-          scale: [1, 1.05, 1],
+          scale: [1, 1.04, 1],
         }}
         transition={{
           duration: 1.2,
@@ -33,15 +33,14 @@ const LoadingScreen = () => {
           ease: 'easeInOut',
         }}
       >
-        {/* Glow Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-400/30 to-emerald-400/30 rounded-3xl blur-2xl scale-150" />
-        
-        {/* Logo Icon */}
-        <div className="relative w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl shadow-teal-500/30">
+        {/* Glow Background (smaller, softer) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-emerald-400/20 rounded-2xl blur-xl scale-110" />
+        {/* Logo Icon (smaller) */}
+        <div className="relative w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
           <svg
             viewBox="0 0 24 24"
             fill="none"
-            className="w-10 h-10 text-white"
+            className="w-7 h-7 text-white"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
@@ -54,9 +53,9 @@ const LoadingScreen = () => {
         </div>
       </motion.div>
 
-      {/* Loading Text */}
+      {/* Loading Text (smaller margin) */}
       <motion.p
-        className="mt-6 text-slate-500 text-sm font-medium tracking-wide"
+        className="mt-4 text-slate-500 text-xs font-medium tracking-wide"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -64,12 +63,12 @@ const LoadingScreen = () => {
         Carregando...
       </motion.p>
 
-      {/* Minimal Progress Dots */}
-      <div className="flex gap-1.5 mt-4">
+      {/* Minimal Progress Dots (smaller) */}
+      <div className="flex gap-1 mt-2">
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            className="w-2 h-2 rounded-full bg-teal-500"
+            className="w-1.5 h-1.5 rounded-full bg-teal-500"
             animate={{
               opacity: [0.3, 1, 0.3],
               scale: [0.8, 1, 0.8],
