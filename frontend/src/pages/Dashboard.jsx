@@ -125,7 +125,7 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 ipad:grid-cols-3 gap-6 mb-10">
         {statsCards.map((stat, index) => {
           const colors = colorClasses[stat.color];
           return (
@@ -233,7 +233,7 @@ const Dashboard = () => {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:grid-cols-3 gap-4">
             {recentMaterias.map((materia, index) => (
               <motion.div
                 key={materia.id}
@@ -270,7 +270,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+      <div className="grid grid-cols-1 ipad:grid-cols-2 gap-4 mt-8">
         <Link to="/resumos">
           <motion.div
             className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6 shadow-sm hover:shadow-md transition-all cursor-pointer"

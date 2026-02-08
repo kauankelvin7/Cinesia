@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo, lazy, Suspense, useCallback } from 'react';
+import { useDeviceLayout } from '../utils/useDeviceLayout';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
 import Sidebar from './Sidebar';
@@ -10,18 +11,8 @@ const PomodoroTimer = lazy(() => import('./PomodoroTimer'));
 const KakaBot = lazy(() => import('./KakaBot'));
 
 const Layout = memo(({ children }) => {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
-
-  // useCallback para handler estável
-  const handleResize = useCallback(() => {
-    setIsDesktop(window.innerWidth >= 1024);
-  }, []);
-
-  useEffect(() => {
-    // Passive listener para melhor performance de scroll
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
-  }, [handleResize]);
+  const layout = useDeviceLayout();
+  const isDesktop = layout === 'desktop';
 
   return (
     <div className="min-h-screen bg-slate-50">

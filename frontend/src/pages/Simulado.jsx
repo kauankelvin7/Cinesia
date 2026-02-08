@@ -540,7 +540,7 @@ function Simulado() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 pb-32 pt-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl ipad:max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           className="mb-8"
@@ -555,7 +555,7 @@ function Simulado() {
               <BookOpen size={32} className="text-white" />
             </motion.div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Simulado Infinito
               </h1>
               <p className="text-slate-600 flex items-center gap-2">
@@ -901,7 +901,7 @@ function Simulado() {
                 layout
               >
                 {/* Pergunta */}
-                <div className="p-6 sm:p-8 border-b border-slate-100">
+                <div className="p-6 ipad:p-8 border-b border-slate-100">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-indigo-600 font-bold">{currentIndex + 1}</span>
@@ -913,7 +913,7 @@ function Simulado() {
                 </div>
 
                 {/* Opções */}
-                <div className="p-6 sm:p-8 space-y-3">
+                <div className="p-6 ipad:p-8 space-y-3">
                   {questaoAtual.opcoes.map((opcao, idx) => {
                     const isSelected = selectedOption === idx;
                     const isCorrect = questaoAtual.correta === idx;
@@ -985,7 +985,7 @@ function Simulado() {
                       exit={{ opacity: 0, height: 0 }}
                       className="border-t border-slate-100"
                     >
-                      <div className="p-6 sm:p-8 bg-gradient-to-br from-slate-50 to-indigo-50/30">
+                      <div className="p-6 ipad:p-8 bg-gradient-to-br from-slate-50 to-indigo-50/30">
                         <div className="flex items-start gap-3">
                           <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
                             <BookOpen size={18} className="text-indigo-600" />
@@ -1005,7 +1005,7 @@ function Simulado() {
                 </AnimatePresence>
 
                 {/* Navegação */}
-                <div className="p-6 sm:p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
+                <div className="p-6 ipad:p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
                   <Button
                     variant="secondary"
                     onClick={questaoAnterior}
@@ -1104,7 +1104,7 @@ function Simulado() {
 
               {/* Botões de ação */}
               <motion.div
-                className="flex flex-col sm:flex-row gap-3 justify-center"
+                className="flex flex-col ipad:flex-row gap-3 justify-center"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}

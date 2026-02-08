@@ -421,7 +421,7 @@ function ConsultaRapida() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+          <div className="flex flex-col ipad:flex-row ipad:items-center gap-4 mb-6">
             <div className="flex items-center gap-4">
               <motion.div 
                 className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30"
@@ -430,7 +430,7 @@ function ConsultaRapida() {
                 <ClipboardList size={32} className="text-white" />
               </motion.div>
               <div>
-                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   Consulta Rápida
                 </h1>
                 <p className="text-slate-600 flex items-center gap-2">
