@@ -6,13 +6,13 @@
  * 
  * Features:
  * - Chat flutuante minimalista
- * - Modelos v1beta compatíveis
- * - Fallback automático
- * - History Injection Pattern
+ * - Modelo: Gemini 1.5 Flash (estável)
+ * - Fallback automático: gemini-2.0-flash-lite
+ * - History Injection Pattern para persona
  * - Renderização Markdown
  * - Tratamento robusto de erros
  * 
- * VERSÃO: 11.0 - FIXED v1beta (Fevereiro 2025)
+ * VERSÃO: 8.0 - History Injection Edition
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -22,16 +22,16 @@ import {
   Send, 
   User,
   Loader2,
-  MessageCircle,
+  Stethoscope,
   AlertTriangle,
   RefreshCw,
   Zap,
-  CheckCircle
+  CheckCircle2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-// Prompt do Sistema (Persona do Kaka) - Injetado via histórico
-const KAKA_PERSONA = `Você é o Kaka, um parceiro de estudos de Fisioterapia paciente e natural.
+// Prompt do Sistema (Persona do Kaka)
+const SYSTEM_PROMPT = `Você é o Kaka, um parceiro de estudos de Fisioterapia paciente e natural.
 
 REGRA DE OURO (ADAPTABILIDADE):
 O tamanho da sua resposta deve espelhar a intenção do usuário:
@@ -51,15 +51,9 @@ TOM DE VOZ:
 - Natural, acolhedor e paciente.
 - Aceite o ritmo dela. Sem textões desnecessários.
 - Use **negrito** para termos-chave quando explicar conceitos.
-- Nunca invente informações médicas.`;
+- Nunca invente informações médicas.
 
-// 🔥 MODELOS CORRETOS para API v1beta (Fevereiro 2025)
-// Baseado na documentação oficial: https://ai.google.dev/gemini-api/docs/models
-const MODEL_CANDIDATES = [
-  'gemini-2.5-flash',          // Modelo 2.5 estável mais recente
-  'gemini-1.5-flash',          // Fallback 1.5 estável
-  'gemini-1.5-pro',            // Pro como último recurso
-];
+Comece toda primeira interação se apresentando brevemente (1-2 frases).`;
 
 const KakaBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -90,12 +84,12 @@ const KakaBot = () => {
     setConnectionError(null);
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    // REMOVIDO LOG DE API KEY
+    
     if (!apiKey) {
       setConnectionError('API Key não configurada');
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⚠️ **Erro de Configuração**\n\nA API Key do Gemini não foi encontrada.\n\n**Como resolver (Vercel):**\n1. Acesse Settings → Environment Variables\n2. Adicione: `VITE_GEMINI_API_KEY`\n3. Cole sua chave do Google AI Studio\n4. Clique **Redeploy** (sem cache)',
+        content: '⚠️ **Erro de Configuração**\n\nA API Key do Gemini não foi encontrada.\n\n**Como resolver:**\n1. Crie um arquivo `.env` na pasta `frontend/`\n2. Adicione: `VITE_GEMINI_API_KEY=sua_chave_aqui`\n3. Reinicie o servidor com `npm run dev`',
         isError: true
       }]);
       setIsInitializing(false);
@@ -106,71 +100,54 @@ const KakaBot = () => {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(apiKey);
       
+      let model = null;
       let chat = null;
       let usedModel = null;
-      const errors = [];
+
+      // ⚡ MODELOS (History Injection Pattern - mais compatível)
+      const PRIMARY_MODEL = 'gemini-1.5-flash';
+      const FALLBACK_MODEL = 'gemini-2.0-flash-lite';
       
-      // Função para criar chat com persona injetada no histórico
+      // History Injection: injetar persona como primeira mensagem do histórico
       const createChatWithPersona = (genModel) => {
         return genModel.startChat({
           history: [
             {
               role: 'user',
-              parts: [{ text: `Aja como o seguinte personagem em TODAS as suas respostas a partir de agora:\n\n${KAKA_PERSONA}` }]
+              parts: [{ text: `Aja como o seguinte personagem em todas as respostas:\n\n${SYSTEM_PROMPT}` }]
             },
             {
               role: 'model', 
-              parts: [{ text: 'Entendido! Sou o Kaka, seu parceiro de estudos de Fisioterapia. 💪 Vou seguir todas as diretrizes - sendo breve em saudações e detalhado quando você precisar. Me conta, o que quer estudar hoje?' }]
+              parts: [{ text: 'Entendido! Serei o Kaka, parceiro de estudos de Fisioterapia. Vou seguir todas as diretrizes de adaptabilidade e tom de voz. Estou pronto para ajudar! 💪' }]
             }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
+          ]
         });
       };
       
-      // 🔥 MULTI-MODEL FALLBACK: Tenta cada modelo até um funcionar
-      for (const modelName of MODEL_CANDIDATES) {
+      try {
+        model = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
+        chat = createChatWithPersona(model);
+        
+        // Teste de conectividade
+        const testResult = await chat.sendMessage('Responda apenas: OK');
+        await testResult.response;
+        
+        usedModel = PRIMARY_MODEL;
+        
+      } catch (primaryError) {
+        // Tentar fallback silenciosamente
         try {
-          console.log(`🤖 [KakaBot] Tentando modelo: ${modelName}`);
-          
-          const model = genAI.getGenerativeModel({ 
-            model: modelName
-          });
-          
+          model = genAI.getGenerativeModel({ model: FALLBACK_MODEL });
           chat = createChatWithPersona(model);
           
-          // Teste de conectividade
-          const testResult = await chat.sendMessage('Responda apenas: OK');
-          await testResult.response;
+          // Teste do fallback
+          const fallbackTest = await chat.sendMessage('Responda apenas: OK');
+          await fallbackTest.response;
+          usedModel = FALLBACK_MODEL;
           
-          usedModel = modelName;
-          console.log(`✅ [KakaBot] Modelo ${modelName} conectado!`);
-          break;
-          
-        } catch (err) {
-          const errorMsg = err?.message || 'erro desconhecido';
-          const status = err?.status || err?.code || '';
-          
-          console.warn(`❌ [KakaBot] Modelo ${modelName} falhou:`, status, errorMsg);
-          errors.push(`${modelName}: ${errorMsg}`);
-          
-          // Continua tentando o próximo modelo
-          continue;
+        } catch (fallbackError) {
+          throw new Error(`Nenhum modelo disponível. Verifique sua API Key.`);
         }
-      }
-      
-      if (!chat || !usedModel) {
-        throw new Error(
-          `Todos os modelos falharam:\n${errors.slice(0, 2).join('\n')}\n\n` +
-          'Possíveis soluções:\n' +
-          '1. Verifique sua API Key em https://aistudio.google.com/\n' +
-          '2. Confirme que a API Gemini está habilitada\n' +
-          '3. Aguarde alguns minutos e tente novamente'
-        );
       }
       
       setGeminiModel(chat);
@@ -187,19 +164,21 @@ const KakaBot = () => {
     } catch (error) {
       const errorMsg = '😢 **Não consegui me conectar**\n\n' + 
         `_${error.message}_\n\n` +
+        '**Possíveis causas:**\n' +
+        '- API Key inválida ou expirada\n' +
+        '- Limite de cota atingido\n' +
+        '- Região bloqueada\n\n' +
         '**Sugestões:**\n' +
         '1. Verifique sua chave em [AI Studio](https://aistudio.google.com/)\n' +
         '2. Crie uma nova API Key\n' +
         '3. Aguarde alguns minutos e tente novamente';
+      
       setConnectionError(error.message);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: errorMsg,
         isError: true
       }]);
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('[KakaBot] Erro ao conectar:', error);
-      }
     } finally {
       setIsInitializing(false);
     }
@@ -233,14 +212,18 @@ const KakaBot = () => {
         throw new Error('Modelo não inicializado. Clique em reconectar.');
       }
 
+      // Chat já mantém histórico internamente via startChat()
+      // Enviar apenas a mensagem atual
       const result = await geminiModel.sendMessage(userMessage);
       const response = await result.response;
       const text = response.text();
 
+      // Chat do Gemini já mantém histórico interno via startChat()
       setMessages(prev => [...prev, { role: 'assistant', content: text }]);
       
     } catch (error) {
       let errorMessage = 'Ops! Tive um probleminha técnico. 😅 Pode tentar novamente?';
+      
       if (error.message?.includes('API key') || error.message?.includes('API_KEY')) {
         errorMessage = '⚠️ Problema com a API Key. Verifique a configuração.';
       } else if (error.message?.includes('blocked') || error.message?.includes('SAFETY')) {
@@ -251,14 +234,12 @@ const KakaBot = () => {
         errorMessage = '🔄 Preciso me reconectar. Use o botão abaixo.';
         setConnectionError('Desconectado');
       }
+
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: errorMessage,
         isError: true
       }]);
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('[KakaBot] Erro ao enviar mensagem:', error);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -300,7 +281,7 @@ const KakaBot = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
           >
-            <MessageCircle size={26} />
+            <Stethoscope size={26} />
             <motion.div
               className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full"
               animate={{ scale: [1, 1.2, 1] }}
@@ -324,14 +305,14 @@ const KakaBot = () => {
             <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <MessageCircle className="text-white" size={22} />
+                  <Stethoscope className="text-white" size={22} />
                 </div>
                 <div>
                   <h3 className="text-white font-bold flex items-center gap-2">
                     Kaka
                     {isInitializing && <Loader2 size={14} className="animate-spin" />}
                     {geminiModel && !isInitializing && (
-                      <CheckCircle size={14} className="text-green-300" />
+                      <CheckCircle2 size={14} className="text-green-300" />
                     )}
                     {connectionError && !isInitializing && (
                       <AlertTriangle size={14} className="text-amber-300" />
@@ -345,7 +326,7 @@ const KakaBot = () => {
                     ) : activeModelName ? (
                       <>
                         <Zap size={12} />
-                        {activeModelName.includes('2.5') ? '2.5 Flash' : activeModelName.includes('1.5-flash') ? '1.5 Flash' : '1.5 Pro'}
+                        {activeModelName === 'gemini-2.0-flash-lite' ? 'Flash-Lite' : 'Flash'}
                       </>
                     ) : (
                       'Seu Mentor de Fisioterapia'
@@ -377,7 +358,7 @@ const KakaBot = () => {
                       message.isSuccess ? 'bg-green-100' :
                       'bg-gradient-to-br from-teal-500 to-emerald-500'
                     }`}>
-                      <MessageCircle className={
+                      <Stethoscope className={
                         message.isError ? 'text-red-500' : 
                         message.isSuccess ? 'text-green-600' :
                         'text-white'
@@ -443,7 +424,7 @@ const KakaBot = () => {
               {isLoading && (
                 <motion.div className="flex items-start" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                   <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-full flex items-center justify-center mr-2">
-                    <MessageCircle className="text-white" size={16} />
+                    <Stethoscope className="text-white" size={16} />
                   </div>
                   <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-sm border border-slate-100">
                     <div className="flex items-center gap-2">
@@ -515,7 +496,7 @@ const KakaBot = () => {
               <p className="text-center text-xs text-slate-400 mt-2">
                 {activeModelName ? (
                   <>
-                    Powered by <span className="font-semibold">Gemini {activeModelName.includes('2.5') ? '2.5' : '1.5'} ⚡</span>
+                    Powered by <span className="font-semibold">{activeModelName === 'gemini-2.0-flash-lite' ? 'Gemini 2.0 Flash-Lite ⚡' : 'Gemini Flash'}</span>
                   </>
                 ) : (
                   'Powered by Google Gemini'

@@ -8,7 +8,7 @@ export default {
     screens: {
       'sm': '640px',
       'md': '768px',
-      'ipad': '768px', // Ativa modo iPad a partir de 768px (iPad mini e tablets)
+      'ipad': '600px', // Ativa modo iPad a partir de 600px
       'lg': '1024px',
       'xl': '1280px',
       '2xl': '1536px',

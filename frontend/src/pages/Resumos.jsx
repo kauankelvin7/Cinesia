@@ -258,9 +258,9 @@ function Resumos() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-slate-100 pb-32 pt-8 px-4">
       <div className="max-w-7xl mx-auto">
         <motion.div className="mb-8" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="flex flex-col ipad:flex-row ipad:items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                   <FileText size={28} className="text-white" />
                 </div>
@@ -276,7 +276,7 @@ function Resumos() {
             </Button>
           </div>
 
-          <div className="flex flex-col ipad:flex-row gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />

@@ -402,9 +402,9 @@ function Flashcards() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         >
-          <div className="flex flex-col ipad:flex-row ipad:items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
                 <motion.div 
                   className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg"
                   whileHover={{ scale: 1.05, rotate: 5 }}
@@ -444,7 +444,7 @@ function Flashcards() {
 
           {/* Barra de Filtros */}
           <motion.div 
-            className="flex flex-col ipad:flex-row ipad:items-center gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm"
+            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -456,7 +456,7 @@ function Flashcards() {
             <Select
               value={selectedMateria}
               onChange={(e) => setSelectedMateria(e.target.value)}
-              className="w-full ipad:w-64"
+              className="w-full sm:w-64"
             >
               <option value="all">Todas as Matérias</option>
               {materias.map(materia => (

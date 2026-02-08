@@ -208,9 +208,9 @@ function Materias() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex flex-col ipad:flex-row ipad:items-start justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
             <div className="flex-1">
-              <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg">
                   <BookOpen size={28} className="text-white" />
                 </div>
@@ -291,10 +291,10 @@ function Materias() {
                     style={{ borderTopColor: materia.cor || '#14B8A6' }}
                   >
                     {/* Card Header */}
-                    <div className="p-4 ipad:p-5 flex-1">
+                    <div className="p-4 sm:p-5 flex-1">
                       <div className="flex items-start justify-between mb-3">
-                          <div 
-                            className="w-12 h-12 ipad:w-14 ipad:h-14 rounded-xl flex items-center justify-center shadow-md"
+                        <div 
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shadow-md"
                           style={{ background: `linear-gradient(135deg, ${materia.cor}dd, ${materia.cor})` }}
                         >
                           <BookOpen size={24} className="text-white" />
@@ -317,22 +317,22 @@ function Materias() {
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-base ipad:text-lg ipad:text-xl font-bold text-slate-900 mb-1 truncate max-w-full" style={{wordBreak:'break-word'}}>
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 truncate max-w-full" style={{wordBreak:'break-word'}}>
                         {materia.nome}
                       </h3>
                       {materia.descricao && (
-                        <p className="text-slate-600 text-xs ipad:text-sm line-clamp-2 mb-3 max-w-full" style={{wordBreak:'break-word'}}>
+                        <p className="text-slate-600 text-xs sm:text-sm line-clamp-2 mb-3 max-w-full" style={{wordBreak:'break-word'}}>
                           {materia.descricao}
                         </p>
                       )}
                     </div>
                     {/* Card Footer - Info Extras e botão concluir */}
-                    <div className="px-4 ipad:px-6 py-3 ipad:py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <div className="grid grid-cols-2 gap-2 ipad:gap-4 text-center">
+                    <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center">
                         <div>
                           <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                             <CreditCard size={14} />
-                            <p className="text-[10px] ipad:text-xs font-medium">Flashcards</p>
+                            <p className="text-[10px] sm:text-xs font-medium">Flashcards</p>
                           </div>
                           <p className="text-base sm:text-lg font-bold text-slate-900">
                             {materia.totalFlashcards || 0}
@@ -341,7 +341,7 @@ function Materias() {
                         <div>
                           <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
                             <FileText size={14} />
-                            <p className="text-[10px] ipad:text-xs font-medium">Resumos</p>
+                            <p className="text-[10px] sm:text-xs font-medium">Resumos</p>
                           </div>
                           <p className="text-base sm:text-lg font-bold text-slate-900">
                             {materia.totalResumos || 0}

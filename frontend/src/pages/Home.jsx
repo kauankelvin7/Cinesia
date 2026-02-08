@@ -209,8 +209,8 @@ const Home = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 pb-32">
       {/* Header Premium com Glass Effect */}
       <div className="bg-white/70 backdrop-blur-xl border-b border-white/50 sticky top-0 z-40 shadow-lg shadow-slate-200/30">
-        <div className="max-w-7xl mx-auto px-4 ipad:px-8 py-6">
-          <div className="flex flex-col ipad:flex-row ipad:items-start ipad:justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 ipad:px-8 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <motion.div 
               className="flex-1"
               initial={{ opacity: 0, x: -20 }}
@@ -250,17 +250,17 @@ const Home = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 ipad:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 ipad:px-8 py-8">
         {/* Stats Cards Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:grid-cols-3 ipad:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 ipad:grid-cols-4 gap-5 mb-8">
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
           </div>
         ) : (
-          <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 ipad:grid-cols-4 gap-5 mb-8">
             <StatCard
               title="Matérias Ativas"
               value={dashboardData?.ativas || 0}

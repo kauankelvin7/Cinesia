@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo, lazy, Suspense, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDeviceLayout } from '../utils/useDeviceLayout';
 import { motion } from 'framer-motion';
 import Logo from './Logo';
@@ -13,6 +14,9 @@ const KakaBot = lazy(() => import('./KakaBot'));
 const Layout = memo(({ children }) => {
   const layout = useDeviceLayout();
   const isDesktop = layout === 'desktop';
+  const location = useLocation();
+  // Oculta widgets no quadro branco
+  const hideWidgets = location.pathname === '/quadrobranco' || location.pathname === '/quadro-branco';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -47,10 +51,12 @@ const Layout = memo(({ children }) => {
       {!isDesktop && <BottomNavigation />}
 
       {/* Widgets Flutuantes - Lazy Loaded */}
-      <Suspense fallback={null}>
-        <PomodoroTimer />
-        <KakaBot />
-      </Suspense>
+      {!hideWidgets && (
+        <Suspense fallback={null}>
+          <PomodoroTimer />
+          <KakaBot />
+        </Suspense>
+      )}
     </div>
   );
 });

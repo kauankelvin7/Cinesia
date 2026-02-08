@@ -23,7 +23,8 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.21.1",
     "react-zoom-pan-pinch": "^3.7.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "tldraw": "^4.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
