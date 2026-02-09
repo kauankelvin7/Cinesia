@@ -1,6 +1,6 @@
 /**
- * 🎨 QUADRO DIGITAL DE ANATOMIA - v3.1 
- * Com configurações para produção
+ * 🎨 QUADRO DIGITAL DE ANATOMIA - v3.3
+ * Responsivo automaticamente com o Layout
  */
 
 import React, { useState, useEffect } from 'react';
@@ -18,25 +18,21 @@ export default function QuadroBranco() {
   }, []);
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      bottom: 0,
-      right: 0,
-      width: isMobile ? '100%' : 'calc(100% - 260px)',
-      left: isMobile ? 0 : 'auto',
-      background: '#f8fafc',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 1
-    }}>
+    <div
+      className="w-full transition-all duration-300"
+      style={{
+        height: isMobile ? 'calc(100vh - 64px - 80px)' : 'calc(100vh - 80px)',
+        background: '#f8fafc',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Tldraw
         inferDarkMode={false}
-        // Configurações importantes para produção
         persistenceKey="quadro-anatomia-cinesia"
         autoFocus
         onMount={(editor) => {
-          console.log('✅ Quadro Digital de Anatomia inicializado');
+          console.log('✅ Quadro Digital inicializado');
           
           try {
             editor.updateInstanceState({ isGridMode: true });

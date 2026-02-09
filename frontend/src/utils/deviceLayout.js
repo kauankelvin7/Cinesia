@@ -2,7 +2,7 @@
 export function setDeviceLayoutClass() {
   const isMobile =
     /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
-    window.innerWidth <= 600;
+    window.innerWidth < 768;
 
   if (isMobile) {
     document.body.classList.add('mobile-layout');
