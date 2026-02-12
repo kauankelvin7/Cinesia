@@ -10,7 +10,12 @@ const api = axios.create({
   },
 });
 
-// Interceptor para adicionar Firebase ID Token em todas as requisições
+/**
+ * Interceptor de requisições
+ * Adiciona o token de autenticação do Firebase (JWT) em todas as requisições para proteger rotas privadas.
+ * Atualiza o localStorage com o token mais recente.
+ * Se não houver usuário autenticado, segue sem token.
+ */
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -36,7 +41,11 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor para tratar erros de autenticação e conexão
+/**
+ * Interceptor de respostas
+ * Lida com erros de rede (ex: servidor offline) e autenticação (401).
+ * Exibe toast amigável para o usuário e faz logout automático em caso de 401.
+ */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -67,7 +76,11 @@ api.interceptors.response.use(
   }
 );
 
-// Função auxiliar para toast simples (pode ser substituída por react-toastify)
+/**
+ * Exibe um toast visual simples na tela (pode ser substituído por uma biblioteca como react-toastify).
+ * @param {string} message - Mensagem a ser exibida
+ * @param {string} type - Tipo do toast ('info' | 'error')
+ */
 const showToast = (message, type = 'info') => {
   // Remove toasts anteriores
   const existingToast = document.getElementById('api-toast');
@@ -118,13 +131,13 @@ const showToast = (message, type = 'info') => {
   }
 };
 
-// Auth
+// ==================== AUTENTICAÇÃO ====================
 export const authAPI = {
   login: (email, senha) => api.post('/auth/login', { email, senha }),
   register: (nome, email, senha) => api.post('/auth/register', { nome, email, senha }),
 };
 
-// Matérias
+// ==================== MATÉRIAS ====================
 export const materiasAPI = {
   getAll: () => api.get('/materias'),
   getById: (id) => api.get(`/materias/${id}`),
@@ -133,7 +146,7 @@ export const materiasAPI = {
   delete: (id) => api.delete(`/materias/${id}`),
 };
 
-// Resumos
+// ==================== RESUMOS ====================
 export const resumosAPI = {
   getAll: () => api.get('/resumos'),
   getById: (id) => api.get(`/resumos/${id}`),
@@ -144,7 +157,7 @@ export const resumosAPI = {
   delete: (id) => api.delete(`/resumos/${id}`),
 };
 
-// Flashcards
+// ==================== FLASHCARDS ====================
 export const flashcardsAPI = {
   getAll: () => api.get('/flashcards'),
   getById: (id) => api.get(`/flashcards/${id}`),
@@ -155,7 +168,7 @@ export const flashcardsAPI = {
   delete: (id) => api.delete(`/flashcards/${id}`),
 };
 
-// Upload de imagens
+// ==================== UPLOAD DE IMAGENS ====================
 export const uploadAPI = {
   uploadImage: (file) => {
     const formData = new FormData();

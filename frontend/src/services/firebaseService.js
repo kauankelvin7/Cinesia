@@ -1,10 +1,14 @@
 /**
  * 🔥 FIREBASE SERVICE - Camada de Serviço Serverless
- * Substitui completamente a API REST Java Spring Boot
- * Usa Firestore para dados e Cloudinary para imagens
- * 
- * NOTA: Imagens são hospedadas no Cloudinary (CDN)
- * URLs são armazenadas nos documentos Firestore
+ *
+ * Responsável por toda a comunicação com o Firestore e Cloudinary.
+ * Substitui a API REST Java Spring Boot, tornando o backend 100% serverless.
+ *
+ * - CRUD completo para matérias, resumos, flashcards e eventos
+ * - Upload de imagens para Cloudinary (CDN), URLs salvas no Firestore
+ * - Funções organizadas por domínio para fácil manutenção
+ *
+ * NOTA: Imagens são hospedadas no Cloudinary (CDN) e as URLs são armazenadas nos documentos Firestore.
  */
 
 import { 
@@ -27,10 +31,14 @@ import { db } from '../config/firebase-config';
 // ==================== MATÉRIAS ====================
 
 /**
- * Cria uma nova matéria no Firestore
- * @param {Object} materia - { nome, descricao, cor, semestre, icone }
+ * Cria uma nova matéria no Firestore.
+ *
+ * @param {Object} materia - Objeto com dados da matéria (nome, descricao, cor, semestre, icone)
  * @param {string} userId - UID do usuário autenticado
  * @returns {Promise<Object>} - Matéria criada com ID
+ *
+ * Exemplo de uso:
+ *   await criarMateria({ nome: 'Anatomia', cor: '#0D9488' }, 'uid123');
  */
 export const criarMateria = async (materia, userId) => {
   try {
@@ -55,7 +63,8 @@ export const criarMateria = async (materia, userId) => {
 };
 
 /**
- * Lista todas as matérias do usuário COM contadores de resumos e flashcards
+ * Lista todas as matérias do usuário, incluindo contadores de resumos e flashcards por matéria.
+ *
  * @param {string} userId - UID do usuário autenticado
  * @returns {Promise<Array>} - Lista de matérias com totalResumos e totalFlashcards
  */
@@ -117,9 +126,20 @@ export const listarMaterias = async (userId) => {
 };
 
 /**
- * Busca estatísticas do dashboard do usuário
+ * Busca estatísticas do dashboard do usuário.
+ *
  * @param {string} userId - UID do usuário autenticado
  * @returns {Promise<Object>} - Totais (ativas/concluídas), matérias recentes e eventos
+ *
+ * Retorna:
+ *   {
+ *     ativas: número de matérias ativas,
+ *     concluidas: número de matérias concluídas,
+ *     totalResumos: total de resumos,
+ *     totalFlashcards: total de flashcards,
+ *     materiasRecentes: array das últimas matérias criadas,
+ *     eventos: array de eventos do usuário
+ *   }
  */
 export const getDashboardStats = async (userId) => {
   try {

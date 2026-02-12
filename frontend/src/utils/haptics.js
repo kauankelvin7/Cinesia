@@ -1,25 +1,28 @@
 /**
  * 📳 Haptic Feedback Utility - Micro-interações Táteis
- * 
- * Sistema de feedback por vibração para dispositivos móveis.
- * Melhora a experiência do usuário com respostas táteis sutis.
- * 
- * Compatibilidade: Android, alguns iPhones (limitado no iOS)
- * Fallback: Não faz nada em dispositivos sem suporte
+ *
+ * Utilitário para fornecer feedback tátil (vibração) em ações do usuário, melhorando a experiência em dispositivos móveis.
+ *
+ * - Compatível com Android e alguns iPhones (limitado no iOS)
+ * - Fallback seguro: não faz nada em dispositivos sem suporte
+ * - Padrões prontos para sucesso, erro, seleção, celebração, etc.
+ *
+ * Exemplo de uso:
+ *   import { hapticSuccess } from './haptics';
+ *   hapticSuccess(); // Vibra para indicar sucesso
  */
 
 /**
- * Verifica se a API de vibração está disponível
- * @returns {boolean}
+ * Verifica se a API de vibração está disponível no navegador/dispositivo.
+ * @returns {boolean} true se suportado, false caso contrário
  */
 const isVibrationSupported = () => {
   return typeof navigator !== 'undefined' && 'vibrate' in navigator;
 };
 
 /**
- * Padrões de vibração pré-definidos
- * Valores em milissegundos
- * Para padrões: [vibrar, pausar, vibrar, pausar, ...]
+ * Padrões de vibração pré-definidos para diferentes tipos de feedback.
+ * Valores em milissegundos. Para padrões: [vibrar, pausar, vibrar, pausar, ...]
  */
 export const HAPTIC_PATTERNS = {
   // Clique sutil - Feedback de toque básico
@@ -48,17 +51,17 @@ export const HAPTIC_PATTERNS = {
 };
 
 /**
- * Executa vibração com um padrão específico
- * 
+ * Executa vibração com um padrão específico.
+ *
  * @param {number|number[]|string} pattern - Duração em ms, array de padrão, ou nome do padrão
- * @returns {boolean} - true se a vibração foi executada
- * 
- * @example
- * vibrate('click')           // Vibração de clique
- * vibrate('success')         // Vibração de sucesso
- * vibrate('error')           // Vibração de erro
- * vibrate(100)               // Vibração de 100ms
- * vibrate([50, 30, 50])      // Padrão customizado
+ * @returns {boolean} true se a vibração foi executada
+ *
+ * Exemplos:
+ *   vibrate('click')           // Vibração de clique
+ *   vibrate('success')         // Vibração de sucesso
+ *   vibrate('error')           // Vibração de erro
+ *   vibrate(100)               // Vibração de 100ms
+ *   vibrate([50, 30, 50])      // Padrão customizado
  */
 export const vibrate = (pattern = 'click') => {
   if (!isVibrationSupported()) {
@@ -80,7 +83,7 @@ export const vibrate = (pattern = 'click') => {
 };
 
 /**
- * Cancela qualquer vibração em andamento
+ * Cancela qualquer vibração em andamento no dispositivo.
  */
 export const cancelVibration = () => {
   if (isVibrationSupported()) {
@@ -89,15 +92,15 @@ export const cancelVibration = () => {
 };
 
 /**
- * Hook-style helper para criar handlers com haptic feedback
- * 
+ * Helper estilo hook para criar handlers que executam haptic feedback antes do callback.
+ *
  * @param {Function} callback - Função a ser executada após a vibração
  * @param {string} pattern - Padrão de vibração
- * @returns {Function} - Handler que vibra e executa o callback
- * 
- * @example
- * const handleClick = withHaptic(() => setCount(c => c + 1), 'click');
- * <button onClick={handleClick}>Incrementar</button>
+ * @returns {Function} Handler que vibra e executa o callback
+ *
+ * Exemplo:
+ *   const handleClick = withHaptic(() => setCount(c => c + 1), 'click');
+ *   <button onClick={handleClick}>Incrementar</button>
  */
 export const withHaptic = (callback, pattern = 'click') => {
   return (...args) => {
@@ -114,12 +117,12 @@ export const withHaptic = (callback, pattern = 'click') => {
 export const hapticSuccess = () => vibrate('success');
 
 /**
- * Vibração para feedback de erro
+ * Vibração para feedback de erro (ação inválida ou falha)
  */
 export const hapticError = () => vibrate('error');
 
 /**
- * Vibração para clique/toque básico
+ * Vibração para clique/toque básico (micro-interação)
  */
 export const hapticClick = () => vibrate('click');
 

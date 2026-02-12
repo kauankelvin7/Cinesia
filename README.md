@@ -1,6 +1,36 @@
+
 # Cinesia 📚🔥
 
-Sistema web/PWA de estudos para Fisioterapia com arquitetura **100% Serverless Firebase**.
+**Cinesia** é um sistema web e PWA inteligente criado para facilitar e potencializar os estudos de estudantes de Fisioterapia. O objetivo é oferecer uma plataforma organizada, intuitiva e moderna, que centraliza conteúdos, resumos, flashcards, simulados e ferramentas de apoio — tudo com integração a modelos de IA generativa (LLM).
+
+## 🧠 Contexto e Propósito
+
+Estudar Fisioterapia exige organização, revisão constante e acesso rápido a conteúdos confiáveis. O Cinesia foi desenvolvido para:
+- Centralizar materiais de estudo (resumos, flashcards, simulados, quadros brancos)
+- Ajudar estudantes a revisar, praticar e fixar conteúdos de forma ativa
+- Oferecer recursos inteligentes, como geração automática de questões e resumos com IA
+- Tornar o aprendizado mais dinâmico, visual e acessível em qualquer dispositivo (PWA)
+
+## 👩‍⚕️ Público-Alvo
+
+Estudantes de graduação em Fisioterapia, cursinhos, residentes e profissionais que desejam revisar conteúdos de forma prática e moderna.
+
+## 🤖 Inteligência Artificial Integrada
+
+O sistema já conta com integração a LLMs (Google Gemini, OpenAI, Claude, Vertex AI), permitindo:
+- Geração automática de simulados e questões a partir de temas ou PDFs
+- Respostas didáticas e adaptativas via chat (KakaBot)
+- Futuramente: agentes de IA personalizados para tutoria, correção automática, sugestões de estudo e acompanhamento de progresso
+
+## 🚀 Visão de Futuro: Sistema com Agente de IA
+
+O Cinesia está sendo preparado para evoluir além de um simples organizador de estudos. A visão é transformar a plataforma em um **agente de IA educacional**:
+- Capaz de entender o perfil do estudante, sugerir trilhas de estudo, identificar dificuldades e adaptar conteúdos
+- Interagir de forma natural, proativa e personalizada
+- Automatizar tarefas repetitivas (resumos, revisões, geração de questões, feedback)
+- Integrar-se a outros sistemas e bancos de dados acadêmicos
+
+---
 
 ## 🚀 Arquitetura
 

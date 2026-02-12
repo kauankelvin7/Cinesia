@@ -165,51 +165,53 @@ const Sidebar = memo(() => {
               {' '}2026
             </p>
             
-            {/* 💝 Dedicatória com hover suave */}
-            <div className="relative">
-              <p 
-                className="text-xs text-slate-400 cursor-pointer select-none"
-                onMouseEnter={() => setShowDedication(true)}
-                onMouseLeave={() => setShowDedication(false)}
-              >
-                Feito com{' '}
-                <motion.span 
-                  className="inline-block text-red-500"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
+            {/*
+              💝 Dedicatória com hover suave
+              <div className="relative">
+                <p 
+                  className="text-xs text-slate-400 cursor-pointer select-none"
+                  onMouseEnter={() => setShowDedication(true)}
+                  onMouseLeave={() => setShowDedication(false)}
                 >
-                  ❤️
-                </motion.span>
-                {' '}por{' '}
-                <span className="font-medium text-slate-500 hover:text-teal-600 transition-colors duration-300">
-                  Kauan Kelvin
-                </span>
-              </p>
-
-              {/* Mensagem que aparece no hover */}
-              <AnimatePresence>
-                {showDedication && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ 
-                      duration: 0.4, 
-                      ease: [0.4, 0, 0.2, 1] // easeOutCubic
-                    }}
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[calc(100%+1rem)] pointer-events-none"
+                  Feito com{' '}
+                  <motion.span 
+                    className="inline-block text-red-500"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
                   >
-                    <div className="relative bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl shadow-lg border border-pink-200/50 px-3 py-2.5">
-                      <p className="text-xs font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent text-center leading-relaxed">
-                        Para a futura melhor<br />Fisioterapeuta do mundo! 🩺✨
-                      </p>
-                      {/* Seta apontando para baixo */}
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gradient-to-br from-pink-50 to-purple-50 border-r border-b border-pink-200/50 rotate-45" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    ❤️
+                  </motion.span>
+                  {' '}por{' '}
+                  <span className="font-medium text-slate-500 hover:text-teal-600 transition-colors duration-300">
+                    Kauan Kelvin
+                  </span>
+                </p>
+
+                Mensagem que aparece no hover
+                <AnimatePresence>
+                  {showDedication && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ 
+                        duration: 0.4, 
+                        ease: [0.4, 0, 0.2, 1] // easeOutCubic
+                      }}
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[calc(100%+1rem)] pointer-events-none"
+                    >
+                      <div className="relative bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl shadow-lg border border-pink-200/50 px-3 py-2.5">
+                        <p className="text-xs font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent text-center leading-relaxed">
+                          Para a futura melhor<br />Fisioterapeuta do mundo! 🩺✨
+                        </p>
+                        {/* Seta apontando para baixo }
+                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gradient-to-br from-pink-50 to-purple-50 border-r border-b border-pink-200/50 rotate-45" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            */}
           </div>
         </div>
       </motion.aside>

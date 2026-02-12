@@ -1,14 +1,14 @@
-/**
- * 🧠 SIMULADO INFINITO - Gerador de Provas com IA
- * 
- * Gera questões de múltipla escolha usando Google Gemini
- * Features:
- * - Escolha de tema livre OU upload de PDF
- * - 5 questões por simulado
- * - Feedback imediato (certo/errado)
- * - Explicação após resposta
- * - Placar final
- * 
+/** *
+ * Página de simulados inteligentes para estudantes de Fisioterapia.
+ * Permite gerar provas de múltipla escolha automaticamente usando LLM (Google Gemini).
+ *
+ * Principais recursos:
+ * - Geração de 5 questões a partir de tema livre ou PDF
+ * - Feedback imediato (certo/errado) e explicação didática
+ * - Upload e extração de texto de PDFs acadêmicos
+ * - Fallback automático entre modelos Gemini
+ * - Interface reativa e acessível
+ *
  * v4.1 - FIXED JSON PARSING (Fevereiro 2025)
  */
 
@@ -39,17 +39,17 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import Button from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
-// 📄 Configurar worker do PDF.js v5+ para Vite
+// 📄 Configuração do worker do PDF.js v5+ para funcionar com Vite
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-// 🤖 MODELOS CORRETOS para API v1beta (Fevereiro 2025)
+// 🤖 Lista de modelos Gemini disponíveis para fallback automático
 const MODEL_CANDIDATES = [
   'gemini-2.5-flash',          // Modelo 2.5 estável mais recente
   'gemini-1.5-flash',          // Fallback 1.5 estável
   'gemini-1.5-pro',            // Pro como último recurso
 ];
 
-// Prompt para gerar questões por TEMA
+// Prompt para gerar questões de múltipla escolha a partir de um tema fornecido pelo usuário
 const generatePromptByTema = (tema) => `Você é um professor de Fisioterapia criando uma prova.
 
 Crie EXATAMENTE 5 questões de múltipla escolha sobre o tema: "${tema}"
@@ -105,7 +105,7 @@ IMPORTANTE:
 - "correta" é o ÍNDICE (0-3) da alternativa correta
 - Retorne APENAS o array JSON, nada mais`;
 
-// Temas sugeridos para Fisioterapia
+// Temas sugeridos para facilitar o uso rápido do simulado
 const temasSugeridos = [
   'Anatomia do Joelho',
   'Dermátomos e Miótomos',
@@ -120,7 +120,7 @@ const temasSugeridos = [
 ];
 
 function Simulado() {
-  // Estados principais
+  // ==================== ESTADOS PRINCIPAIS ====================
   const [tema, setTema] = useState('');
   const [questoes, setQuestoes] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -131,7 +131,7 @@ function Simulado() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
 
-  // 📄 Estados para Upload de PDF
+  // ==================== ESTADOS PARA UPLOAD DE PDF ====================
   const [activeTab, setActiveTab] = useState('tema'); // 'tema' | 'arquivo'
   const [pdfFile, setPdfFile] = useState(null);
   const [pdfText, setPdfText] = useState('');
@@ -140,7 +140,12 @@ function Simulado() {
   const fileInputRef = useRef(null);
 
   /**
-   * 📄 Extrair texto do PDF usando pdfjs-dist
+   * 📄 Extrai texto de um arquivo PDF usando pdfjs-dist.
+   *
+   * @param {File} file - Arquivo PDF selecionado pelo usuário
+   * @returns {Promise<string>} - Texto extraído do PDF
+   *
+   * Limpa espaços, limita tamanho e trata erros comuns.
    */
   const extractTextFromPdf = async (file) => {
     setIsExtractingPdf(true);
@@ -194,7 +199,8 @@ function Simulado() {
   };
 
   /**
-   * 📁 Handler para seleção de arquivo
+   * 📁 Handler para seleção de arquivo PDF pelo input.
+   * Valida tipo e tamanho, chama extração e trata erros.
    */
   const handleFileSelect = async (file) => {
     if (!file) return;
@@ -224,7 +230,8 @@ function Simulado() {
   };
 
   /**
-   * 🖱️ Handlers de Drag & Drop
+   * 🖱️ Handlers de Drag & Drop para upload de PDF.
+   * Permite arrastar e soltar arquivos na interface.
    */
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
@@ -259,12 +266,16 @@ function Simulado() {
   };
 
   /**
-   * 🔥 MULTI-MODEL FALLBACK: Tenta múltiplos modelos
+   * 🔥 MULTI-MODEL FALLBACK: Tenta múltiplos modelos Gemini para garantir resposta.
+   *
+   * @param {string} prompt - Prompt a ser enviado para a LLM
+   * @returns {Promise<string>} - Resposta gerada pela IA
+   *
+   * Tenta cada modelo da lista até obter resposta válida.
    */
   const generateWithFallback = async (prompt) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    console.log('🔑 [Simulado] API Key:', apiKey ? apiKey.substring(0, 10) + '...' : 'AUSENTE');
     
     if (!apiKey) {
       throw new Error('API Key do Gemini não configurada. Adicione VITE_GEMINI_API_KEY no Vercel (Settings → Environment Variables) e faça Redeploy.');
@@ -275,7 +286,7 @@ function Simulado() {
     
     for (const modelName of MODEL_CANDIDATES) {
       try {
-        console.log(`🤖 [Simulado] Tentando modelo: ${modelName}`);
+        // console.log removido por segurança
         
         const model = genAI.getGenerativeModel({ 
           model: modelName,
@@ -291,11 +302,7 @@ function Simulado() {
         const response = await result.response;
         const text = response.text();
         
-        console.log(`✅ [Simulado] Modelo ${modelName} funcionou!`);
-        console.log(`📏 [Simulado] Tamanho da resposta:`, text.length, 'chars');
-        console.log(`🔍 [Simulado] Resposta começa com:`, text.substring(0, 100));
-        console.log(`🔍 [Simulado] Resposta termina com:`, text.substring(text.length - 100));
-        
+    
         return text;
         
       } catch (err) {
@@ -348,7 +355,7 @@ function Simulado() {
       
       const responseText = await generateWithFallback(prompt);
       
-      console.log('📝 [Simulado] Resposta recebida, tamanho:', responseText.length, 'chars');
+      // console.log removido por segurança
       
       // 🧹 LIMPEZA INTELIGENTE: remover apenas marcadores markdown
       let cleanedResponse = responseText
@@ -372,7 +379,7 @@ function Simulado() {
         cleanedResponse = cleanedResponse.substring(0, lastBracket + 1);
       }
       
-      console.log('🧹 [Simulado] JSON limpo, tamanho:', cleanedResponse.length, 'chars');
+      // console.log removido por segurança
       
       // 🔍 PARSING COM MÚLTIPLAS TENTATIVAS
       let parsedQuestions;
@@ -380,12 +387,12 @@ function Simulado() {
       // Tentativa 1: Parse direto (caso mais comum)
       try {
         parsedQuestions = JSON.parse(cleanedResponse);
-        console.log('✅ [Simulado] Parse direto funcionou!');
+        // console.log removido por segurança
       } catch (parseError) {
-        console.log('⚠️ [Simulado] Parse direto falhou:', parseError.message);
-        console.log('📊 [Simulado] Tamanho do JSON limpo:', cleanedResponse.length);
-        console.log('🔍 [Simulado] Primeiros 300 chars:', cleanedResponse.substring(0, 300));
-        console.log('🔍 [Simulado] Últimos 300 chars:', cleanedResponse.substring(cleanedResponse.length - 300));
+        // console.log removido por segurança
+        // console.log removido por segurança
+        // console.log removido por segurança
+        // console.log removido por segurança
         
         // Tentativa 2: Extrair array JSON completo
         try {
@@ -393,13 +400,13 @@ function Simulado() {
           const arrayStart = cleanedResponse.indexOf('[');
           const arrayEnd = cleanedResponse.lastIndexOf(']');
           
-          console.log('📍 [Simulado] Array encontrado de:', arrayStart, 'até:', arrayEnd);
+          // console.log removido por segurança
           
           if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
             const jsonArray = cleanedResponse.substring(arrayStart, arrayEnd + 1);
-            console.log('📏 [Simulado] Tamanho do array extraído:', jsonArray.length);
+            // console.log removido por segurança
             parsedQuestions = JSON.parse(jsonArray);
-            console.log('✅ [Simulado] Extração de array funcionou!');
+            // console.log removido por segurança
           } else {
             throw new Error('Nenhum array JSON encontrado');
           }
@@ -411,7 +418,7 @@ function Simulado() {
         }
       }
 
-      console.log('📊 [Simulado] Questões parseadas:', parsedQuestions?.length || 0);
+      // console.log removido por segurança
 
       // Validar estrutura
       if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
@@ -443,7 +450,7 @@ function Simulado() {
         throw new Error('As questões geradas estão em formato inválido. Tente novamente.');
       }
 
-      console.log('✅ [Simulado] Questões válidas:', validQuestions.length);
+      // console.log removido por segurança
 
       setQuestoes(validQuestions);
       setFase('quiz');

@@ -11,10 +11,17 @@ class ErrorBoundary extends React.Component {
     super(props);
     this.state = { hasError: false, error: null };
   }
+
+  static getDerivedStateFromError(error) {
+    // Atualiza o estado para exibir a UI de fallback
+    return { hasError: true, error };
+  }
+
   componentDidCatch(error, errorInfo) {
     // Você pode logar o erro em um serviço externo aqui
     // console.error('ErrorBoundary:', error, errorInfo);
   }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -31,7 +38,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// 🔥 LAZY LOADING - Widgets pesados carregados sob demanda
+// LAZY LOADING - Widgets pesados carregados sob demanda
 const PomodoroTimer = lazy(() => import('./PomodoroTimer'));
 const KakaBot = lazy(() => import('./KakaBot'));
 
