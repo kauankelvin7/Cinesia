@@ -1,10 +1,9 @@
 import React, { memo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import ProfileModal from './ProfileModal';
-import { FiUser } from 'react-icons/fi';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiHome, FiBookOpen, FiLayers, FiCreditCard, FiEdit3, FiClipboard, FiCpu, FiMoreHorizontal, FiX } from 'react-icons/fi';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Home, BookOpen, Layers, CreditCard, PenLine, ClipboardList, Cpu, Bone, MoreHorizontal, X, User } from 'lucide-react';
 
 const BottomNavigation = memo(() => {
   const [showMore, setShowMore] = useState(false);
@@ -12,31 +11,28 @@ const BottomNavigation = memo(() => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Itens principais (sempre visíveis na barra)
   const mainNavItems = [
-    { path: '/', icon: FiHome, label: 'Início' },
-    { path: '/materias', icon: FiBookOpen, label: 'Matérias' },
-    { path: '/resumos', icon: FiLayers, label: 'Resumos' },
-    { path: '/flashcards', icon: FiCreditCard, label: 'Cards' },
+    { path: '/', icon: Home, label: 'Início' },
+    { path: '/materias', icon: BookOpen, label: 'Matérias' },
+    { path: '/resumos', icon: Layers, label: 'Resumos' },
+    { path: '/flashcards', icon: CreditCard, label: 'Cards' },
   ];
 
-  // Itens extras (visíveis no menu expandido)
   const extraNavItems = [
-    { path: '/simulado', icon: FiCpu, label: 'Simulados' },
-    { path: '/consulta-rapida', icon: FiClipboard, label: 'Consultas' },
-    { path: '/quadro-branco', icon: FiEdit3, label: 'Desenhar' },
+    { path: '/simulado', icon: Cpu, label: 'Simulados' },
+    { path: '/consulta-rapida', icon: ClipboardList, label: 'Consultas' },
+    { path: '/quadro-branco', icon: PenLine, label: 'Desenhar' },
+    { path: '/atlas-3d', icon: Bone, label: 'Atlas 3D' },
   ];
 
-  // Verifica se algum item extra está ativo
   const isExtraActive = extraNavItems.some(item => location.pathname === item.path);
 
   return (
     <>
-      {/* Overlay para fechar o menu */}
       <AnimatePresence>
         {showMore && (
           <motion.div
-            className="fixed inset-0 bg-black/20 z-40"
+            className="fixed inset-0 bg-black/15 dark:bg-black/30 backdrop-blur-sm z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -45,33 +41,31 @@ const BottomNavigation = memo(() => {
         )}
       </AnimatePresence>
 
-      {/* Menu expandido com itens extras */}
       <AnimatePresence>
         {showMore && (
           <motion.div
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-50 min-w-[280px] max-w-[320px]"
-            initial={{ y: 20, opacity: 0, scale: 0.9 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-float p-2 z-50 min-w-[240px]"
+            initial={{ y: 12, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            exit={{ y: 12, opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
           >
-            {/* Links de navegação */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-0.5">
               {extraNavItems.map((item) => (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   onClick={() => setShowMore(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
                       isActive
-                        ? 'bg-teal-50 text-teal-600'
-                        : 'text-slate-600 hover:bg-slate-50'
+                        ? 'bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-200'
                     }`
                   }
                 >
-                  <item.icon size={20} />
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <item.icon size={18} />
+                  <span>{item.label}</span>
                 </NavLink>
               ))}
             </div>
@@ -79,93 +73,66 @@ const BottomNavigation = memo(() => {
         )}
       </AnimatePresence>
 
-      {/* Barra de navegação principal */}
-      <motion.nav
-        className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-2 py-2 flex items-center justify-around z-50 safe-area-bottom"
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      <nav
+        role="navigation"
+        aria-label="Navegação principal"
+        className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200/80 dark:border-slate-800/80 px-2 py-1.5 flex items-center justify-around z-50 safe-area-bottom transition-colors"
+        style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}
       >
-        {mainNavItems.map((item, index) => (
+        {mainNavItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/'}
+            aria-label={item.label}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl relative transition-all duration-200 min-w-[60px] ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] ${
                 isActive
-                  ? 'text-teal-600'
-                  : 'text-slate-500 hover:text-teal-600'
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-slate-400 dark:text-slate-500 active:text-slate-600 dark:active:text-slate-300'
               }`
             }
           >
             {({ isActive }) => (
-              <motion.div
-                className="flex flex-col items-center gap-0.5"
-                whileTap={{ scale: 0.95 }}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[10px] font-semibold whitespace-nowrap">
+              <>
+                <item.icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+                <span className="text-[10px] font-medium whitespace-nowrap">
                   {item.label}
                 </span>
-                {isActive && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute -bottom-0.5 w-1 h-1 bg-teal-600 rounded-full"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </motion.div>
+              </>
             )}
           </NavLink>
         ))}
 
-        {/* Botão de Perfil/Avatar */}
         <button
           onClick={() => setIsProfileOpen(true)}
-          className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl relative transition-all duration-200 min-w-[60px] text-slate-500 hover:text-teal-600"
+          aria-label="Abrir perfil"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] text-slate-400 dark:text-slate-500"
         >
-          <span className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 text-white font-bold text-base shadow">
-            {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || <FiUser size={18} />}
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-white font-semibold text-[11px]">
+            {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || <User size={14} />}
           </span>
-          <span className="text-[10px] font-semibold whitespace-nowrap">Perfil</span>
+          <span className="text-[10px] font-medium whitespace-nowrap">Perfil</span>
         </button>
 
-        {/* Botão "Mais" para abrir menu extra */}
         <button
           onClick={() => setShowMore(!showMore)}
-          className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl relative transition-all duration-200 min-w-[60px] ${
-            showMore || isExtraActive
-              ? 'text-teal-600'
-              : 'text-slate-500 hover:text-teal-600'
+          aria-label={showMore ? 'Fechar menu extra' : 'Abrir menu extra'}
+          aria-expanded={showMore}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] ${
+            showMore || isExtraActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'
           }`}
         >
-          <motion.div
-            className="flex flex-col items-center gap-0.5"
-            whileTap={{ scale: 0.95 }}
-            animate={{ rotate: showMore ? 90 : 0 }}
-          >
-            {showMore ? (
-              <FiX size={22} strokeWidth={2.5} />
-            ) : (
-              <FiMoreHorizontal size={22} strokeWidth={isExtraActive ? 2.5 : 2} />
-            )}
-            <span className="text-[10px] font-semibold whitespace-nowrap">
-              {showMore ? 'Fechar' : 'Mais'}
-            </span>
-            {isExtraActive && !showMore && (
-              <motion.div
-                className="absolute -bottom-0.5 w-1 h-1 bg-teal-600 rounded-full"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-          </motion.div>
+          {showMore ? (
+            <X size={20} strokeWidth={2} />
+          ) : (
+            <MoreHorizontal size={20} strokeWidth={isExtraActive ? 2.2 : 1.8} />
+          )}
+          <span className="text-[10px] font-medium whitespace-nowrap">
+            {showMore ? 'Fechar' : 'Mais'}
+          </span>
         </button>
-      </motion.nav>
+      </nav>
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </>
   );
@@ -174,4 +141,3 @@ const BottomNavigation = memo(() => {
 BottomNavigation.displayName = 'BottomNavigation';
 
 export default BottomNavigation;
-

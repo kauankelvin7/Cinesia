@@ -1,7 +1,7 @@
 /**
- * 🏷️ BADGE - Etiquetas Coloridas Premium
+ * 🏷️ BADGE — Premium SaaS Design System
  * 
- * Pequenas tags para categorização visual
+ * Semantic color tags with dot indicator and dark mode support.
  */
 
 import React from 'react';
@@ -11,44 +11,56 @@ const Badge = ({
   variant = 'default', 
   color = null,
   size = 'md',
+  dot = false,
   className = '' 
 }) => {
   const variants = {
-    default: 'bg-slate-100 text-slate-700 border-slate-200',
-    primary: 'bg-teal-50 text-teal-700 border-teal-200',
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200',
-    danger: 'bg-red-50 text-red-700 border-red-200',
-    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    default: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+    primary: 'bg-primary-50 text-primary-700 dark:bg-primary-950 dark:text-primary-300',
+    success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300',
+    warning: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+    danger: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
+    info: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    accent: 'bg-accent-50 text-accent-700 dark:bg-accent-950 dark:text-accent-300',
+  };
+
+  const dotColors = {
+    default: 'bg-slate-400',
+    primary: 'bg-primary-500',
+    success: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    danger: 'bg-red-500',
+    info: 'bg-blue-500',
+    accent: 'bg-accent-500',
   };
 
   const sizes = {
     sm: 'px-2 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base',
+    md: 'px-2.5 py-0.5 text-xs',
+    lg: 'px-3 py-1 text-sm',
   };
 
-  // Se uma cor customizada for passada
   const customStyle = color ? {
-    backgroundColor: `${color}15`,
+    backgroundColor: `${color}12`,
     color: color,
-    borderColor: `${color}40`
   } : {};
 
   return (
     <span
       className={`
-        inline-flex items-center gap-1 
-        font-semibold 
-        rounded-full 
-        border
-        transition-all
+        inline-flex items-center gap-1.5 
+        font-medium 
+        rounded-full
+        transition-colors
         ${variants[variant]}
         ${sizes[size]}
         ${className}
       `}
       style={color ? customStyle : {}}
     >
+      {dot && (
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColors[variant] || 'bg-slate-400'}`} />
+      )}
       {children}
     </span>
   );

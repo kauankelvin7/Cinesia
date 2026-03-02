@@ -52,11 +52,11 @@ const FlashcardItem = memo(({
       >
         {/* FRENTE - Pergunta */}
         <div 
-          className="absolute inset-0 backface-hidden bg-white rounded-2xl shadow-lg border-2 border-slate-200 p-5 flex flex-col justify-between hover:shadow-xl transition-shadow"
+          className="absolute inset-0 backface-hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 p-5 flex flex-col justify-between hover:shadow-md transition-shadow duration-200"
           style={{ 
             backfaceVisibility: 'hidden',
-            borderTopColor: flashcard.materiaCor || '#14B8A6',
-            borderTopWidth: '4px'
+            borderTopColor: flashcard.materiaCor || '#0EA5E9',
+            borderTopWidth: '3px'
           }}
         >
           <div>
@@ -65,10 +65,10 @@ const FlashcardItem = memo(({
                 <span className="truncate block max-w-[120px]">{flashcard.materiaNome || 'Sem matéria'}</span>
               </Badge>
               {showActions && (
-                <div className="flex gap-1">
+                <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={handleEdit}
-                    className="p-1.5 rounded-lg hover:bg-teal-50 text-slate-400 hover:text-teal-600 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950 text-slate-400 dark:text-slate-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors active:scale-95"
                     title="Editar"
                     aria-label="Editar flashcard"
                   >
@@ -76,7 +76,7 @@ const FlashcardItem = memo(({
                   </button>
                   <button
                     onClick={handleDelete}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 dark:text-slate-500 hover:text-red-600 transition-colors active:scale-95"
                     title="Excluir"
                     aria-label="Excluir flashcard"
                   >
@@ -86,13 +86,13 @@ const FlashcardItem = memo(({
               )}
             </div>
 
-            <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2 line-clamp-3">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-2 line-clamp-3">
               {flashcard.pergunta}
             </h3>
           </div>
 
           <div className="text-center">
-            <p className="text-xs text-slate-400 font-medium">
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
               Clique para ver a resposta →
             </p>
           </div>
@@ -100,22 +100,23 @@ const FlashcardItem = memo(({
 
         {/* VERSO - Resposta */}
         <div 
-          className="absolute inset-0 backface-hidden bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl shadow-lg border-2 p-5 flex flex-col justify-between"
+          className="absolute inset-0 backface-hidden bg-primary-50 dark:bg-primary-950 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 p-5 flex flex-col justify-between"
           style={{ 
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
-            borderColor: flashcard.materiaCor || '#14B8A6'
+            borderTopColor: flashcard.materiaCor || '#0EA5E9',
+            borderTopWidth: '3px'
           }}
         >
           <div className="overflow-y-auto flex-1">
-            <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
               <span 
                 className="w-2 h-2 rounded-full flex-shrink-0" 
-                style={{ backgroundColor: flashcard.materiaCor || '#14B8A6' }}
+                style={{ backgroundColor: flashcard.materiaCor || '#0EA5E9' }}
               />
               Resposta
             </h3>
-            <p className="text-sm sm:text-base text-slate-700 leading-relaxed mb-3">
+            <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
               {flashcard.resposta}
             </p>
 
@@ -132,7 +133,7 @@ const FlashcardItem = memo(({
           </div>
 
           <div className="text-center">
-            <p className="text-xs font-medium" style={{ color: flashcard.materiaCor || '#14B8A6' }}>
+            <p className="text-xs font-medium" style={{ color: flashcard.materiaCor || '#0EA5E9' }}>
               ← Clique para voltar
             </p>
           </div>

@@ -142,7 +142,7 @@ export const AvatarImage = memo(({
   if (hasError || !src) {
     return (
       <div
-        className={`flex items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 text-white font-semibold ${className}`}
+        className={`flex items-center justify-center rounded-full bg-primary-600 text-white font-semibold ${className}`}
         style={{ width: size, height: size, fontSize: size * 0.4 }}
         {...props}
       >

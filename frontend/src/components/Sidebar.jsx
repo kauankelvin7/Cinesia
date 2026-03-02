@@ -1,47 +1,28 @@
 /**
- * SIDEBAR PREMIUM - Navegação Principal (Desktop)
- * 
- * Design System HealthTech Premium - Light Mode Only
- * Features:
- * - Glassmorphism sutil
- * - Ícones Lucide elegantes
- * - Trigger para ProfileModal
- * - Animações fluidas
- * - Dedicatória especial animada ❤️
+ * SIDEBAR — Premium SaaS Navigation
+ * Dark mode, collapsible, modern styling
  */
 
 import React, { useState, memo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
   BookOpen, 
   FileText, 
   Layers, 
-  LogOut, 
-  Settings,
-  ChevronRight,
-  Sparkles,
   Brain,
   ClipboardList,
-  PenTool
+  PenTool,
+  Bone,
 } from 'lucide-react';
 import Logo from './Logo';
 import ProfileModal from './ProfileModal';
+import UserMenu from './UserMenu';
 import { useAuth } from '../contexts/AuthContext-firebase';
-
-// Utility function outside component
-const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Bom dia';
-  if (hour < 18) return 'Boa tarde';
-  return 'Boa noite';
-};
 
 const Sidebar = memo(() => {
   const { user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [showDedication, setShowDedication] = useState(false);
 
   const links = [
     { to: '/', icon: Home, label: 'Home' },
@@ -51,53 +32,38 @@ const Sidebar = memo(() => {
     { to: '/simulado', icon: Brain, label: 'Simulados' },
     { to: '/consulta-rapida', icon: ClipboardList, label: 'Consulta Rápida' },
     { to: '/quadro-branco', icon: PenTool, label: 'Quadro Branco' },
+    { to: '/atlas-3d', icon: Bone, label: 'Atlas 3D' },
   ];
 
   return (
     <>
-      <motion.aside
-        className="fixed left-0 top-0 h-screen w-64 bg-white/80 backdrop-blur-xl border-r border-slate-200/50 flex flex-col shadow-xl shadow-slate-200/50 z-50"
-        initial={{ x: -264, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      >
+      <aside className="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-50 transition-colors duration-200">
         {/* Logo */}
-        <div className="p-6 border-b border-slate-100">
-          <Logo size="medium" />
+        <div className="px-5 py-5 border-b border-slate-100 dark:border-slate-800">
+          <Logo size="small" />
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 p-4 space-y-1">
-          {links.map((link, index) => (
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto" role="navigation" aria-label="Menu principal">
+          {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
+              end={link.to === '/'}
               className={({ isActive }) =>
-                `group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-colors duration-150 ${
                   isActive
-                    ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-lg shadow-teal-500/25'
-                    : 'text-slate-600 hover:bg-gradient-to-r hover:from-teal-50 hover:to-emerald-50 hover:text-teal-700'
+                    ? 'bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <motion.div
-                    whileHover={{ rotate: isActive ? 0 : 10 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                  >
-                    <link.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                  </motion.div>
-                  <span className="font-medium">{link.label}</span>
+                  <link.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className="flex-shrink-0" />
+                  <span>{link.label}</span>
                   {isActive && (
-                    <motion.div
-                      className="ml-auto"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      <ChevronRight size={16} />
-                    </motion.div>
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500" />
                   )}
                 </>
               )}
@@ -105,116 +71,15 @@ const Sidebar = memo(() => {
           ))}
         </nav>
 
-        {/* User Card */}
-        <div className="p-4 border-t border-slate-100">
-          {/* User Profile Card */}
-          <motion.button
-            onClick={() => setIsProfileOpen(true)}
-            className="w-full p-4 bg-gradient-to-br from-slate-50 to-teal-50/50 hover:from-teal-50 hover:to-emerald-50 rounded-2xl border border-slate-100 hover:border-teal-200 transition-all duration-300 group text-left"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-teal-500/25">
-                  {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold text-slate-900 truncate">
-                    {user?.displayName || user?.email?.split('@')[0] || 'Usuário'}
-                  </p>
-                  <Sparkles className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-slate-500 truncate">
-                  {getGreeting()} 
-                </p>
-              </div>
+        {/* Dark mode toggle + User section */}
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800">
+          <UserMenu onOpenProfile={() => setIsProfileOpen(true)} />
 
-              <Settings 
-                size={18} 
-                className="text-slate-400 group-hover:text-teal-600 group-hover:rotate-90 transition-all duration-500" 
-              />
-            </div>
-
-            <div className="text-xs text-slate-400 group-hover:text-teal-600 transition-colors flex items-center gap-1">
-              <span>Clique para editar perfil</span>
-              <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </motion.button>
-
-          <motion.button
-            onClick={logout}
-            className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-xl border border-slate-200 hover:border-red-200 transition-all duration-300 font-medium shadow-sm"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <LogOut size={18} />
-            <span className="text-sm">Sair da Conta</span>
-          </motion.button>
-
-          {/* Branding & Créditos */}
-          <div className="mt-4 text-center space-y-2">
-            <p className="text-xs text-slate-400">
-              <span className="font-semibold bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                Cinesia
-              </span>
-              {' '}2026
-            </p>
-            
-            {/*
-              💝 Dedicatória com hover suave
-              <div className="relative">
-                <p 
-                  className="text-xs text-slate-400 cursor-pointer select-none"
-                  onMouseEnter={() => setShowDedication(true)}
-                  onMouseLeave={() => setShowDedication(false)}
-                >
-                  Feito com{' '}
-                  <motion.span 
-                    className="inline-block text-red-500"
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
-                  >
-                    ❤️
-                  </motion.span>
-                  {' '}por{' '}
-                  <span className="font-medium text-slate-500 hover:text-teal-600 transition-colors duration-300">
-                    Kauan Kelvin
-                  </span>
-                </p>
-
-                Mensagem que aparece no hover
-                <AnimatePresence>
-                  {showDedication && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ 
-                        duration: 0.4, 
-                        ease: [0.4, 0, 0.2, 1] // easeOutCubic
-                      }}
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[calc(100%+1rem)] pointer-events-none"
-                    >
-                      <div className="relative bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl shadow-lg border border-pink-200/50 px-3 py-2.5">
-                        <p className="text-xs font-semibold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent text-center leading-relaxed">
-                          Para a futura melhor<br />Fisioterapeuta do mundo! 🩺✨
-                        </p>
-                        {/* Seta apontando para baixo }
-                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gradient-to-br from-pink-50 to-purple-50 border-r border-b border-pink-200/50 rotate-45" />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            */}
-          </div>
+          <p className="mt-2 text-center text-[11px] text-slate-300 dark:text-slate-600 font-medium">
+            Cinesia · 2026
+          </p>
         </div>
-      </motion.aside>
+      </aside>
 
       <ProfileModal 
         isOpen={isProfileOpen} 
@@ -224,7 +89,6 @@ const Sidebar = memo(() => {
   );
 });
 
-// Display name for DevTools
 Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

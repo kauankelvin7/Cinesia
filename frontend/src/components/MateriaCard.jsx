@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiEdit2, FiTrash2, FiCheckCircle, FiCircle } from 'react-icons/fi';
+import { Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import SafeIcon from './SafeIcon';
 import { formatTimestamp } from '../utils/dateHelper';
 import { hapticClick, hapticSuccess, hapticHeavy } from '../utils/haptics';
@@ -25,7 +25,7 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
 
   return (
     <motion.div
-      className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md"
+      className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all hover:shadow-md"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2, scale: 1.01 }}
@@ -53,7 +53,7 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold text-slate-900 truncate">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">
                 {materia.nome}
               </h3>
               {materia.descricao && (
@@ -77,16 +77,16 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
               whileTap={{ scale: 0.9 }}
               title={isConcluida ? 'Marcar como não concluída' : 'Marcar como concluída'}
             >
-              {isConcluida ? <FiCheckCircle size={18} /> : <FiCircle size={18} />}
+              {isConcluida ? <CheckCircle2 size={18} /> : <Circle size={18} />}
             </motion.button>
             <motion.button
               onClick={handleEdit}
-              className="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950 rounded-lg transition-colors"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               title="Editar"
             >
-              <FiEdit2 size={18} />
+              <Edit2 size={18} />
             </motion.button>
             <motion.button
               onClick={handleDelete}
@@ -95,7 +95,7 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
               whileTap={{ scale: 0.9 }}
               title="Excluir"
             >
-              <FiTrash2 size={18} />
+              <Trash2 size={18} />
             </motion.button>
           </div>
         </div>
@@ -109,10 +109,10 @@ const MateriaCard = ({ materia, onEdit, onDelete, onToggleConcluida }) => {
         )}
 
         {/* Stats */}
-        <div className="flex items-center gap-4 pt-3 border-t border-slate-100">
+        <div className="flex items-center gap-4 pt-3 border-t border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-1.5 text-sm">
             <span className="text-slate-500">Criada em:</span>
-            <span className="font-medium text-slate-900">
+            <span className="font-medium text-slate-900 dark:text-white">
               {formatTimestamp(materia.createdAt)}
             </span>
           </div>

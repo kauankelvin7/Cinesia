@@ -18,15 +18,16 @@ import {
   BookOpen, 
   FileText, 
   GraduationCap,
-  Sparkles,
   Check
 } from 'lucide-react';
+import { Input } from '../ui/Input';
+import Button from '../ui/Button';
 
 // Tipos de evento disponíveis
 const EVENT_TYPES = [
-  { id: 'estudo', label: 'Estudo', icon: BookOpen, color: 'from-teal-500 to-emerald-500' },
-  { id: 'prova', label: 'Prova', icon: GraduationCap, color: 'from-red-500 to-orange-500' },
-  { id: 'trabalho', label: 'Trabalho', icon: FileText, color: 'from-purple-500 to-pink-500' },
+  { id: 'estudo', label: 'Estudo', icon: BookOpen, color: 'bg-primary-600' },
+  { id: 'prova', label: 'Prova', icon: GraduationCap, color: 'bg-red-600' },
+  { id: 'trabalho', label: 'Trabalho', icon: FileText, color: 'bg-purple-600' },
 ];
 
 // Formata a data para exibição amigável
@@ -128,7 +129,7 @@ const AddEventModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -136,7 +137,7 @@ const AddEventModal = ({
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -145,31 +146,34 @@ const AddEventModal = ({
 
           {/* Modal Card */}
           <motion.div
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-event-modal-title"
+            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden border border-slate-200 dark:border-slate-700"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header com Gradiente */}
-            <div className="bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-5">
+            <div className="bg-primary-600 px-6 py-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
                     <Calendar className="text-white" size={22} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Novo Evento</h2>
+                    <h2 id="add-event-modal-title" className="text-xl font-semibold text-white">Novo Evento</h2>
                     <p className="text-white/80 text-sm flex items-center gap-1">
-                      <Sparkles size={12} />
                       {formatDateShort(eventDate)}
                     </p>
                   </div>
                 </div>
                 <motion.button
                   onClick={onClose}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  aria-label="Fechar modal"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -181,49 +185,30 @@ const AddEventModal = ({
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {/* Input de Título */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Título do Evento
-                </label>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={titulo}
-                  onChange={(e) => {
-                    setTitulo(e.target.value);
-                    setError('');
-                  }}
-                  placeholder="Ex: Prova de Anatomia"
-                  className={`w-full px-4 py-3 bg-slate-50 border-2 rounded-xl text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:outline-none ${
-                    error 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' 
-                      : 'border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10'
-                  }`}
-                  maxLength={100}
-                />
-                {error && (
-                  <motion.p 
-                    className="text-red-500 text-sm mt-2"
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    {error}
-                  </motion.p>
-                )}
-              </div>
+              <Input
+                ref={inputRef}
+                label="Título do Evento"
+                type="text"
+                value={titulo}
+                onChange={(e) => {
+                  setTitulo(e.target.value);
+                  setError('');
+                }}
+                placeholder="Ex: Prova de Anatomia"
+                error={error}
+                maxLength={100}
+                className="py-3 h-auto bg-slate-50"
+              />
 
               {/* Seletor de Data */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Data
-                </label>
-                <input
-                  type="date"
-                  value={formatDateForInput(eventDate)}
-                  onChange={handleDateChange}
-                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 transition-all duration-200 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
-                />
-              </div>
+              <Input
+                label="Data"
+                type="date"
+                value={formatDateForInput(eventDate)}
+                onChange={handleDateChange}
+                leftIcon={Calendar}
+                className="py-3 h-auto bg-slate-50"
+              />
 
               {/* Tipo de Evento */}
               <div>
@@ -242,7 +227,7 @@ const AddEventModal = ({
                         onClick={() => setTipo(eventType.id)}
                         className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
                           isSelected
-                            ? 'border-transparent bg-gradient-to-br ' + eventType.color + ' text-white shadow-lg'
+                            ? 'border-transparent ' + eventType.color + ' text-white shadow-sm'
                             : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-slate-100'
                         }`}
                         whileHover={{ scale: 1.02 }}
@@ -254,12 +239,12 @@ const AddEventModal = ({
                         </div>
                         {isSelected && (
                           <motion.div 
-                            className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md"
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-sm"
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500 }}
+                            transition={{ duration: 0.15 }}
                           >
-                            <Check size={12} className="text-teal-600" />
+                            <Check size={12} className="text-primary-600 dark:text-primary-400" />
                           </motion.div>
                         )}
                       </motion.button>
@@ -270,35 +255,23 @@ const AddEventModal = ({
 
               {/* Botões */}
               <div className="flex gap-3 pt-2">
-                <motion.button
+                <Button
                   type="button"
+                  variant="secondary"
+                  fullWidth
                   onClick={onClose}
-                  className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
                 >
                   Cancelar
-                </motion.button>
-                <motion.button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  fullWidth
+                  loading={isSubmitting}
                   disabled={isSubmitting}
-                  className="flex-1 py-3 px-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
                 >
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <motion.span
-                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      />
-                      Salvando...
-                    </span>
-                  ) : (
-                    'Salvar Evento'
-                  )}
-                </motion.button>
+                  Salvar Evento
+                </Button>
               </div>
             </form>
           </motion.div>

@@ -4,7 +4,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { FiPlus, FiX, FiCalendar, FiTrash2 } from 'react-icons/fi';
+import { Plus, X, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { salvarEvento, listarEventos, deletarEvento } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
 
@@ -87,22 +87,22 @@ const AgendaWidget = () => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-md">
-            <FiCalendar className="text-white" size={20} />
+          <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950 flex items-center justify-center">
+            <CalendarIcon className="text-primary-600 dark:text-primary-400" size={20} />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Agenda</h2>
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Agenda</h2>
         </div>
         <motion.button
           onClick={() => setShowModal(true)}
-          className="p-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <FiPlus size={20} />
+          <Plus size={20} />
         </motion.button>
       </div>
 
@@ -124,13 +124,13 @@ const AgendaWidget = () => {
         </h3>
         
         {loading ? (
-          <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+            <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
             Carregando...
           </div>
         ) : proximosEventos.length === 0 ? (
-          <div className="text-center py-6 text-slate-400 text-sm">
-            <FiCalendar className="mx-auto mb-2 text-slate-300" size={32} />
+          <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">
+            <CalendarIcon className="mx-auto mb-2 text-slate-300" size={32} />
             Nenhum evento agendado
           </div>
         ) : (
@@ -138,7 +138,7 @@ const AgendaWidget = () => {
             {proximosEventos.map((evento, index) => (
               <motion.div
                 key={evento.id}
-                className="bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-lg p-3 flex items-start justify-between hover:shadow-md transition-all duration-200 group"
+                className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-lg p-3 flex items-start justify-between hover:bg-slate-50 transition-colors duration-150 group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -149,21 +149,21 @@ const AgendaWidget = () => {
                       {evento.tipo}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-slate-900 truncate">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                     {evento.titulo}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {format(evento.dataObj, "dd 'de' MMMM", { locale: ptBR })}
                   </p>
                 </div>
                 <motion.button
                   onClick={() => handleDelete(evento.id)}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                  className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-white hover:bg-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   title="Excluir evento"
                 >
-                  <FiTrash2 size={14} />
+                  <Trash2 size={14} />
                 </motion.button>
               </motion.div>
             ))}
@@ -175,31 +175,32 @@ const AgendaWidget = () => {
       <AnimatePresence>
         {showModal && (
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-[1000] p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowModal(false)}
           >
             <motion.div
-              className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-md shadow-2xl"
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-md"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                    <FiCalendar className="text-white" size={16} />
+                  <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950 flex items-center justify-center">
+                    <CalendarIcon className="text-primary-600 dark:text-primary-400" size={16} />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">Novo Evento</h3>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Novo Evento</h3>
                 </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  <FiX size={20} />
+                  <X size={20} />
                 </button>
               </div>
 
@@ -212,7 +213,7 @@ const AgendaWidget = () => {
                     type="text"
                     value={formData.titulo}
                     onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                     placeholder="Ex: Prova de Anatomia"
                     required
                   />
@@ -226,7 +227,7 @@ const AgendaWidget = () => {
                     type="date"
                     value={formData.data}
                     onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-all"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-all"
                     required
                   />
                 </div>
@@ -238,7 +239,7 @@ const AgendaWidget = () => {
                   <select
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 text-slate-900 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                   >
                     <option value="prova">🎯 Prova</option>
                     <option value="trabalho">📝 Trabalho</option>
@@ -249,7 +250,7 @@ const AgendaWidget = () => {
                 <div className="flex gap-3 pt-4">
                   <motion.button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:shadow-lg transition-all font-medium"
+                    className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -258,7 +259,7 @@ const AgendaWidget = () => {
                   <motion.button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-slate-100 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+                    className="px-6 py-3 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

@@ -4,88 +4,70 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     screens: {
       'sm': '640px',
       'md': '768px',
-      'ipad': '600px', // Ativa modo iPad a partir de 600px
+      'ipad': '600px',
       'lg': '1024px',
       'xl': '1280px',
       '2xl': '1536px',
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        heading: ['Sora', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Design System - Primary Colors
+        // Primary: Blue-Teal — confiança, saúde, tecnologia
         primary: {
-          50: '#F0FDFA',
-          100: '#CCFBF1',
-          200: '#99F6E4',
-          300: '#5EEAD4',
-          400: '#2DD4BF',  // Dark Mode Primary
-          500: '#14B8A6',
-          600: '#0D9488',  // Light Mode Primary
-          700: '#0F766E',
-          800: '#115E59',
-          900: '#134E4A',
-          950: '#042F2E',
+          50:  '#F0F9FF',
+          100: '#E0F2FE',
+          200: '#BAE6FD',
+          300: '#7DD3FC',
+          400: '#38BDF8',
+          500: '#0EA5E9',
+          600: '#0284C7',
+          700: '#0369A1',
+          800: '#075985',
+          900: '#0C4A6E',
+          950: '#082F49',
         },
-        
-        // Background Colors (Auto-swapped pelo Tailwind)
-        // Light: slate-50 | Dark: slate-950
-        background: {
-          DEFAULT: '#F8FAFC',  // Light mode
-          dark: '#020617',     // Dark mode (aplicado via bg-background dark:bg-background-dark)
+
+        // Secondary: Green — cura, progresso, bem-estar
+        secondary: {
+          50:  '#ECFDF5',
+          100: '#D1FAE5',
+          200: '#A7F3D0',
+          300: '#6EE7B7',
+          400: '#34D399',
+          500: '#10B981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065F46',
+          900: '#064E3B',
+          950: '#022C22',
         },
-        
-        // Surface/Card Colors
-        // Light: white | Dark: slate-900
-        surface: {
-          DEFAULT: '#FFFFFF',
-          dark: '#0F172A',
-          elevated: '#1E293B', // Cards elevados no dark mode
+
+        // Accent: Orange — CTAs, alertas positivos
+        accent: {
+          50:  '#FFF7ED',
+          100: '#FFEDD5',
+          200: '#FED7AA',
+          300: '#FDBA74',
+          400: '#FB923C',
+          500: '#F97316',
+          600: '#EA580C',
+          700: '#C2410C',
+          800: '#9A3412',
+          900: '#7C2D12',
+          950: '#431407',
         },
-        
-        // Text Colors (seguem hierarquia visual)
-        text: {
-          primary: {
-            DEFAULT: '#1E293B',    // slate-800 - Light mode
-            dark: '#E2E8F0',       // slate-200 - Dark mode
-          },
-          secondary: {
-            DEFAULT: '#64748B',    // slate-500 - Light mode
-            dark: '#94A3B8',       // slate-400 - Dark mode
-          },
-          muted: {
-            DEFAULT: '#94A3B8',    // slate-400 - Light mode
-            dark: '#64748B',       // slate-500 - Dark mode
-          },
-        },
-        
-        // Border Colors
-        border: {
-          DEFAULT: '#E2E8F0',    // slate-200 - Light mode
-          dark: '#334155',       // slate-700 - Dark mode
-        },
-        
-        // Cores tradicionais do Tailwind (compatibilidade total)
-        teal: {
-          50: '#F0FDFA',
-          100: '#CCFBF1',
-          200: '#99F6E4',
-          300: '#5EEAD4',
-          400: '#2DD4BF',
-          500: '#14B8A6',
-          600: '#0D9488',
-          700: '#0F766E',
-          800: '#115E59',
-          900: '#134E4A',
-          950: '#042F2E',
-        },
+
+        // Neutral: Modern slate
         slate: {
-          50: '#F8FAFC',
+          50:  '#F8FAFC',
           100: '#F1F5F9',
           200: '#E2E8F0',
           300: '#CBD5E1',
@@ -97,16 +79,73 @@ export default {
           900: '#0F172A',
           950: '#020617',
         },
+
+        // Semantic
+        success: { DEFAULT: '#10B981', light: '#D1FAE5', dark: '#065F46' },
+        warning: { DEFAULT: '#F59E0B', light: '#FEF3C7', dark: '#92400E' },
+        error:   { DEFAULT: '#EF4444', light: '#FEE2E2', dark: '#991B1B' },
+        info:    { DEFAULT: '#3B82F6', light: '#DBEAFE', dark: '#1E40AF' },
+
+        // Surfaces
+        background: { DEFAULT: '#F8FAFC', dark: '#0F172A' },
+        surface:    { DEFAULT: '#FFFFFF', muted: '#F1F5F9', dark: '#1E293B', 'dark-muted': '#334155' },
+
+        // Compatibility aliases
+        teal: {
+          50:  '#F0F9FF', 100: '#E0F2FE', 200: '#BAE6FD', 300: '#7DD3FC',
+          400: '#38BDF8', 500: '#0EA5E9', 600: '#0284C7', 700: '#0369A1',
+          800: '#075985', 900: '#0C4A6E', 950: '#082F49',
+        },
+        emerald: {
+          50:  '#ECFDF5', 100: '#D1FAE5', 200: '#A7F3D0', 300: '#6EE7B7',
+          400: '#34D399', 500: '#10B981', 600: '#059669', 700: '#047857',
+          800: '#065F46', 900: '#064E3B', 950: '#022C22',
+        },
       },
+
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'soft-dark': '0 4px 20px -2px rgba(0, 0, 0, 0.3), 0 10px 40px -5px rgba(0, 0, 0, 0.2)',
-        'card': '0 4px 20px -2px rgba(13, 148, 136, 0.1)',
-        'card-dark': '0 4px 20px -2px rgba(45, 212, 191, 0.2)',
+        'xs':   '0 1px 2px 0 rgba(0,0,0,0.03)',
+        'soft': '0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.03)',
+        'card': '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
+        'elevated': '0 4px 6px -1px rgba(0,0,0,0.06), 0 10px 20px -2px rgba(0,0,0,0.05)',
+        'float': '0 10px 40px -10px rgba(0,0,0,0.12), 0 20px 60px -20px rgba(0,0,0,0.08)',
+        'glow-primary': '0 0 0 1px rgba(14,165,233,0.1), 0 4px 16px -4px rgba(14,165,233,0.15)',
+        'glow-accent':  '0 0 0 1px rgba(249,115,22,0.1), 0 4px 16px -4px rgba(249,115,22,0.15)',
+        'inner-soft': 'inset 0 1px 2px 0 rgba(0,0,0,0.04)',
       },
+
       borderRadius: {
+        'xl':  '0.75rem',
         '2xl': '1rem',
-        '3xl': '1.5rem',
+        '3xl': '1.25rem',
+      },
+
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'slide-down': 'slideDown 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'scale-in': 'scaleIn 0.2s ease-out',
+        'shimmer': 'shimmer 2s infinite linear',
+        'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+        'draw-check': 'drawCheck 0.4s ease-out forwards',
+        'progress': 'progress linear',
+      },
+      keyframes: {
+        fadeIn:  { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        slideDown: { '0%': { opacity: '0', transform: 'translateY(-12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        slideInRight: { '0%': { opacity: '0', transform: 'translateX(16px)' }, '100%': { opacity: '1', transform: 'translateX(0)' } },
+        scaleIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+        shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+        pulseSoft: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.7' } },
+        drawCheck: { '0%': { strokeDashoffset: '24' }, '100%': { strokeDashoffset: '0' } },
+        progress: { '0%': { width: '100%' }, '100%': { width: '0%' } },
+      },
+
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
       },
     },
   },

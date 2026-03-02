@@ -179,7 +179,7 @@ const PWAInstallBanner = () => {
         className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-safe"
       >
         <div className="max-w-2xl mx-auto">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 shadow-2xl">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 via-primary-600 to-secondary-500 shadow-2xl">
             {/* Efeito de brilho no fundo */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10" />
             

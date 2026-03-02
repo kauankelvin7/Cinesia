@@ -70,11 +70,17 @@
     
     <title>Cinesia Fisio</title>
     
-    <!-- Tema Light Mode fixo -->
+    <!-- Tema: Detecta preferência salva ou do sistema -->
     <script>
       (function() {
-        document.documentElement.classList.add('light');
-        document.documentElement.style.colorScheme = 'light';
+        var theme = localStorage.getItem('cinesia-theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+        } else {
+          document.documentElement.classList.add('light');
+          document.documentElement.style.colorScheme = 'light';
+        }
       })();
     </script>
     

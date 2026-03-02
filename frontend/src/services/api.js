@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 import { auth } from '../config/firebase-config';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
@@ -51,16 +52,11 @@ api.interceptors.response.use(
   (error) => {
     // Erro de rede (servidor offline)
     if (error.code === 'ERR_NETWORK' || !error.response) {
-      const message = 'Não foi possível conectar ao servidor. Verifique sua conexão ou tente novamente mais tarde.';
+      const message = 'Sem conexão com o servidor. Verifique sua internet e tente novamente.';
       
-      // Toast simples via console (você pode substituir por uma lib como react-toastify)
       console.error('❌ Erro de Conexão:', message);
       
-      // Alerta visual simples
-      if (typeof window !== 'undefined') {
-        // Cria um toast customizado se não houver biblioteca
-        showToast(message, 'error');
-      }
+      toast.error(message);
       
       return Promise.reject({ message, type: 'network' });
     }
@@ -75,61 +71,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-/**
- * Exibe um toast visual simples na tela (pode ser substituído por uma biblioteca como react-toastify).
- * @param {string} message - Mensagem a ser exibida
- * @param {string} type - Tipo do toast ('info' | 'error')
- */
-const showToast = (message, type = 'info') => {
-  // Remove toasts anteriores
-  const existingToast = document.getElementById('api-toast');
-  if (existingToast) existingToast.remove();
-  
-  const toast = document.createElement('div');
-  toast.id = 'api-toast';
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'error' ? '#FEE2E2' : '#E0F2FE'};
-    color: ${type === 'error' ? '#991B1B' : '#075985'};
-    border: 1px solid ${type === 'error' ? '#FCA5A5' : '#BAE6FD'};
-    padding: 16px 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 9999;
-    max-width: 400px;
-    font-size: 14px;
-    font-weight: 500;
-    animation: slideIn 0.3s ease;
-  `;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  // Remove após 5 segundos
-  setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 5000);
-  
-  // Adiciona animações CSS
-  if (!document.getElementById('toast-animations')) {
-    const style = document.createElement('style');
-    style.id = 'toast-animations';
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-      @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-};
 
 // ==================== AUTENTICAÇÃO ====================
 export const authAPI = {

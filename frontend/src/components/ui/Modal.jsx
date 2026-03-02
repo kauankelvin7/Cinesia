@@ -1,17 +1,12 @@
 /**
- * 🎭 MODAL - Componente de Janela Flutuante Premium
+ * 🎭 MODAL — Premium SaaS Design System
  * 
- * Features:
- * - Backdrop com blur glassmorphism
- * - Animações suaves (Framer Motion)
- * - Fechamento por ESC e clique fora
- * - Tamanhos responsivos
+ * Features: dark mode, focus trap, ESC close, backdrop blur, scale animation
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import Button from './Button';
 
 const Modal = ({ 
   isOpen, 
@@ -19,30 +14,41 @@ const Modal = ({
   title, 
   children, 
   size = 'md',
-  showCloseButton = true 
+  showCloseButton = true,
+  footer = null,
 }) => {
-  // Fechar com ESC
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const titleId = useId();
+
+  // Focus trap + ESC
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+    if (!isOpen) return;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), a[href]'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Prevenir scroll do body quando modal aberto
+  // Lock body scroll
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    if (isOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   const sizeClasses = {
@@ -50,7 +56,7 @@ const Modal = ({
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
-    full: 'max-w-6xl'
+    full: 'max-w-6xl',
   };
 
   return (
@@ -59,46 +65,68 @@ const Modal = ({
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             onClick={onClose}
+            aria-hidden="true"
           />
 
-          {/* Modal Container */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Container */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
             <motion.div
-              className={`bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? titleId : undefined}
+              className={`
+                bg-white dark:bg-slate-800
+                rounded-2xl
+                shadow-xl dark:shadow-2xl
+                w-full ${sizeClasses[size]}
+                max-h-[90vh] overflow-hidden
+                border border-slate-200/80 dark:border-slate-700/60
+              `}
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               {(title || showCloseButton) && (
-                <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700/80">
                   {title && (
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    <h2 id={titleId} className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                       {title}
                     </h2>
                   )}
                   {showCloseButton && (
                     <button
+                      ref={closeButtonRef}
                       onClick={onClose}
-                      className="ml-auto p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+                      aria-label="Fechar modal"
+                      className="ml-auto p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
                     >
-                      <X size={24} />
+                      <X size={20} />
                     </button>
                   )}
                 </div>
               )}
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)] text-slate-700 dark:text-slate-300">
                 {children}
               </div>
+
+              {/* Footer */}
+              {footer && (
+                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-end gap-3">
+                  {footer}
+                </div>
+              )}
             </motion.div>
           </div>
         </>

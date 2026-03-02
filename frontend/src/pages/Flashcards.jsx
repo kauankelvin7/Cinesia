@@ -10,12 +10,12 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, 
   Filter, 
   CreditCard, 
-  Sparkles,
   ImageIcon,
   X,
   Play,
@@ -50,17 +50,17 @@ const containerVariants = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  hidden: { opacity: 0, y: 12, scale: 0.97 },
   visible: { 
     opacity: 1, 
     y: 0, 
     scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 25 }
+    transition: { duration: 0.2, ease: 'easeOut' }
   },
   exit: { 
     opacity: 0, 
-    scale: 0.9, 
-    transition: { duration: 0.2 } 
+    scale: 0.95, 
+    transition: { duration: 0.15 } 
   }
 };
 
@@ -74,7 +74,7 @@ const slideVariants = {
     x: 0,
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 30 }
+    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
   },
   exit: (direction) => ({
     x: direction < 0 ? 400 : -400,
@@ -239,8 +239,10 @@ function Flashcards() {
       await carregarDados();
       resetForm();
       setError(null);
+      toast.success(editingId ? 'Flashcard atualizado!' : 'Flashcard criado com sucesso!');
     } catch (err) {
       setError('Erro ao salvar flashcard');
+      toast.error('Não foi possível salvar o flashcard.');
       console.error(err);
     }
   };
@@ -275,8 +277,10 @@ function Flashcards() {
       await deletarFlashcard(confirmDelete.id);
       await carregarDados();
       setError(null);
+      toast.success('Flashcard excluído com sucesso.');
     } catch (err) {
       setError('Erro ao excluir flashcard');
+      toast.error('Não foi possível excluir o flashcard.');
       console.error(err);
     } finally {
       setIsDeleting(false);
@@ -377,56 +381,85 @@ function Flashcards() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 transition-opacity duration-700 opacity-100">
-        <div className="relative flex flex-col items-center justify-center">
-          <div className="w-20 h-20 flex items-center justify-center">
-            <span className="absolute w-20 h-20 rounded-full border-4 border-teal-200 border-t-teal-400" style={{opacity:0.5}} />
-            <span className="absolute w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-400" style={{opacity:0.3}} />
-            <span className="relative flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg transition-all duration-700">
-              <CreditCard size={28} className="text-teal-600" />
-            </span>
+      <div className="min-h-screen pb-32 pt-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 animate-pulse" />
+                  <div className="h-8 w-48 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
+                </div>
+                <div className="h-4 w-64 bg-slate-50 rounded-lg animate-pulse" />
+              </div>
+              <div className="flex gap-3">
+                <div className="h-12 w-32 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
+                <div className="h-12 w-36 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 animate-pulse">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="h-10 w-20 bg-slate-100 dark:bg-slate-700 rounded-lg" />
+                <div className="h-10 w-full sm:w-64 bg-slate-100 dark:bg-slate-700 rounded-lg" />
+                <div className="h-10 w-24 bg-slate-100 dark:bg-slate-700 rounded-lg ml-auto" />
+              </div>
+            </div>
           </div>
-          <span className="mt-8 text-lg font-semibold text-teal-600 text-center drop-shadow-sm transition-opacity duration-700 opacity-80">Carregando flashcards...</span>
+          <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:lg:grid-cols-3 ipad:xl:grid-cols-4 gap-6 ipad:gap-8">
+            {[1,2,3,4,5,6,7,8].map(i => (
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm h-72" style={{animationDelay:`${i*80}ms`}}>
+                <div className="h-1 bg-slate-100 dark:bg-slate-700 animate-pulse" />
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="h-5 w-24 bg-blue-50 rounded-full animate-pulse" />
+                    <div className="flex gap-1"><div className="w-8 h-8 bg-slate-50 rounded-lg animate-pulse" /><div className="w-8 h-8 bg-slate-50 rounded-lg animate-pulse" /></div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <div className="h-4 w-full bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+                    <div className="h-4 w-4/5 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
+                    <div className="h-4 w-3/5 bg-slate-50 rounded animate-pulse" />
+                  </div>
+                </div>
+                <div className="absolute bottom-5 left-0 right-0 text-center"><div className="h-3.5 w-32 bg-slate-50 rounded animate-pulse mx-auto" /></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100 pb-32 pt-8 px-4">
+    <div className="min-h-screen pb-32 pt-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           className="mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
         >
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3 flex items-center gap-3">
-                <motion.div 
-                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  whileTap={{ scale: 0.95 }}
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center"
                 >
-                  <CreditCard size={28} className="text-white" />
-                </motion.div>
+                  <CreditCard size={22} className="text-blue-600 dark:text-blue-400" />
+                </div>
                 Meus Flashcards
               </h1>
-              <p className="text-slate-600 flex items-center gap-2">
-                <Sparkles size={16} className="text-blue-500" />
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
                 Crie e estude com flashcards interativos
               </p>
             </div>
             <div className="flex gap-3">
               {flashcardsFiltrados.length > 0 && (
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   size="lg"
                   leftIcon={<Play size={20} />}
                   onClick={iniciarModoEstudo}
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 hover:from-emerald-600 hover:to-teal-600"
                 >
                   Modo Estudo
                 </Button>
@@ -444,13 +477,13 @@ function Flashcards() {
 
           {/* Barra de Filtros */}
           <motion.div 
-            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-sm"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="flex items-center gap-2 text-slate-700 font-medium">
-              <Filter size={18} className="text-teal-600" />
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
+              <Filter size={18} className="text-primary-600 dark:text-primary-400" />
               Filtrar por:
             </div>
             <Select
@@ -468,7 +501,7 @@ function Flashcards() {
             
             <div className="ml-auto flex items-center gap-4">
               <div className="text-sm text-slate-600">
-                <span className="font-bold text-slate-900">{flashcardsFiltrados.length}</span> flashcard{flashcardsFiltrados.length !== 1 && 's'}
+                <span className="font-bold text-slate-900 dark:text-white">{flashcardsFiltrados.length}</span> flashcard{flashcardsFiltrados.length !== 1 && 's'}
               </div>
             </div>
           </motion.div>
@@ -481,18 +514,16 @@ function Flashcards() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <motion.div 
-              className="w-24 h-24 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+            <div 
+              className="w-20 h-20 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-5"
             >
-              <CreditCard size={48} className="text-blue-600" />
-            </motion.div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {selectedMateria === 'all' ? 'Nenhum flashcard criado' : 'Nenhum flashcard nesta matéria'}
+              <CreditCard size={40} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              {selectedMateria === 'all' ? 'Pronto para memorizar? \u{1F9E0}' : 'Nenhum flashcard nesta mat\u00e9ria'}
             </h3>
-            <p className="text-slate-600 mb-8">
-              Crie flashcards para fixar melhor o conteúdo estudado
+            <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
+              Flashcards s\u00e3o a melhor forma de fixar conte\u00fado. Crie o primeiro e comece a revisar!
             </p>
             <Button
               variant="primary"
@@ -505,7 +536,8 @@ function Flashcards() {
           </motion.div>
         ) : (
           <motion.div 
-            className="grid grid-cols-1 ipad:grid-cols-2 ipad:lg:grid-cols-3 ipad:xl:grid-cols-4 gap-6 ipad:gap-8"
+            className="grid gap-6"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -578,7 +610,7 @@ function Flashcards() {
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Imagem (Opcional)
               </label>
-              <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-teal-500 transition-colors duration-200">
+              <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-primary-500 transition-colors duration-200">
                 <input
                   type="file"
                   accept="image/*"
@@ -619,7 +651,7 @@ function Flashcards() {
                         <p className="text-slate-700 font-medium">
                           {compressingImage ? 'Processando...' : 'Clique para adicionar imagem'}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           PNG, JPG ou WEBP (máx. 10MB)
                         </p>
                       </div>
@@ -665,7 +697,7 @@ function Flashcards() {
         <AnimatePresence>
           {modoEstudo && currentFlashcard && (
             <motion.div
-              className="fixed inset-0 z-50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col"
+              className="fixed inset-0 z-50 bg-slate-900 flex flex-col"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -679,8 +711,7 @@ function Flashcards() {
               >
                 <div className="flex items-center gap-4">
                   <motion.div 
-                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center"
-                    whileHover={{ scale: 1.1 }}
+                    className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center"
                   >
                     <BookOpen size={20} className="text-white" />
                   </motion.div>
@@ -706,10 +737,10 @@ function Flashcards() {
               <div className="px-4 sm:px-8 py-3">
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full"
+                    className="h-full bg-primary-500 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
                   />
                 </div>
               </div>
@@ -730,20 +761,20 @@ function Flashcards() {
                       className="relative perspective-1000 cursor-pointer"
                       onClick={flipStudyCard}
                       whileTap={{ scale: 0.98 }}
-                      style={{ minHeight: '400px' }}
+                      style={{ minHeight: 'min(400px, 60vh)' }}
                     >
                       <motion.div
                         className="relative w-full h-full"
                         animate={{ rotateY: isStudyFlipped ? 180 : 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
                         style={{ transformStyle: 'preserve-3d' }}
                       >
                         {/* FRENTE - Pergunta */}
                         <div
-                          className="absolute inset-0 backface-hidden bg-white rounded-3xl shadow-2xl p-8 sm:p-12 flex flex-col justify-between"
+                          className="absolute inset-0 backface-hidden bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col justify-between overflow-hidden"
                           style={{ 
                             backfaceVisibility: 'hidden',
-                            minHeight: '400px'
+                            minHeight: 'min(400px, 60vh)'
                           }}
                         >
                           <div>
@@ -754,7 +785,7 @@ function Flashcards() {
                               <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">
                                 Pergunta
                               </p>
-                              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-relaxed">
+                              <h3 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed line-clamp-6 overflow-hidden">
                                 {currentFlashcard.pergunta}
                               </h3>
                             </div>
@@ -774,18 +805,18 @@ function Flashcards() {
 
                         {/* VERSO - Resposta */}
                         <div
-                          className="absolute inset-0 backface-hidden bg-gradient-to-br from-teal-500 to-emerald-500 rounded-3xl shadow-2xl p-8 sm:p-12 flex flex-col"
+                          className="absolute inset-0 backface-hidden bg-primary-600 rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col overflow-hidden"
                           style={{ 
                             backfaceVisibility: 'hidden',
                             transform: 'rotateY(180deg)',
-                            minHeight: '400px'
+                            minHeight: 'min(400px, 60vh)'
                           }}
                         >
                           <div className="flex-1 overflow-y-auto">
                             <p className="text-xs uppercase tracking-wider text-white/70 font-semibold mb-3">
                               Resposta
                             </p>
-                            <p className="text-xl sm:text-2xl text-white leading-relaxed font-medium">
+                            <p className="text-lg sm:text-2xl text-white leading-relaxed font-medium line-clamp-8 overflow-hidden">
                               {currentFlashcard.resposta}
                             </p>
 
@@ -847,7 +878,7 @@ function Flashcards() {
                     className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                       currentIndex === flashcardsFiltrados.length - 1
                         ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg'
+                        : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'
                     }`}
                     whileHover={currentIndex !== flashcardsFiltrados.length - 1 ? { scale: 1.02 } : {}}
                     whileTap={currentIndex !== flashcardsFiltrados.length - 1 ? { scale: 0.98 } : {}}
@@ -877,6 +908,12 @@ function Flashcards() {
         }
         .transform-style-3d {
           transform-style: preserve-3d;
+        }
+        /* Study mode — responsive card sizing */
+        @media (max-width: 640px) {
+          .perspective-1000 {
+            min-height: 300px !important;
+          }
         }
       `}</style>
 

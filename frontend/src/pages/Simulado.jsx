@@ -21,7 +21,6 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
-  Sparkles,
   RotateCcw,
   Trophy,
   Loader2,
@@ -31,7 +30,8 @@ import {
   FileText,
   Upload,
   X,
-  File
+  File,
+  RefreshCw
 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -546,7 +546,7 @@ function Simulado() {
   const percentual = fase === 'resultado' ? Math.round((acertos / questoes.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-100 pb-32 pt-8 px-4">
+    <div className="min-h-screen pb-32 pt-8 px-4">
       <div className="max-w-4xl ipad:max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -556,16 +556,15 @@ function Simulado() {
         >
           <div className="flex items-center gap-4 mb-4">
             <motion.div 
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"
-              whileHover={{ scale: 1.05, rotate: 5 }}
+              className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center"
             >
-              <BookOpen size={32} className="text-white" />
+              <BookOpen size={32} className="text-indigo-600" />
             </motion.div>
             <div>
-              <h1 className="text-3xl ipad:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl ipad:text-3xl font-semibold text-slate-900 dark:text-white">
                 Simulado Infinito
               </h1>
-              <p className="text-slate-600 flex items-center gap-2">
+              <p className="text-slate-600 dark:text-slate-300 flex items-center gap-2">
                 <Zap size={16} className="text-amber-500" />
                 Questões geradas por IA para seu estudo
               </p>
@@ -581,28 +580,28 @@ function Simulado() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-slate-200/50 p-8"
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-8"
             >
               <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
                   <Target size={40} className="text-indigo-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                   Gere Questões com IA
                 </h2>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-300">
                   Escolha um tema ou faça upload de um PDF
                 </p>
               </div>
 
               {/* 📑 ABAS: Por Tema / Por Arquivo */}
-              <div className="flex mb-6 bg-slate-100 rounded-xl p-1">
+              <div className="flex mb-6 bg-slate-100 dark:bg-slate-700 rounded-xl p-1">
                 <button
                   onClick={() => setActiveTab('tema')}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
                     activeTab === 'tema'
-                      ? 'bg-white text-indigo-600 shadow-md'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <BookOpen size={18} />
@@ -612,8 +611,8 @@ function Simulado() {
                   onClick={() => setActiveTab('arquivo')}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
                     activeTab === 'arquivo'
-                      ? 'bg-white text-indigo-600 shadow-md'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <FileText size={18} />
@@ -626,7 +625,7 @@ function Simulado() {
                 {activeTab === 'tema' && (
                   <>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                         Tema do Simulado
                       </label>
                       <Input
@@ -640,7 +639,7 @@ function Simulado() {
 
                     {/* Temas Sugeridos */}
                     <div>
-                      <p className="text-sm font-medium text-slate-600 mb-3">
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
                         Sugestões populares:
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -651,7 +650,7 @@ function Simulado() {
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                               tema === t
                                 ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700'
                             }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -688,29 +687,29 @@ function Simulado() {
                             : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50'
                         }`}
                       >
-                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                           <Upload size={32} className="text-indigo-600" />
                         </div>
-                        <p className="text-slate-700 font-semibold mb-2">
+                        <p className="text-slate-700 dark:text-slate-300 font-semibold mb-2">
                           Arraste um PDF aqui ou clique para selecionar
                         </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Apostilas, capítulos de livros, artigos... (máx. 20MB)
                         </p>
                       </div>
                     ) : (
                       /* Arquivo selecionado */
-                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                            <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center shadow-sm">
                               <File size={24} className="text-indigo-600" />
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-800 truncate max-w-[200px] sm:max-w-none">
+                              <p className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-none">
                                 {pdfFile.name}
                               </p>
-                              <p className="text-sm text-slate-500">
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                                 {pdfText && (
                                   <span className="text-green-600 ml-2">
@@ -756,7 +755,7 @@ function Simulado() {
                   size="lg"
                   onClick={gerarQuestoes}
                   disabled={isLoading || isExtractingPdf || (activeTab === 'tema' ? !tema.trim() : !pdfText)}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
                   leftIcon={isLoading ? <Loader2 size={20} className="animate-spin" /> : <Play size={20} />}
                 >
                   {isLoading ? 'Gerando Questões...' : 'Iniciar Simulado'}
@@ -772,7 +771,7 @@ function Simulado() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-slate-200/50 p-12"
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-12"
             >
               <div className="text-center">
                 {/* Animação de loading */}
@@ -797,7 +796,7 @@ function Simulado() {
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Sparkles size={40} className="text-indigo-600" />
+                    <Zap size={40} className="text-indigo-600" />
                   </motion.div>
                 </div>
 
@@ -807,10 +806,10 @@ function Simulado() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
                     Gerando suas questões...
                   </h3>
-                  <p className="text-slate-600 mb-6">
+                  <p className="text-slate-600 dark:text-slate-300 mb-6">
                     A IA está criando questões personalizadas sobre{' '}
                     <span className="font-semibold text-indigo-600">{tema || 'seu conteúdo'}</span>
                   </p>
@@ -819,7 +818,7 @@ function Simulado() {
                 {/* Etapas do processo (animadas sequencialmente) */}
                 <div className="space-y-3 max-w-md mx-auto">
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 }}
@@ -829,11 +828,11 @@ function Simulado() {
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
-                    <span className="text-sm text-slate-700">Analisando o tema...</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Analisando o tema...</span>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 }}
@@ -843,11 +842,11 @@ function Simulado() {
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
                     />
-                    <span className="text-sm text-slate-700">Criando perguntas relevantes...</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Criando perguntas relevantes...</span>
                   </motion.div>
 
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.8 }}
@@ -857,13 +856,13 @@ function Simulado() {
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
                     />
-                    <span className="text-sm text-slate-700">Gerando alternativas e explicações...</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Gerando alternativas e explicações...</span>
                   </motion.div>
                 </div>
 
                 {/* Mensagem de paciência */}
                 <motion.p
-                  className="text-xs text-slate-500 mt-8"
+                  className="text-xs text-slate-500 dark:text-slate-400 mt-8"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1 }}
@@ -885,7 +884,7 @@ function Simulado() {
               {/* Barra de Progresso */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-600">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                     Questão {currentIndex + 1} de {questoes.length}
                   </span>
                   <span className="text-sm font-bold text-indigo-600">
@@ -894,17 +893,17 @@ function Simulado() {
                 </div>
                 <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                    className="h-full bg-indigo-500"
                     initial={{ width: 0 }}
                     animate={{ width: `${((currentIndex + 1) / questoes.length) * 100}%` }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   />
                 </div>
               </div>
 
               {/* Card da Questão */}
               <motion.div
-                className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden"
                 layout
               >
                 {/* Pergunta */}
@@ -913,7 +912,7 @@ function Simulado() {
                     <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-indigo-600 font-bold">{currentIndex + 1}</span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-slate-900 leading-relaxed">
+                    <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white leading-relaxed">
                       {questaoAtual.pergunta}
                     </h3>
                   </div>
@@ -926,14 +925,14 @@ function Simulado() {
                     const isCorrect = questaoAtual.correta === idx;
                     const showFeedback = hasAnswered;
                     
-                    let optionStyle = 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50';
+                    let optionStyle = 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:bg-indigo-50';
                     if (showFeedback) {
                       if (isCorrect) {
                         optionStyle = 'border-emerald-500 bg-emerald-50';
                       } else if (isSelected && !isCorrect) {
                         optionStyle = 'border-red-500 bg-red-50';
                       } else {
-                        optionStyle = 'border-slate-200 opacity-60';
+                        optionStyle = 'border-slate-200 dark:border-slate-700 opacity-60';
                       }
                     } else if (isSelected) {
                       optionStyle = 'border-indigo-500 bg-indigo-50';
@@ -958,7 +957,7 @@ function Simulado() {
                               ? 'bg-red-500 text-white'
                               : isSelected
                               ? 'bg-indigo-500 text-white'
-                              : 'bg-slate-100 text-slate-600'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                           }`}>
                             {showFeedback && isCorrect ? (
                               <CheckCircle size={18} />
@@ -970,10 +969,10 @@ function Simulado() {
                           </div>
                           <span className={`flex-1 ${
                             showFeedback && isCorrect
-                              ? 'text-emerald-800 font-medium'
+                              ? 'text-emerald-800 dark:text-emerald-300 font-medium'
                               : showFeedback && isSelected && !isCorrect
-                              ? 'text-red-800'
-                              : 'text-slate-700'
+                              ? 'text-red-800 dark:text-red-300'
+                              : 'text-slate-700 dark:text-slate-300'
                           }`}>
                             {opcao}
                           </span>
@@ -990,18 +989,18 @@ function Simulado() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="border-t border-slate-100"
+                      className="border-t border-slate-100 dark:border-slate-700"
                     >
-                      <div className="p-6 ipad:p-8 bg-gradient-to-br from-slate-50 to-indigo-50/30">
+                      <div className="p-6 ipad:p-8 bg-slate-50 dark:bg-slate-800/50">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                            <BookOpen size={18} className="text-indigo-600" />
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center flex-shrink-0">
+                            <BookOpen size={18} className="text-indigo-600 dark:text-indigo-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-indigo-600 mb-1">
+                            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
                               Explicação
                             </p>
-                            <p className="text-slate-700 leading-relaxed">
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                               {questaoAtual.explicacao}
                             </p>
                           </div>
@@ -1012,7 +1011,7 @@ function Simulado() {
                 </AnimatePresence>
 
                 {/* Navegação */}
-                <div className="p-6 ipad:p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
+                <div className="p-6 ipad:p-8 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-4">
                   <Button
                     variant="secondary"
                     onClick={questaoAnterior}
@@ -1027,7 +1026,7 @@ function Simulado() {
                     onClick={proximaQuestao}
                     disabled={!hasAnswered}
                     rightIcon={currentIndex === questoes.length - 1 ? <Trophy size={18} /> : <ArrowRight size={18} />}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                    className="bg-indigo-600"
                   >
                     {currentIndex === questoes.length - 1 ? 'Ver Resultado' : 'Próxima'}
                   </Button>
@@ -1043,26 +1042,26 @@ function Simulado() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-xl shadow-slate-200/50 p-8 text-center"
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-8 text-center"
             >
               {/* Ícone de troféu animado */}
               <motion.div
-                className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg ${
+                className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 ${
                   percentual >= 80
-                    ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30'
+                    ? 'bg-amber-50 text-amber-600'
                     : percentual >= 60
-                    ? 'bg-gradient-to-br from-emerald-400 to-teal-500 shadow-emerald-500/30'
-                    : 'bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-500/30'
+                    ? 'bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                 }`}
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               >
-                <Trophy size={48} className="text-white" />
+                <Trophy size={48} />
               </motion.div>
 
               <motion.h2
-                className="text-3xl font-bold text-slate-900 mb-2"
+                className="text-3xl font-bold text-slate-900 dark:text-white mb-2"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
@@ -1075,14 +1074,14 @@ function Simulado() {
               </motion.h2>
 
               <motion.p
-                className="text-slate-600 mb-8"
+                className="text-slate-600 dark:text-slate-300 mb-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
                 Você acertou <span className="font-bold text-indigo-600">{acertos}</span> de{' '}
                 <span className="font-bold">{questoes.length}</span> questões sobre{' '}
-                <span className="font-semibold text-slate-900">{tema}</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{tema}</span>
               </motion.p>
 
               {/* Barra de desempenho */}
@@ -1096,17 +1095,17 @@ function Simulado() {
                   <motion.div
                     className={`h-full rounded-full ${
                       percentual >= 80
-                        ? 'bg-gradient-to-r from-amber-400 to-orange-500'
+                        ? 'bg-amber-500'
                         : percentual >= 60
-                        ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
-                        : 'bg-gradient-to-r from-indigo-400 to-purple-500'
+                        ? 'bg-primary-500'
+                        : 'bg-indigo-500'
                     }`}
                     initial={{ width: 0 }}
                     animate={{ width: `${percentual}%` }}
                     transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
                   />
                 </div>
-                <p className="text-2xl font-bold text-slate-900 mt-3">{percentual}%</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">{percentual}%</p>
               </motion.div>
 
               {/* Botões de ação */}
@@ -1128,8 +1127,8 @@ function Simulado() {
                   variant="primary"
                   size="lg"
                   onClick={novoSimulado}
-                  leftIcon={<Sparkles size={18} />}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600"
+                  leftIcon={<RefreshCw size={18} />}
+                  className="bg-indigo-600"
                 >
                   Mais Questões ({tema})
                 </Button>

@@ -29,9 +29,7 @@ const StreakIndicator = ({
   // Detecta se é mobile
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      console.log('CheckMobile:', mobile, 'Width:', window.innerWidth); // Debug
-      setIsMobile(mobile);
+      setIsMobile(window.innerWidth < 1024);
     };
     
     checkMobile();
@@ -56,7 +54,7 @@ const StreakIndicator = ({
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       
-      console.log('UpdateTooltip - isMobile:', isMobile, 'rect:', rect); // Debug
+
       
       // Sempre posiciona o tooltip à esquerda do card, para evitar corte
       const tooltipWidth = 256;
@@ -183,7 +181,7 @@ const StreakIndicator = ({
       >
         {/* Ícone Principal */}
         <motion.div 
-          className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${classes.gradient} ${classes.shadow} flex items-center justify-center text-white flex-shrink-0 shadow-lg relative overflow-hidden`}
+          className={`w-14 h-14 rounded-2xl ${classes.bg} flex items-center justify-center ${classes.text} flex-shrink-0 relative overflow-hidden`}
           animate={currentStreak > 0 ? {
             boxShadow: [
               `0 10px 30px -10px rgba(251, 146, 60, 0.3)`,
@@ -198,7 +196,7 @@ const StreakIndicator = ({
           }}
         >
           {/* Efeito de brilho */}
-          {currentStreak > 0 && (
+          {false && currentStreak > 0 && (
             <motion.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
               animate={{
@@ -229,10 +227,10 @@ const StreakIndicator = ({
           {/* Badge de milestone */}
           {currentStreak >= 100 && (
             <motion.div
-              className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg"
+              className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             >
               <Award size={12} className="text-yellow-900" />
             </motion.div>
@@ -312,7 +310,7 @@ const StreakIndicator = ({
                 {longestStreak > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <TrendingUp size={16} className="text-teal-500" />
+                      <TrendingUp size={16} className="text-primary-500 dark:text-primary-400" />
                       <span className="text-slate-600">Recorde</span>
                     </div>
                     <span className="font-bold text-slate-900">
@@ -350,10 +348,10 @@ const StreakIndicator = ({
 
                 {/* Dica */}
                 {currentStreak === 0 && (
-                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-2">
+                  <div className="bg-primary-50 dark:bg-primary-950 border border-primary-200 dark:border-primary-800 rounded-lg p-2">
                     <div className="flex items-start gap-2">
 
-                      <p className="text-xs text-teal-700">
+                      <p className="text-xs text-primary-700 dark:text-primary-300">
                         Faça login todos os dias para construir sua sequência!
                       </p>
                     </div>

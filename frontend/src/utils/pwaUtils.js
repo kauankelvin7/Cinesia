@@ -164,13 +164,7 @@ export const dismissIOSInstallBanner = () => {
 export const initPWA = () => {
   initInstallPrompt();
   
-  // Log de status
-  console.log('📱 PWA Status:', {
-    installed: isInstalledPWA(),
-    online: !isOffline(),
-    iOS: isIOS(),
-    safari: isSafari()
-  });
+  // Status PWA silencioso (sem log)
 };
 
 export default {

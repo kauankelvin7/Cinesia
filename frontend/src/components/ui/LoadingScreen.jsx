@@ -1,12 +1,8 @@
 /**
- * 🌀 LOADING SCREEN - Transição Premium para Lazy Loading
+ * 🌀 LOADING SCREEN — Premium SaaS Design System
  * 
- * Fallback elegante para React.Suspense
- * Features:
- * - Logo pulsante centralizada
- * - Animação suave e rápida
- * - Gradiente consistente com a marca
- * - Não bloqueia a thread principal
+ * Minimal loading screen with logo pulse and progress dots.
+ * Dark mode aware.
  */
 
 import React from 'react';
@@ -15,70 +11,48 @@ import { motion } from 'framer-motion';
 const LoadingScreen = () => {
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-colors"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Logo Container com Pulse (smaller) */}
+      {/* Logo Icon */}
       <motion.div
         className="relative"
-        animate={{
-          scale: [1, 1.04, 1],
-        }}
-        transition={{
-          duration: 1.2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        animate={{ scale: [1, 1.04, 1] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
       >
-        {/* Glow Background (smaller, softer) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-400/20 to-emerald-400/20 rounded-2xl blur-xl scale-110" />
-        {/* Logo Icon (smaller) */}
-        <div className="relative w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className="w-7 h-7 text-white"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
+          <svg viewBox="0 0 48 48" fill="none" className="w-7 h-7">
+            {/* Stylized figure */}
+            <circle cx="24" cy="12" r="4" fill="white"/>
+            <path d="M24 18 C24 22, 22 28, 24 32" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <path d="M16 22 Q20 20, 24 21 Q28 20, 32 22" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+            <path d="M22 32 L18 40" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M26 32 L30 40" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
         </div>
       </motion.div>
 
-      {/* Loading Text (smaller margin) */}
+      {/* Brand text */}
       <motion.p
-        className="mt-4 text-slate-500 text-xs font-medium tracking-wide"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        className="mt-4 text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
       >
-        Carregando...
+        Cinesia
       </motion.p>
 
-      {/* Minimal Progress Dots (smaller) */}
-      <div className="flex gap-1 mt-2">
+      {/* Progress Dots */}
+      <div className="flex gap-1.5 mt-3">
         {[0, 1, 2].map((i) => (
           <motion.div
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-teal-500"
-            animate={{
-              opacity: [0.3, 1, 0.3],
-              scale: [0.8, 1, 0.8],
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: 'easeInOut',
-            }}
+            className="w-1.5 h-1.5 rounded-full bg-primary-500"
+            animate={{ opacity: [0.25, 1, 0.25] }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
           />
         ))}
       </div>

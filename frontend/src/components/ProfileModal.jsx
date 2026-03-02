@@ -1,131 +1,95 @@
 /**
  * 👤 PROFILE MODAL - Edição de Perfil do Usuário
  * 
- * Modal elegante para personalização do nome de exibição
- * Integrado com Firebase Auth updateProfile
+ * Modal premium com seções organizadas:
+ * - Dados Pessoais (nome + email)
+ * - Preferências (tema + acessibilidade)
+ * - Informações da conta
  * 
- * Features:
- * - Edição do displayName
- * - Preview do avatar
- * - Animações suaves (Framer Motion)
- * - Design Glassmorphism Premium
+ * Integrado com Firebase Auth updateProfile
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { updateProfile } from 'firebase/auth';
 import { auth } from '../config/firebase-config';
 import { useAuth } from '../contexts/AuthContext-firebase';
+import { useTheme } from '../contexts/ThemeContext';
 import Button from './ui/Button';
+import { Input } from './ui/Input';
 import FontSizeControl from './FontSizeControl';
 import { hapticSuccess, hapticError } from '../utils/haptics';
 import { 
   X, 
   User, 
   Mail, 
-  Sparkles, 
   Check, 
   Loader2,
   Camera,
   Type,
-  Eye
+  Eye,
+  Shield,
+  Calendar,
+  Sun,
+  Moon,
+  Monitor,
+  Palette,
+  Settings2,
+  Sparkles,
 } from 'lucide-react';
+
+/* ─── Section wrapper ─── */
+const Section = ({ icon: Icon, title, children, className = '' }) => (
+  <div className={`space-y-3 ${className}`}>
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-950 flex items-center justify-center">
+        <Icon size={13} className="text-primary-600 dark:text-primary-400" />
+      </div>
+      <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</h3>
+    </div>
+    {children}
+  </div>
+);
 
 const ProfileModal = ({ isOpen, onClose }) => {
   const { user, setUser } = useAuth();
+  const { mode, setMode, isDarkMode } = useTheme();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
-  // Inicializar com o nome atual
   useEffect(() => {
-    if (user) {
-      setDisplayName(user.displayName || '');
-    }
+    if (user) setDisplayName(user.displayName || '');
   }, [user, isOpen]);
 
-  // Reset estados quando fechar
   useEffect(() => {
-    if (!isOpen) {
-      setSuccess(false);
-      setError(null);
-    }
+    if (!isOpen) { setSuccess(false); setError(null); }
   }, [isOpen]);
 
   const handleSave = async () => {
-    if (!displayName.trim()) {
-      setError('Por favor, digite um nome.');
-      return;
-    }
-
+    if (!displayName.trim()) { setError('Por favor, digite um nome.'); return; }
     setLoading(true);
     setError(null);
-
     try {
-      // Atualizar no Firebase Auth
-      await updateProfile(auth.currentUser, {
-        displayName: displayName.trim()
-      });
-
-      // Atualizar estado local (ambas as propriedades para compatibilidade)
+      await updateProfile(auth.currentUser, { displayName: displayName.trim() });
       if (setUser) {
-        const updatedUser = {
-          ...user,
-          nome: displayName.trim(),
-          displayName: displayName.trim()
-        };
+        const updatedUser = { ...user, nome: displayName.trim(), displayName: displayName.trim() };
         setUser(updatedUser);
-        
-        // Atualizar localStorage também
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
-
-      // Haptic feedback de sucesso
       hapticSuccess();
       setSuccess(true);
-      
-      // Fechar após 1.5s de sucesso
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-
+      toast.success('Perfil atualizado! ✨');
+      setTimeout(() => onClose(), 1500);
     } catch (err) {
       console.error('Erro ao atualizar perfil:', err);
       hapticError();
-      setError('Erro ao salvar. Tente novamente.');
+      setError('Ops, não conseguimos salvar. Tente novamente.');
+      toast.error('Erro ao atualizar perfil.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Animações do modal
-  const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 }
-  };
-
-  const modalVariants = {
-    hidden: { 
-      opacity: 0, 
-      scale: 0.9, 
-      y: 20 
-    },
-    visible: { 
-      opacity: 1, 
-      scale: 1, 
-      y: 0,
-      transition: {
-        type: 'spring',
-        damping: 25,
-        stiffness: 300
-      }
-    },
-    exit: { 
-      opacity: 0, 
-      scale: 0.9, 
-      y: 20,
-      transition: { duration: 0.2 }
     }
   };
 
@@ -135,176 +99,184 @@ const ProfileModal = ({ isOpen, onClose }) => {
     return 'U';
   };
 
+  const createdAt = user?.metadata?.creationTime
+    ? new Date(user.metadata.creationTime).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    : null;
+
+  const themeOptions = [
+    { key: 'light',  icon: Sun,     label: 'Claro' },
+    { key: 'dark',   icon: Moon,    label: 'Escuro' },
+    { key: 'system', icon: Monitor, label: 'Sistema' },
+  ];
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          variants={backdropVariants}
-          initial="hidden"
-          animate="visible"
-          exit="hidden"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          {/* Backdrop com blur */}
-          <motion.div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-            onClick={onClose}
-          />
+          {/* Backdrop */}
+          <motion.div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[3px]" onClick={onClose} />
 
-          {/* Modal Card */}
+          {/* Modal */}
           <motion.div
-            className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden"
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-modal-title"
+            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
+            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } }}
+            exit={{ opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.2 } }}
           >
-            {/* Header com gradiente */}
-            <div className="relative bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-8 text-center">
-              {/* Botão fechar */}
+            {/* ─── Header ─── */}
+            <div className="relative bg-gradient-to-br from-primary-600 to-primary-700 px-6 py-7 text-center flex-shrink-0">
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                aria-label="Fechar perfil"
+                className="absolute top-3.5 right-3.5 p-1.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-white" />
+                <X className="w-4 h-4 text-white" />
               </button>
 
-              {/* Avatar Preview */}
               <motion.div
                 className="relative inline-block"
-                animate={{ scale: success ? [1, 1.1, 1] : 1 }}
+                animate={{ scale: success ? [1, 1.08, 1] : 1 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="w-24 h-24 mx-auto rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/40 flex items-center justify-center shadow-xl">
-                  <span className="text-4xl font-bold text-white">
-                    {getInitials()}
-                  </span>
+                <div className="w-20 h-20 mx-auto rounded-full bg-white/15 border-[3px] border-white/30 flex items-center justify-center ring-4 ring-white/10">
+                  <span className="text-3xl font-bold text-white">{getInitials()}</span>
                 </div>
-                
-                {/* Badge de sucesso */}
                 <AnimatePresence>
                   {success && (
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
-                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg"
+                      className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg"
                     >
-                      <Check className="w-5 h-5 text-white" />
+                      <Check className="w-4 h-4 text-white" />
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
 
-              <h2 className="mt-4 text-xl font-bold text-white">
-                Seu Perfil
-              </h2>
-              <p className="text-white/80 text-sm mt-1">
-                Personalize como você quer ser chamado
-              </p>
+              <h2 id="profile-modal-title" className="mt-3 text-lg font-bold text-white">Meu Perfil</h2>
+              <p className="text-white/70 text-xs mt-0.5">Personalize sua experiência</p>
             </div>
 
-            {/* Form */}
-            <div className="p-6 space-y-5">
-              {/* Campo de Nome */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
-                  <Sparkles className="w-4 h-4 text-teal-500" />
-                  Como gostaria de ser chamado?
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Ex: Dr. João, Maria, Prof. Silva..."
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
-                    disabled={loading || success}
-                  />
+            {/* ─── Scrollable Content ─── */}
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+              {/* Seção: Dados Pessoais */}
+              <Section icon={User} title="Dados Pessoais">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Nome de exibição</label>
+                    <Input
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Ex: Dr. João, Maria, Prof. Silva..."
+                      leftIcon={User}
+                      disabled={loading || success}
+                      className="py-3 h-auto"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-500 mb-1.5 block">Email</label>
+                    <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl">
+                      <Mail size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                      <span className="text-sm text-slate-500 dark:text-slate-400 truncate">{user?.email || '—'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Section>
 
-              {/* Email (readonly) */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-500 mb-2">
-                  <Mail className="w-4 h-4" />
-                  Email (não editável)
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
-                  />
+              {/* Seção: Aparência */}
+              <Section icon={Palette} title="Aparência">
+                <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-700/60 rounded-xl">
+                  {themeOptions.map(({ key, icon: ThIcon, label }) => {
+                    const active = mode === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setMode(key)}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                          active
+                            ? 'bg-white dark:bg-slate-600 text-primary-600 dark:text-primary-300 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        <ThIcon size={13} />
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
+              </Section>
 
-              {/* Seção de Acessibilidade */}
-              <div className="pt-4 border-t border-slate-200">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3">
-                  <Eye className="w-4 h-4 text-teal-500" />
-                  Acessibilidade
-                </label>
+              {/* Seção: Acessibilidade */}
+              <Section icon={Eye} title="Acessibilidade">
                 <FontSizeControl />
-              </div>
+              </Section>
+
+              {/* Seção: Conta */}
+              {createdAt && (
+                <Section icon={Shield} title="Informações da Conta">
+                  <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                    <Calendar size={14} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Membro desde</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">{createdAt}</p>
+                    </div>
+                  </div>
+                </Section>
+              )}
 
               {/* Mensagens de erro/sucesso */}
               <AnimatePresence mode="wait">
                 {error && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm"
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-2 px-3.5 py-2.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 rounded-xl text-red-600 dark:text-red-400 text-xs"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5 flex-shrink-0" />
                     {error}
                   </motion.div>
                 )}
-                
                 {success && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-600 text-sm"
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs"
                   >
-                    <Check className="w-4 h-4" />
+                    <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
                     Perfil atualizado com sucesso!
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Botões */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="secondary"
-                  fullWidth
-                  onClick={onClose}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="primary"
-                  fullWidth
-                  onClick={handleSave}
-                  loading={loading}
-                  disabled={success}
-                  leftIcon={success ? <Check className="w-5 h-5" /> : null}
-                >
-                  {success ? 'Salvo!' : 'Salvar Alterações'}
-                </Button>
-              </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-center">
-              <p className="text-xs text-slate-500">
-                💡 O nome será exibido em todo o sistema para uma experiência personalizada
-              </p>
+            {/* ─── Footer ─── */}
+            <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-3 flex-shrink-0 bg-slate-50/80 dark:bg-slate-800/80">
+              <Button variant="secondary" fullWidth onClick={onClose} disabled={loading}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleSave}
+                loading={loading}
+                disabled={success}
+                leftIcon={success ? <Check className="w-4 h-4" /> : null}
+              >
+                {success ? 'Salvo!' : 'Salvar'}
+              </Button>
             </div>
           </motion.div>
         </motion.div>

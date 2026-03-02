@@ -22,7 +22,6 @@ import {
   RefreshCw,
   Zap,
   CheckCircle2,
-  Sparkles,
   Database,
   Activity
 } from 'lucide-react';
@@ -63,16 +62,12 @@ const SYSTEM_PROMPT = `Você é o **Kaka**, um assistente de IA especializado em
    → Resposta completa com tópicos e exemplos clínicos
 
 ## 🔧 CAPACIDADES DO SISTEMA
-Você tem acesso a ferramentas para consultar dados do Cinesia:
-- \`get_patient_info\`: Buscar informações de pacientes
-- \`get_exercise_library\`: Consultar biblioteca de exercícios
-- \`get_recent_sessions\`: Ver sessões recentes
-- \`analyze_progress\`: Analisar evolução de pacientes
-
-**Quando usar ferramentas:**
-- Usuário pergunta sobre paciente específico
-- Solicitação de análise de dados
-- Busca por exercícios ou protocolos
+Você pode ajudar com dúvidas sobre:
+- Anatomia, fisiologia e biomecânica
+- Patologias musculoesqueléticas e neurológicas
+- Exercícios terapêuticos e protocolos de reabilitação
+- Avaliação e diagnóstico fisioterapêutico
+- Recursos eletroterapêuticos e terapia manual
 
 ## ✍️ FORMATAÇÃO
 - Use **negrito** para termos-chave médicos
@@ -178,10 +173,7 @@ const KakaBot = () => {
             }
           });
           const chat = createChatWithPersona(model);
-          // Teste de conectividade
-          const testResult = await chat.sendMessage('OK');
-          await testResult.response;
-          // Sucesso!
+          // Sucesso - modelo inicializado!
           chatRef.current = chat;
           setGeminiModel(chat);
           setActiveModelName(modelName);
@@ -553,7 +545,7 @@ const KakaBot = () => {
         {!isOpen && (
           <motion.button
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6 w-16 h-16 bg-gradient-to-br from-teal-500 via-emerald-500 to-teal-600 rounded-full shadow-xl flex items-center justify-center text-white hover:shadow-2xl transition-all group"
+            className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6 w-16 h-16 bg-primary-600 rounded-full shadow-md flex items-center justify-center text-white hover:bg-primary-700 transition-colors group"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -564,34 +556,49 @@ const KakaBot = () => {
             
             {/* Indicador de notificação */}
             <motion.div
-              className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg"
+              className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center shadow-sm"
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <Sparkles size={12} className="text-white" />
+              <span className="text-[8px] text-white font-bold">!</span>
             </motion.div>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Janela de Chat */}
+      {/* Janela de Chat — desktop: fixed card, mobile: bottom drawer */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            className="fixed bottom-4 right-4 z-50 w-[400px] max-w-[calc(100vw-32px)] h-[600px] max-h-[calc(100vh-100px)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200"
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: 50 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 px-5 py-4 flex items-center justify-between shadow-lg">
+          <>
+            {/* Mobile backdrop overlay */}
+            <motion.div
+              className="fixed inset-0 bg-black/30 dark:bg-black/50 z-[190] sm:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              className="fixed z-[200] bg-white dark:bg-slate-800 overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700 
+                bottom-0 left-0 right-0 h-[65vh] rounded-t-2xl
+                sm:bottom-4 sm:right-4 sm:left-auto sm:w-[400px] sm:max-w-[calc(100vw-32px)] sm:h-[600px] sm:max-h-[calc(100vh-100px)] sm:rounded-2xl shadow-float"
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            >
+            {/* Mobile drag handle + Header */}
+            <div className="bg-primary-600">
+              <div className="sm:hidden flex justify-center pt-2">
+                <div className="w-10 h-1 bg-white/30 rounded-full" />
+              </div>
+              <div className="px-5 py-3 sm:py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner">
+                <div className="w-11 h-11 bg-white/15 rounded-xl flex items-center justify-center">
                   <Stethoscope className="text-white" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                  <h3 className="text-white font-semibold text-lg flex items-center gap-2">
                     Kaka
                     <motion.span
                       animate={{ rotate: [0, 10, 0] }}
@@ -612,10 +619,11 @@ const KakaBot = () => {
               >
                 <X className="text-white" size={22} />
               </button>
+              </div>
             </div>
 
             {/* Área de Mensagens */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-50 to-white">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900">
               {messages.map((message, index) => (
                 <motion.div
                   key={index}
@@ -629,7 +637,7 @@ const KakaBot = () => {
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center mr-2 shrink-0 shadow-sm ${
                       message.isSystem && message.systemType === 'error' ? 'bg-red-100' : 
                       message.isSystem && message.systemType === 'success' ? 'bg-green-100' :
-                      'bg-gradient-to-br from-teal-500 to-emerald-500'
+                      'bg-primary-600'
                     }`}>
                       {message.isSystem && message.systemType === 'error' ? (
                         <AlertTriangle className="text-red-500" size={18} />
@@ -645,12 +653,12 @@ const KakaBot = () => {
                   <div
                     className={`max-w-[85%] px-4 py-3 rounded-2xl ${
                       message.role === 'user'
-                        ? 'bg-gradient-to-br from-teal-500 to-emerald-600 text-white rounded-br-md shadow-md'
+                        ? 'bg-primary-600 text-white rounded-br-md shadow-sm'
                         : message.isSystem && message.systemType === 'error'
                           ? 'bg-red-50 text-red-800 border border-red-200 rounded-bl-md'
                           : message.isSystem && message.systemType === 'success'
                             ? 'bg-green-50 text-green-800 border border-green-200 rounded-bl-md'
-                            : 'bg-white text-slate-700 shadow-md border border-slate-200 rounded-bl-md'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 shadow-sm border border-slate-200 dark:border-slate-700 rounded-bl-md'
                     }`}
                   >
                     {message.role === 'assistant' ? (
@@ -658,7 +666,7 @@ const KakaBot = () => {
                         <ReactMarkdown
                           components={{
                             strong: ({ children }) => (
-                              <strong className="font-semibold text-teal-700">{children}</strong>
+                              <strong className="font-semibold text-primary-700 dark:text-primary-300">{children}</strong>
                             ),
                             p: ({ children }) => (
                               <p className="text-sm leading-relaxed my-1.5 first:mt-0 last:mb-0">{children}</p>
@@ -673,14 +681,14 @@ const KakaBot = () => {
                               <li className="my-0.5">{children}</li>
                             ),
                             code: ({ children }) => (
-                              <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-teal-700">{children}</code>
+                              <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono text-primary-700 dark:text-primary-300">{children}</code>
                             ),
                             a: ({ href, children }) => (
                               <a 
                                 href={href} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="text-teal-600 hover:text-teal-700 underline"
+                                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 underline"
                               >
                                 {children}
                               </a>
@@ -697,7 +705,7 @@ const KakaBot = () => {
 
                   {/* Avatar do usuário */}
                   {message.role === 'user' && (
-                    <div className="w-9 h-9 bg-gradient-to-br from-slate-200 to-slate-300 rounded-xl flex items-center justify-center ml-2 shrink-0 shadow-sm">
+                    <div className="w-9 h-9 bg-slate-200 rounded-xl flex items-center justify-center ml-2 shrink-0">
                       <User className="text-slate-600" size={18} />
                     </div>
                   )}
@@ -711,17 +719,17 @@ const KakaBot = () => {
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }}
                 >
-                  <div className="w-9 h-9 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center mr-2 shadow-sm">
+                  <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center mr-2 shadow-sm">
                     <Stethoscope className="text-white" size={18} />
                   </div>
-                  <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-md shadow-md border border-slate-200">
+                  <div className="bg-white dark:bg-slate-700 px-4 py-3 rounded-2xl rounded-bl-md shadow-md border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-slate-600">Kaka está pensando</span>
                       <span className="flex gap-1">
                         {[0, 1, 2].map(i => (
                           <motion.span
                             key={i}
-                            className="w-2 h-2 bg-teal-500 rounded-full"
+                            className="w-2 h-2 bg-primary-500 rounded-full"
                             animate={{ y: [0, -5, 0] }}
                             transition={{ 
                               duration: 0.6, 
@@ -743,7 +751,7 @@ const KakaBot = () => {
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }}
                 >
-                  <div className="flex items-center gap-2 px-4 py-2 bg-teal-50 border border-teal-200 rounded-xl text-teal-700 text-sm shadow-sm">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 dark:bg-primary-950 border border-primary-200 rounded-xl text-primary-700 dark:text-primary-300 text-sm shadow-sm">
                     <Loader2 size={16} className="animate-spin" />
                     Estabelecendo conexão com a IA...
                   </div>
@@ -755,10 +763,10 @@ const KakaBot = () => {
 
             {/* Botão de Reconexão */}
             {connectionStatus === 'error' && (
-              <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-t border-amber-200">
+              <div className="px-4 py-3 bg-amber-50 border-t border-amber-200">
                 <button
                   onClick={handleRetryConnection}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+                  className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
                 >
                   <RefreshCw size={16} />
                   Tentar Reconectar
@@ -767,7 +775,7 @@ const KakaBot = () => {
             )}
 
             {/* Input de Mensagem */}
-            <div className="p-4 bg-white border-t border-slate-200">
+            <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef}
@@ -782,7 +790,7 @@ const KakaBot = () => {
                   }
                   disabled={isLoading || connectionStatus !== 'connected'}
                   rows={1}
-                  className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-24"
+                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-24"
                   style={{ 
                     minHeight: '44px',
                     maxHeight: '96px'
@@ -791,9 +799,9 @@ const KakaBot = () => {
                 <motion.button
                   onClick={sendMessage}
                   disabled={!inputValue.trim() || isLoading || connectionStatus !== 'connected'}
-                  className="p-3 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all"
-                  whileHover={{ scale: connectionStatus === 'connected' ? 1.05 : 1 }}
-                  whileTap={{ scale: connectionStatus === 'connected' ? 0.95 : 1 }}
+                  className="p-3 bg-primary-600 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-700 transition-colors"
+                  whileHover={{ scale: connectionStatus === 'connected' ? 1.02 : 1 }}
+                  whileTap={{ scale: connectionStatus === 'connected' ? 0.98 : 1 }}
                 >
                   {isLoading ? (
                     <Loader2 className="animate-spin" size={20} />
@@ -804,7 +812,7 @@ const KakaBot = () => {
               </div>
               
               {/* Footer com informações */}
-              <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
                 <span className="flex items-center gap-1">
                   {connectionStatus === 'connected' && (
                     <>
@@ -819,6 +827,7 @@ const KakaBot = () => {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

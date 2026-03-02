@@ -23,7 +23,7 @@ import {
   Brain,
   ChevronDown
 } from 'lucide-react';
-import { doc, updateDoc, increment, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, increment, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase-config';
 import { useAuth } from '../contexts/AuthContext-firebase';
 
@@ -41,6 +41,7 @@ const PomodoroTimer = memo(() => {
   const [totalMinutesToday, setTotalMinutesToday] = useState(0);
   const intervalRef = useRef(null);
   const audioRef = useRef(null);
+  const handleTimerCompleteRef = useRef(null);
 
   // Carregar dados do usuário
   useEffect(() => {
@@ -67,23 +68,7 @@ const PomodoroTimer = memo(() => {
   };
 
   // Timer logic
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      handleTimerComplete();
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isRunning, timeLeft]);
-
-  const handleTimerComplete = async () => {
+  const handleTimerComplete = useCallback(async () => {
     setIsRunning(false);
     
     // Tocar som de notificação
@@ -124,7 +109,27 @@ const PomodoroTimer = memo(() => {
         });
       }
     }
-  };
+  }, [mode, cyclesCompleted, totalMinutesToday, user]);
+
+  // Keep ref in sync with latest callback
+  handleTimerCompleteRef.current = handleTimerComplete;
+
+  // Timer tick effect
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      handleTimerCompleteRef.current();
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning, timeLeft]);
 
   const savePomodoroProgress = async (cycles, minutes) => {
     try {
@@ -140,14 +145,12 @@ const PomodoroTimer = memo(() => {
         updatedAt: serverTimestamp()
       }, { merge: true });
       
-      // Atualizar também o total do usuário
+      // Atualizar também o total do usuário (setDoc + merge para criar se não existir)
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         totalMinutesStudied: increment(25),
         lastPomodoroAt: serverTimestamp()
-      }).catch(() => {
-        // Ignora se o documento não existe
-      });
+      }, { merge: true });
       
     } catch (error) {
       console.error('Erro ao salvar progresso do Pomodoro:', error);
@@ -211,7 +214,7 @@ const PomodoroTimer = memo(() => {
         className="fixed bottom-40 right-4 z-40 sm:bottom-6 sm:right-24 lg:bottom-6 lg:right-28"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
       >
         <AnimatePresence mode="wait">
           {!isExpanded ? (
@@ -219,15 +222,15 @@ const PomodoroTimer = memo(() => {
             <motion.button
               key="minimized"
               onClick={() => setIsExpanded(true)}
-              className={`relative w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all ${
+              className={`relative w-14 h-14 rounded-full shadow-md flex items-center justify-center transition-colors ${
                 isRunning
                   ? mode === 'focus'
-                    ? 'bg-gradient-to-br from-teal-500 to-emerald-500'
-                    : 'bg-gradient-to-br from-amber-500 to-orange-500'
-                  : 'bg-gradient-to-br from-slate-600 to-slate-700'
+                    ? 'bg-primary-600'
+                    : 'bg-amber-500'
+                  : 'bg-slate-600'
               }`}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
@@ -255,17 +258,17 @@ const PomodoroTimer = memo(() => {
             // Painel Expandido
             <motion.div
               key="expanded"
-              className="bg-white rounded-2xl shadow-2xl overflow-hidden w-72"
-              initial={{ scale: 0.8, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden w-72 border border-slate-200 dark:border-slate-700"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             >
               {/* Header */}
               <div className={`px-4 py-3 flex items-center justify-between ${
                 mode === 'focus'
-                  ? 'bg-gradient-to-r from-teal-500 to-emerald-500'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                  ? 'bg-primary-600'
+                  : 'bg-amber-500'
               }`}>
                 <div className="flex items-center gap-2 text-white">
                   {mode === 'focus' ? (
@@ -312,7 +315,7 @@ const PomodoroTimer = memo(() => {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-slate-900 font-mono">
+                    <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
                       {formatTime(timeLeft)}
                     </span>
                   </div>
@@ -333,7 +336,7 @@ const PomodoroTimer = memo(() => {
                     onClick={toggleTimer}
                     className={`p-4 rounded-xl text-white transition-colors ${
                       mode === 'focus'
-                        ? 'bg-teal-500 hover:bg-teal-600'
+                        ? 'bg-primary-500 hover:bg-primary-600'
                         : 'bg-amber-500 hover:bg-amber-600'
                     }`}
                     whileHover={{ scale: 1.05 }}
@@ -360,11 +363,11 @@ const PomodoroTimer = memo(() => {
                 <div className="bg-slate-50 rounded-xl p-3 text-sm">
                   <div className="flex items-center justify-between text-slate-600">
                     <span>Ciclos hoje:</span>
-                    <span className="font-bold text-slate-900">{cyclesCompleted}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{cyclesCompleted}</span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-600 mt-1">
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mt-1">
                     <span>Tempo estudado:</span>
-                    <span className="font-bold text-teal-600">{formatHours(totalMinutesToday)}</span>
+                    <span className="font-bold text-primary-600 dark:text-primary-400">{formatHours(totalMinutesToday)}</span>
                   </div>
                 </div>
               </div>

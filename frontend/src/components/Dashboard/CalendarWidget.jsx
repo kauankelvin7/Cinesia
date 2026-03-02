@@ -1,12 +1,20 @@
+/**
+ * CalendarWidget — Flat calendar + upcoming events
+ * 
+ * Renders WITHOUT its own card wrapper — the parent provides the card.
+ * Uses calendar-container-compact CSS class for compact sizing.
+ */
+
 import { useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { Plus, CalendarDays, Trash2 } from 'lucide-react';
+import '../../styles/calendar.css';
+import { CalendarDays, Trash2 } from 'lucide-react';
 
-const CalendarWidget = ({ eventos = [], onAddEvento, onOpenAddModal, onClickDay, onDeleteEvento }) => {
+const CalendarWidget = ({ eventos = [], onOpenAddModal, onClickDay, onDeleteEvento }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Verifica se uma data tem eventos
+  // Check if date has events
   const hasEventOnDate = (date) => {
     return eventos.some(evento => {
       const eventoDate = evento.data?.toDate?.() || new Date(evento.data);
@@ -18,220 +26,107 @@ const CalendarWidget = ({ eventos = [], onAddEvento, onOpenAddModal, onClickDay,
     });
   };
 
-  // Customiza os tiles do calendário
+  // Event dot indicator on tiles
   const tileContent = ({ date, view }) => {
     if (view === 'month' && hasEventOnDate(date)) {
       return (
-        <div className="flex justify-center mt-1">
-          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+        <div className="flex justify-center mt-0.5">
+          <div className="w-1 h-1 bg-primary-500 rounded-full" />
         </div>
       );
     }
     return null;
   };
 
-  // Filtra e ordena próximos eventos
+  // Upcoming events (sorted, max 3)
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  
+
   const proximosEventos = eventos
     .map(evento => ({
       ...evento,
-      dataObj: evento.data?.toDate?.() || new Date(evento.data)
+      dataObj: evento.data?.toDate?.() || new Date(evento.data),
     }))
     .filter(evento => evento.dataObj >= hoje)
     .sort((a, b) => a.dataObj - b.dataObj)
     .slice(0, 3);
 
-  // Handler para adicionar evento - Abre o modal customizado
-  const handleAddEvento = () => {
-    if (onOpenAddModal) {
-      onOpenAddModal(selectedDate);
-    }
-  };
-
-  // Handler para clique em um dia específico
   const handleDayClick = (date) => {
     setSelectedDate(date);
-    if (onClickDay) {
-      onClickDay(date);
-    }
-  };
-
-  // Formata data para exibição
-  const formatarData = (date) => {
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short'
-    });
+    if (onClickDay) onClickDay(date);
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 transition-colors">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <CalendarDays className="w-4 h-4 text-teal-600" />
-          <h3 className="text-sm font-semibold text-slate-800">
-            Calendario
-          </h3>
-        </div>
-        <button
-          onClick={handleAddEvento}
-          className="p-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white rounded-lg transition-all shadow-sm"
-          title="Adicionar Evento"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
-      </div>
+    <div className="calendar-container-compact">
+      {/* Calendar grid */}
+      <Calendar
+        onChange={setSelectedDate}
+        onClickDay={handleDayClick}
+        value={selectedDate}
+        tileContent={tileContent}
+        locale="pt-BR"
+        className="w-full border-none"
+      />
 
-      {/* Calendar */}
-      <div className="agenda-calendar text-xs">
-        <Calendar
-          onChange={setSelectedDate}
-          onClickDay={handleDayClick}
-          value={selectedDate}
-          tileContent={tileContent}
-          locale="pt-BR"
-          className="w-full border-none text-xs"
-        />
-      </div>
-
-      {/* Próximos Eventos */}
-      <div className="border-t border-gray-200 pt-4">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+      {/* Upcoming events */}
+      <div className="mt-5 pt-4 border-t border-slate-200/60 dark:border-slate-700/50">
+        <h4 className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
           Próximos Eventos
         </h4>
-        
+
         {proximosEventos.length > 0 ? (
           <div className="space-y-2">
             {proximosEventos.map((evento, index) => (
               <div
                 key={evento.id || index}
-                className="group flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="group flex items-center gap-3 p-2.5 bg-slate-50/80 dark:bg-slate-700/40 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/70 transition-colors"
               >
-                <div className="flex-shrink-0 w-12 text-center">
-                  <div className="text-xs font-semibold text-blue-600">
-                    {formatarData(evento.dataObj)}
-                  </div>
+                {/* Date badge */}
+                <div className="flex-shrink-0 w-10 h-10 bg-primary-50 dark:bg-primary-950/80 rounded-lg flex flex-col items-center justify-center border border-primary-100 dark:border-primary-900/50">
+                  <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400 leading-none">
+                    {evento.dataObj.getDate()}
+                  </span>
+                  <span className="text-[8px] text-primary-500 dark:text-primary-400 uppercase leading-none mt-0.5">
+                    {evento.dataObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                  </span>
                 </div>
+
+                {/* Event info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                     {evento.titulo || evento.title}
                   </p>
                   {evento.tipo && (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       {evento.tipo}
                     </p>
                   )}
                 </div>
+
+                {/* Delete button */}
                 {onDeleteEvento && evento.id && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteEvento(evento);
-                    }}
-                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 text-red-500 hover:text-red-600 transition-all"
+                    onClick={(e) => { e.stopPropagation(); onDeleteEvento(evento); }}
+                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-950 text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-all"
                     title="Excluir evento"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 text-center py-4">
-            Nenhum evento próximo
-          </p>
+          <div className="text-center py-5">
+            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700/60 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <CalendarDays size={18} className="text-slate-300 dark:text-slate-500" />
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Nenhum evento próximo
+            </p>
+          </div>
         )}
       </div>
-
-      <style>{`
-        .calendar-widget :global(.react-calendar) {
-          background: transparent;
-          border: none;
-          font-family: inherit;
-        }
-
-        .calendar-widget :global(.react-calendar__navigation button) {
-          color: #1f2937;
-          min-width: 44px;
-          background: none;
-          font-size: 16px;
-          margin-top: 8px;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__navigation button) {
-          color: #f9fafb;
-        }
-
-        .calendar-widget :global(.react-calendar__navigation button:enabled:hover) {
-          background-color: #f3f4f6;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__navigation button:enabled:hover) {
-          background-color: #334155;
-        }
-
-        .calendar-widget :global(.react-calendar__month-view__weekdays) {
-          text-transform: uppercase;
-          font-weight: 500;
-          font-size: 0.75rem;
-          color: #6b7280;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__month-view__weekdays) {
-          color: #9ca3af;
-        }
-
-        .calendar-widget :global(.react-calendar__tile) {
-          color: #374151;
-          padding: 0.75rem 0.5rem;
-          background: none;
-          font-size: 0.875rem;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__tile) {
-          color: #e5e7eb;
-        }
-
-        .calendar-widget :global(.react-calendar__tile:enabled:hover) {
-          background-color: #dbeafe;
-          border-radius: 0.5rem;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__tile:enabled:hover) {
-          background-color: #1e3a8a;
-        }
-
-        .calendar-widget :global(.react-calendar__tile--active) {
-          background: #2563eb;
-          color: white;
-          border-radius: 0.5rem;
-        }
-
-        .calendar-widget :global(.react-calendar__tile--active:enabled:hover) {
-          background: #1d4ed8;
-        }
-
-        .calendar-widget :global(.react-calendar__tile--now) {
-          background: #fef3c7;
-          border-radius: 0.5rem;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__tile--now) {
-          background: #78350f;
-        }
-
-        .calendar-widget :global(.react-calendar__tile--now:enabled:hover) {
-          background: #fde68a;
-        }
-
-        :global(.dark) .calendar-widget :global(.react-calendar__tile--now:enabled:hover) {
-          background: #92400e;
-        }
-      `}</style>
     </div>
   );
 };

@@ -49,8 +49,7 @@ const SafeIcon = ({
     }
 
     // Se ainda não encontrou, usa fallback
-    if (!IconComponent || typeof IconComponent !== 'function') {
-      console.warn(`Ícone "${name}" não encontrado. Usando fallback.`);
+    if (!IconComponent || (typeof IconComponent !== 'function' && typeof IconComponent !== 'object')) {
       IconComponent = FallbackIcon;
     }
 
