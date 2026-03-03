@@ -556,9 +556,9 @@ function Simulado() {
         >
           <div className="flex items-center gap-4 mb-4">
             <motion.div 
-              className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center"
+              className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center"
             >
-              <BookOpen size={32} className="text-indigo-600" />
+              <BookOpen size={32} className="text-indigo-600 dark:text-indigo-400" />
             </motion.div>
             <div>
               <h1 className="text-2xl ipad:text-3xl font-semibold text-slate-900 dark:text-white">
@@ -583,8 +583,8 @@ function Simulado() {
               className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-8"
             >
               <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <Target size={40} className="text-indigo-600" />
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <Target size={40} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                   Gere Questões com IA
@@ -650,7 +650,7 @@ function Simulado() {
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                               tema === t
                                 ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700'
+                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-300'
                             }`}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -683,14 +683,14 @@ function Simulado() {
                         onClick={() => fileInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                           isDragOver
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/50'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-400'
+                            : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20'
                         }`}
                       >
-                        <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <Upload size={32} className="text-indigo-600" />
+                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Upload size={32} className="text-indigo-600 dark:text-indigo-400" />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 font-semibold mb-2">
+                        <p className="text-slate-700 dark:text-slate-200 font-semibold mb-2">
                           Arraste um PDF aqui ou clique para selecionar
                         </p>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -699,7 +699,7 @@ function Simulado() {
                       </div>
                     ) : (
                       /* Arquivo selecionado */
-                      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                      <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center shadow-sm">
@@ -729,7 +729,7 @@ function Simulado() {
                         </div>
                         
                         {isExtractingPdf && (
-                          <div className="mt-4 flex items-center gap-2 text-indigo-600">
+                          <div className="mt-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
                             <Loader2 size={16} className="animate-spin" />
                             <span className="text-sm">Extraindo texto do PDF...</span>
                           </div>
@@ -743,7 +743,7 @@ function Simulado() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
+                    className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400"
                   >
                     <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
                     <p className="text-sm">{error}</p>
@@ -778,14 +778,14 @@ function Simulado() {
                 <div className="relative w-32 h-32 mx-auto mb-8">
                   {/* Círculo externo girando */}
                   <motion.div
-                    className="absolute inset-0 rounded-full border-4 border-indigo-200 border-t-indigo-600"
+                    className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
                   
                   {/* Círculo interno girando */}
                   <motion.div
-                    className="absolute inset-4 rounded-full border-4 border-purple-200 border-t-purple-600"
+                    className="absolute inset-4 rounded-full border-4 border-purple-200 dark:border-purple-900 border-t-purple-600 dark:border-t-purple-400"
                     animate={{ rotate: -360 }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                   />
@@ -796,7 +796,7 @@ function Simulado() {
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <Zap size={40} className="text-indigo-600" />
+                    <Zap size={40} className="text-indigo-600 dark:text-indigo-400" />
                   </motion.div>
                 </div>
 
@@ -818,13 +818,13 @@ function Simulado() {
                 {/* Etapas do processo (animadas sequencialmente) */}
                 <div className="space-y-3 max-w-md mx-auto">
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 }}
                   >
                     <motion.div
-                      className="w-2 h-2 rounded-full bg-indigo-600"
+                      className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400"
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity }}
                     />
@@ -832,13 +832,13 @@ function Simulado() {
                   </motion.div>
 
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 }}
                   >
                     <motion.div
-                      className="w-2 h-2 rounded-full bg-purple-600"
+                      className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400"
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
                     />
@@ -846,13 +846,13 @@ function Simulado() {
                   </motion.div>
 
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.8 }}
                   >
                     <motion.div
-                      className="w-2 h-2 rounded-full bg-indigo-600"
+                      className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400"
                       animate={{ scale: [1, 1.5, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
                     />
@@ -891,7 +891,7 @@ function Simulado() {
                     {tema}
                   </span>
                 </div>
-                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-indigo-500"
                     initial={{ width: 0 }}
@@ -907,10 +907,10 @@ function Simulado() {
                 layout
               >
                 {/* Pergunta */}
-                <div className="p-6 ipad:p-8 border-b border-slate-100">
+                <div className="p-6 ipad:p-8 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-indigo-600 font-bold">{currentIndex + 1}</span>
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center flex-shrink-0">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">{currentIndex + 1}</span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white leading-relaxed">
                       {questaoAtual.pergunta}
@@ -925,17 +925,17 @@ function Simulado() {
                     const isCorrect = questaoAtual.correta === idx;
                     const showFeedback = hasAnswered;
                     
-                    let optionStyle = 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 hover:bg-indigo-50';
+                    let optionStyle = 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30';
                     if (showFeedback) {
                       if (isCorrect) {
-                        optionStyle = 'border-emerald-500 bg-emerald-50';
+                        optionStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-400';
                       } else if (isSelected && !isCorrect) {
-                        optionStyle = 'border-red-500 bg-red-50';
+                        optionStyle = 'border-red-500 bg-red-50 dark:bg-red-950/30 dark:border-red-400';
                       } else {
                         optionStyle = 'border-slate-200 dark:border-slate-700 opacity-60';
                       }
                     } else if (isSelected) {
-                      optionStyle = 'border-indigo-500 bg-indigo-50';
+                      optionStyle = 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-400';
                     }
 
                     return (
@@ -969,9 +969,9 @@ function Simulado() {
                           </div>
                           <span className={`flex-1 ${
                             showFeedback && isCorrect
-                              ? 'text-emerald-800 dark:text-emerald-300 font-medium'
+                              ? 'text-emerald-800 dark:text-emerald-200 font-medium'
                               : showFeedback && isSelected && !isCorrect
-                              ? 'text-red-800 dark:text-red-300'
+                              ? 'text-red-800 dark:text-red-200'
                               : 'text-slate-700 dark:text-slate-300'
                           }`}>
                             {opcao}
@@ -1048,7 +1048,7 @@ function Simulado() {
               <motion.div
                 className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 ${
                   percentual >= 80
-                    ? 'bg-amber-50 text-amber-600'
+                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
                     : percentual >= 60
                     ? 'bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400'
                     : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
@@ -1091,7 +1091,7 @@ function Simulado() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                <div className="h-4 bg-slate-200 rounded-full overflow-hidden max-w-md mx-auto">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden max-w-md mx-auto">
                   <motion.div
                     className={`h-full rounded-full ${
                       percentual >= 80

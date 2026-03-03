@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -12,8 +13,6 @@ import {
   Moon,
   Monitor,
   Bell,
-  HelpCircle,
-  Newspaper,
   LogOut,
   ChevronRight,
 } from 'lucide-react';
@@ -99,6 +98,7 @@ MenuItem.displayName = 'MenuItem';
 /* ── Main Component ──────────────────────────── */
 const UserMenu = ({ onOpenProfile, className = '' }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -133,13 +133,24 @@ const UserMenu = ({ onOpenProfile, className = '' }) => {
         className="w-full p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-150 group text-left"
         aria-haspopup="menu"
         aria-expanded={open}
+        title={`${user?.displayName || 'Usuário'} — ${user?.email || ''}`}
       >
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold text-sm">
-              {initial}
-            </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full" />
+          <div className="relative shrink-0">
+            {/* Avatar com foto real do usuário (user.photoURL) ou fallback com gradiente */}
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'Avatar'}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-cyan-500/40"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                {initial}
+              </div>
+            )}
+            {/* Indicador de status online */}
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
@@ -179,8 +190,8 @@ const UserMenu = ({ onOpenProfile, className = '' }) => {
             </div>
 
             <div className="p-1.5">
-              <MenuItem icon={User} label="Meu Perfil" onClick={() => { setOpen(false); onOpenProfile?.(); }} />
-              <MenuItem icon={Settings} label="Configurações" onClick={() => setOpen(false)} />
+              <MenuItem icon={User} label="Meu Perfil" onClick={() => { setOpen(false); navigate('/meu-perfil'); }} />
+              <MenuItem icon={Settings} label="Configurações" onClick={() => { setOpen(false); navigate('/configuracoes'); }} />
             </div>
 
             {/* Theme segmented */}
@@ -194,9 +205,7 @@ const UserMenu = ({ onOpenProfile, className = '' }) => {
             <Divider />
 
             <div className="p-1.5">
-              <MenuItem icon={Bell} label="Notificações" onClick={() => setOpen(false)} />
-              <MenuItem icon={HelpCircle} label="Ajuda & Suporte" onClick={() => setOpen(false)} />
-              <MenuItem icon={Newspaper} label="Novidades" badge="NOVO" onClick={() => setOpen(false)} />
+              <MenuItem icon={Bell} label="Notificações" onClick={() => { setOpen(false); navigate('/notificacoes'); }} />
             </div>
 
             <Divider />

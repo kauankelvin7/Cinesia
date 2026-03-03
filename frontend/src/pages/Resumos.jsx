@@ -1,16 +1,17 @@
-﻿/**
+/**
  *  RESUMOS - Biblioteca de Estudos Premium
  * 
- * Editor rico com React Quill para criação de resumos formatados
+ * Editor rico com React Quill para cria��o de resumos formatados
  * Features:
  * - Editor de texto rico (bold, listas, cores)
  * - Busca em tempo real
- * - Filtro por matéria
+ * - Filtro por mat�ria
  * - Grid responsivo com preview
- * - Modal full-screen para edição
+ * - Modal full-screen para edi��o
  */
 
 import React, { useState, useEffect, Suspense, lazy, memo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,7 +35,12 @@ import {
   FileText,
   X,
   Calendar,
-  ClipboardList
+  ClipboardList,
+  BookOpen,
+  Lightbulb,
+  PenTool,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import { 
   listarResumos, 
@@ -49,7 +55,7 @@ import { Input, Select } from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
-// Configuração do Editor Quill
+// Configura��o do Editor Quill
 const quillModules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
@@ -62,46 +68,46 @@ const quillModules = {
 
 const quillFormats = ['header', 'bold', 'italic', 'list', 'bullet', 'color'];
 
-// Template de Caso Clínico para Fisioterapia
-const TEMPLATE_CASO_CLINICO = `<h2>📋 Caso Clínico</h2>
+// Template de Caso Cl�nico para Fisioterapia
+const TEMPLATE_CASO_CLINICO = `<h2>? Caso Cl�nico</h2>
 
 <h3>Queixa Principal</h3>
 <p>Descreva a queixa principal do paciente...</p>
 
-<h3>Histórico da Moléstia Atual (HMA)</h3>
-<p>Evolução dos sintomas, início, fatores de melhora/piora...</p>
+<h3>Hist�rico da Mol�stia Atual (HMA)</h3>
+<p>Evolu��o dos sintomas, in�cio, fatores de melhora/piora...</p>
 
-<h3>Avaliação Física</h3>
+<h3>Avalia��o F�sica</h3>
 <ul>
-<li><strong>Inspeção:</strong> </li>
-<li><strong>Palpação:</strong> </li>
+<li><strong>Inspe��o:</strong> </li>
+<li><strong>Palpa��o:</strong> </li>
 <li><strong>Amplitude de Movimento:</strong> </li>
-<li><strong>Força Muscular:</strong> </li>
+<li><strong>For�a Muscular:</strong> </li>
 <li><strong>Testes Especiais:</strong> </li>
 </ul>
 
-<h3>Diagnóstico Cinético-Funcional</h3>
-<p>Conclusão baseada na avaliação...</p>
+<h3>Diagn�stico Cin�tico-Funcional</h3>
+<p>Conclus�o baseada na avalia��o...</p>
 
 <h3>Objetivos de Tratamento</h3>
 <ul>
 <li><strong>Curto Prazo:</strong> </li>
-<li><strong>Médio Prazo:</strong> </li>
+<li><strong>M�dio Prazo:</strong> </li>
 <li><strong>Longo Prazo:</strong> </li>
 </ul>
 
 <h3>Plano de Tratamento</h3>
-<p>Condutas e intervenções planejadas...</p>
+<p>Condutas e interven��es planejadas...</p>
 `;
 
-// Função auxiliar para remover HTML tags
+// Fun��o auxiliar para remover HTML tags
 const stripHtml = (html) => {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || '';
 };
 
-// Função para formatar data
+// Fun��o para formatar data
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -110,23 +116,33 @@ const formatDate = (timestamp) => {
 
 function Resumos() {
   const { user } = useAuth();
+  const location = useLocation();
   const [resumos, setResumos] = useState([]);
   const [resumosFiltrados, setResumosFiltrados] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [viewingResumo, setViewingResumo] = useState(null); // Novo estado para visualização
+  const [viewingResumo, setViewingResumo] = useState(null); // Novo estado para visualiza��o
   const [modalMode, setModalMode] = useState('edit'); // 'edit' ou 'view'
-  const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualização
+  const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualiza��o
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMateria, setSelectedMateria] = useState('all');
   const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
   const [error, setError] = useState(null);
 
-  // Estado do Modal de Confirmação
+  // Estado do Modal de Confirma��o
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Auto-open new resumo modal from Home quick action
+  useEffect(() => {
+    if (location.state?.openNew && !loading) {
+      setShowModal(true);
+      // Clear the state so it doesn't re-open on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, loading]);
 
   useEffect(() => {
     if (user) carregarDados();
@@ -159,7 +175,7 @@ function Resumos() {
       setMaterias(materiasData);
       setError(null);
     } catch (err) {
-      setError('Não conseguimos carregar seus dados. Tente novamente em instantes.');
+      setError('N�o conseguimos carregar seus dados. Tente novamente em instantes.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao carregar dados:', err);
       }
@@ -171,7 +187,7 @@ function Resumos() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.titulo.trim() || !formData.conteudo.trim()) {
-      setError('Título e conteúdo são obrigatórios');
+      setError('T�tulo e conte�do s�o obrigat�rios');
       return;
     }
     try {
@@ -186,8 +202,8 @@ function Resumos() {
       setError(null);
       toast.success(editingId ? 'Resumo atualizado com sucesso!' : 'Resumo criado com sucesso!');
     } catch (err) {
-      setError('Não foi possível salvar o resumo. Tente novamente.');
-      toast.error('Não foi possível salvar o resumo.');
+      setError('N�o foi poss�vel salvar o resumo. Tente novamente.');
+      toast.error('N�o foi poss�vel salvar o resumo.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao salvar resumo:', err);
       }
@@ -226,10 +242,10 @@ function Resumos() {
       await deletarResumo(confirmDelete.id);
       await carregarDados();
       setError(null);
-      toast.success('Resumo excluído com sucesso.');
+      toast.success('Resumo exclu�do com sucesso.');
     } catch (err) {
-      setError('Não foi possível excluir o resumo. Tente novamente.');
-      toast.error('Não foi possível excluir o resumo.');
+      setError('N�o foi poss�vel excluir o resumo. Tente novamente.');
+      toast.error('N�o foi poss�vel excluir o resumo.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao excluir resumo:', err);
       }
@@ -249,7 +265,7 @@ function Resumos() {
 
   const getMateriaInfo = (materiaId) => {
     const materia = materias.find(m => m.id === materiaId);
-    return materia || { nome: 'Sem matéria', cor: '#94A3B8' };
+    return materia || { nome: 'Sem mat�ria', cor: '#94A3B8' };
   };
 
   if (loading) {
@@ -276,7 +292,7 @@ function Resumos() {
           </div>
           <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:lg:grid-cols-3 ipad:xl:grid-cols-4 gap-6 ipad:gap-8">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm h-[280px] flex flex-col" style={{animationDelay:`${i*80}ms`}}>
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm h-70 flex flex-col" style={{animationDelay:`${i*80}ms`}}>
                 <div className="p-5 flex-1">
                   <div className="h-5 w-24 bg-violet-50 rounded-full animate-pulse mb-4" />
                   <div className="h-5 w-3/4 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse mb-3" />
@@ -325,7 +341,7 @@ function Resumos() {
             </div>
             <div className="w-full sm:w-64">
               <Select value={selectedMateria} onChange={(e) => setSelectedMateria(e.target.value)}>
-                <option value="all">Todas as Matérias</option>
+                <option value="all">Todas as Mat�rias</option>
                 {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
               </Select>
             </div>
@@ -338,20 +354,90 @@ function Resumos() {
         </motion.div>
 
         {resumosFiltrados.length === 0 ? (
-          <motion.div className="text-center py-20" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-            <div className="w-20 h-20 bg-violet-50 dark:bg-violet-950 rounded-2xl flex items-center justify-center mx-auto mb-5">
-              <FileText size={40} className="text-violet-600 dark:text-violet-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              {searchTerm || selectedMateria !== 'all' ? 'Nenhum resumo encontrado' : 'Sua biblioteca começa aqui \u2728'}
-            </h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-              {searchTerm || selectedMateria !== 'all' ? 'Tente ajustar os filtros de busca' : 'Resumos são como mapas do conhecimento. Crie seu primeiro e comece a organizar seus estudos!'}
-            </p>
-            {!searchTerm && selectedMateria === 'all' && (
-              <Button variant="primary" size="lg" leftIcon={<Plus size={20} />} onClick={() => setShowModal(true)}>
-                Criar Primeiro Resumo
-              </Button>
+          <motion.div className="text-center py-16" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+            {searchTerm || selectedMateria !== 'all' ? (
+              <>
+                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <Search size={36} className="text-slate-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Nenhum resumo encontrado
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-4 max-w-md mx-auto">
+                  Tente ajustar os filtros de busca
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 bg-violet-50 dark:bg-violet-950 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                  <FileText size={40} className="text-violet-600 dark:text-violet-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Sua biblioteca come�a aqui ?
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                  Resumos s�o como mapas do conhecimento. Crie seu primeiro e organize seus estudos!
+                </p>
+
+                {/* Onboarding Steps */}
+                <div className="max-w-xl mx-auto mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                  <motion.div
+                    className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center mb-3">
+                      <span className="text-sm font-bold text-violet-600 dark:text-violet-400">1</span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Clique em "Novo Resumo"</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Use o bot�o acima para abrir o editor</p>
+                  </motion.div>
+
+                  <motion.div
+                    className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-3">
+                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400">2</span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Escreva ou use template</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Formate com negrito, listas, cores e mais</p>
+                  </motion.div>
+
+                  <motion.div
+                    className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-3">
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">3</span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Organize por mat�ria</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Vincule a uma mat�ria para f�cil acesso</p>
+                  </motion.div>
+                </div>
+
+                {/* CTA + Tip */}
+                <Button variant="primary" size="lg" leftIcon={<Plus size={20} />} onClick={() => setShowModal(true)}>
+                  Criar Primeiro Resumo
+                </Button>
+
+                <motion.div
+                  className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-100 dark:border-amber-900/40"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Dica: Use o template de "Caso Cl�nico" para estruturar rapidamente!
+                  </p>
+                </motion.div>
+              </>
             )}
           </motion.div>
         ) : (
@@ -372,11 +458,11 @@ function Resumos() {
                   variants={cardItemVariants}
                   whileHover={{ y: -3, transition: { duration: 0.15 } }}
                 >
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full flex flex-col min-h-[280px]">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full flex flex-col min-h-70">
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <Badge color={materiaInfo.cor} size="sm">
-                          <span className="truncate block max-w-[140px]">{materiaInfo.nome}</span>
+                          <span className="truncate block max-w-35">{materiaInfo.nome}</span>
                         </Badge>
                         <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button onClick={() => handleEdit(resumo)} className="p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 text-slate-400 sm:text-purple-600 sm:dark:text-purple-400 transition-colors active:scale-95" title="Editar">
@@ -416,14 +502,14 @@ function Resumos() {
 
         <AnimatePresence>
           {showModal && (
-            <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
+            <motion.div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
               <motion.div className="bg-white dark:bg-slate-900 rounded-2xl shadow-md w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none print:shadow-none" initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800 print:bg-white print:border-none">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center print:bg-white print:shadow-none">
                       <FileText size={18} className="text-violet-600 print:text-violet-700" />
                     </div>
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualização do Resumo'}</h2>
+                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualiza��o do Resumo'}</h2>
                   </div>
                   <div className="flex gap-2">
                     {modalMode === 'edit' && (
@@ -434,7 +520,7 @@ function Resumos() {
                             titulo: formData.titulo,
                             conteudo: formData.conteudo,
                             materiaId: formData.materiaId,
-                            createdAt: viewingResumo?.createdAt // mantém data se já existia
+                            createdAt: viewingResumo?.createdAt // mant�m data se j� existia
                           });
                         }}
                         className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors print:hidden"
@@ -494,15 +580,15 @@ function Resumos() {
                   <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
-                        <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
-                          <option value="">Selecione uma matéria</option>
+                        <Input label="T�tulo do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
+                        <Select label="Mat�ria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
+                          <option value="">Selecione uma mat�ria</option>
                           {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
                         </Select>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
+                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Conte�do do Resumo<span className="text-red-500 ml-1">*</span></label>
                           {!editingId && (
                             <motion.button
                               type="button"
@@ -512,7 +598,7 @@ function Resumos() {
                               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                             >
                               <ClipboardList size={16} />
-                              Usar Template Caso Clínico
+                              Usar Template Caso Cl�nico
                             </motion.button>
                           )}
                         </div>
@@ -533,7 +619,7 @@ function Resumos() {
                 ) : (
                   <div className="flex-1 overflow-y-auto print:overflow-visible">
                     <div className="p-8 print:p-0 max-w-3xl mx-auto" style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}>
-                      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem título'}</h1>
+                      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem t�tulo'}</h1>
                       <div className="mb-4 flex gap-2 items-center print:mb-2">
                         <Badge color={getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).cor} size="sm">
                           <span>{getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).nome}</span>
@@ -543,7 +629,7 @@ function Resumos() {
                       <div 
                         className="prose prose-purple max-w-none print:prose print:prose-sm"
                         style={{ wordBreak: 'break-word', fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}
-                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conteúdo</p>' }}
+                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conte�do</p>' }}
                       />
                     </div>
                   </div>
@@ -554,7 +640,7 @@ function Resumos() {
         </AnimatePresence>
       </div>
 
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Modal de Confirma��o de Exclus�o */}
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null, nome: '' })}

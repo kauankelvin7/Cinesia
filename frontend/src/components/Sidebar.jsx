@@ -1,6 +1,7 @@
 /**
  * SIDEBAR — Premium SaaS Navigation
  * Dark mode, collapsible, modern styling
+ * Avatar com foto real do usuário no rodapé
  */
 
 import React, { useState, memo } from 'react';
@@ -14,6 +15,7 @@ import {
   ClipboardList,
   PenTool,
   Bone,
+  ChevronRight,
 } from 'lucide-react';
 import Logo from './Logo';
 import ProfileModal from './ProfileModal';
@@ -60,7 +62,7 @@ const Sidebar = memo(() => {
             >
               {({ isActive }) => (
                 <>
-                  <link.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className="flex-shrink-0" />
+                  <link.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
                   <span>{link.label}</span>
                   {isActive && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500" />
@@ -71,7 +73,7 @@ const Sidebar = memo(() => {
           ))}
         </nav>
 
-        {/* Dark mode toggle + User section */}
+        {/* User section with real photo */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800">
           <UserMenu onOpenProfile={() => setIsProfileOpen(true)} />
 

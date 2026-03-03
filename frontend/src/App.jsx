@@ -34,6 +34,9 @@ const Simulado = lazy(() => import('./pages/Simulado'));
 const ConsultaRapida = lazy(() => import('./pages/ConsultaRapida'));
 const QuadroBranco = lazy(() => import('./pages/QuadroBranco'));
 const Atlas3D = lazy(() => import('./pages/Atlas3D'));
+const Notificacoes = lazy(() => import('./pages/Notificacoes'));
+const Configuracoes = lazy(() => import('./pages/Configuracoes'));
+const MeuPerfil = lazy(() => import('./pages/MeuPerfil'));
 
 // Componente de rota protegida
 const ProtectedRoute = ({ children }) => {
@@ -78,6 +81,9 @@ function AppContent() {
                     <Route path="/consulta-rapida" element={<ConsultaRapida />} />
                     <Route path="/quadro-branco" element={<QuadroBranco />} />
                     <Route path="/atlas-3d" element={<Atlas3D />} />
+                    <Route path="/notificacoes" element={<Notificacoes />} />
+                    <Route path="/configuracoes" element={<Configuracoes />} />
+                    <Route path="/meu-perfil" element={<MeuPerfil />} />
                   </Routes>
                 </Suspense>
               </Layout>

@@ -149,6 +149,10 @@
 ::-webkit-scrollbar-thumb { background: #CDD4DB; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #9BA5B1; }
 
+/* Scrollbar hide utility — para docks de scroll horizontal */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* Spinner fallback */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner {

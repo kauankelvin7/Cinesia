@@ -523,7 +523,7 @@ function Flashcards() {
               {selectedMateria === 'all' ? 'Pronto para memorizar? \u{1F9E0}' : 'Nenhum flashcard nesta mat\u00e9ria'}
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-              Flashcards s\u00e3o a melhor forma de fixar conte\u00fado. Crie o primeiro e comece a revisar!
+              Flashcards são a melhor forma de fixar um conteúdo. Crie o primeiro e comece a revisar!
             </p>
             <Button
               variant="primary"

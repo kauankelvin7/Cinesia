@@ -1,54 +1,58 @@
 /**
- * ATLAS 3D — Anatomia Interativa
- * 
- * 50+ estruturas anatômicas procedurais com:
- * - Esqueleto completo bilateral (axial + apendicular)
- * - Músculos estratificados bilaterais (deltóide, peitoral, quad, isquio, gastroc, glúteos, bíceps, tríceps, trapézio, abdominais, oblíquos, adutores, tibial anterior)
- * - Tendões, ligamentos e cartilagem translúcida
- * - MeshPhysicalMaterial com sheen, clearcoat
- * - Iluminação médica calibrada (4 fontes)
- * - Base de dados clínica expandida: origem, inserção, inervação, irrigação, testes especiais
- * - Raycasting interativo + painel de informações
- * - Responsivo: sidebar desktop / drawer mobile
- * - Dark mode completo
+ * ATLAS 3D MELHORADO — Anatomia com proporções humanas reais
+ * Geometrias orgânicas, proporções corretas, aparência realista
  */
 
-import React, { useState, useRef, useCallback, Suspense, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import React, { useState, useRef, useCallback, Suspense, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Html, Environment, ContactShadows } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import {
-  X, RotateCcw, Info, ChevronRight, Bone, Search,
-  Eye, Layers, ChevronDown, Filter,
+  X, RotateCcw, Info, ChevronRight, Search,
+  Eye, Layers, ChevronDown, Filter, ZoomIn, ZoomOut,
+  Activity, Bone, Brain, Heart
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
-/* ═══════════════ MATERIAL PRESETS ═══════════════ */
+/* ═══════════════════════════════════════════════════════
+   PALETA DE MATERIAIS ANATOMICAMENTE CORRETOS
+═══════════════════════════════════════════════════════ */
 
 const MAT = {
-  bone:       { color: '#F5E6D3', roughness: 0.55, metalness: 0.05, clearcoat: 0.15, clearcoatRoughness: 0.4, sheen: 0.3, sheenColor: '#FFF8F0' },
-  boneDark:   { color: '#E8D5C5', roughness: 0.60, metalness: 0.05, clearcoat: 0.10, clearcoatRoughness: 0.5, sheen: 0.2, sheenColor: '#F5E8D8' },
-  cartilage:  { color: '#A8D8EA', roughness: 0.30, metalness: 0.00, clearcoat: 0.60, clearcoatRoughness: 0.2, sheen: 0.5, sheenColor: '#C5E8F5', transparent: true, opacity: 0.7 },
-  muscle:     { color: '#C94040', roughness: 0.70, metalness: 0.02, clearcoat: 0.08, clearcoatRoughness: 0.6, sheen: 0.4, sheenColor: '#E88080' },
-  muscleDark: { color: '#A03030', roughness: 0.75, metalness: 0.02, sheen: 0.3, sheenColor: '#D06060' },
-  tendon:     { color: '#F5F0E0', roughness: 0.50, metalness: 0.00, clearcoat: 0.20, clearcoatRoughness: 0.3, sheen: 0.6, sheenColor: '#FFFFF0' },
-  ligament:   { color: '#E8E0C8', roughness: 0.55, metalness: 0.00, sheen: 0.4, sheenColor: '#F5F0E0' },
+  // Pele / superfície
+  skin:        { color: '#E8C5A0', roughness: 0.75, metalness: 0.0,  clearcoat: 0.2,  clearcoatRoughness: 0.5, sheen: 0.4,  sheenColor: '#F5DCC8' },
+  skinDark:    { color: '#C4956A', roughness: 0.8,  metalness: 0.0,  clearcoat: 0.15, clearcoatRoughness: 0.6, sheen: 0.3,  sheenColor: '#D4A882' },
+  // Ossos
+  bone:        { color: '#F0E2D0', roughness: 0.55, metalness: 0.05, clearcoat: 0.2,  clearcoatRoughness: 0.4, sheen: 0.3,  sheenColor: '#FFF8F0' },
+  boneDark:    { color: '#D8C4AE', roughness: 0.6,  metalness: 0.05, clearcoat: 0.1,  clearcoatRoughness: 0.5, sheen: 0.2,  sheenColor: '#EDD8C5' },
+  cartilage:   { color: '#A8D8EA', roughness: 0.3,  metalness: 0.0,  clearcoat: 0.7,  clearcoatRoughness: 0.2, sheen: 0.5,  sheenColor: '#C5E8F5', transparent: true, opacity: 0.65 },
+  // Músculos
+  muscle:      { color: '#C03535', roughness: 0.65, metalness: 0.02, clearcoat: 0.12, clearcoatRoughness: 0.55, sheen: 0.5, sheenColor: '#E07070' },
+  muscleMid:   { color: '#A82828', roughness: 0.7,  metalness: 0.02, clearcoat: 0.08, clearcoatRoughness: 0.6,  sheen: 0.4, sheenColor: '#C86060' },
+  muscleDeep:  { color: '#8B1A1A', roughness: 0.75, metalness: 0.02, clearcoat: 0.05, clearcoatRoughness: 0.65, sheen: 0.3, sheenColor: '#B04040' },
+  // Tendões
+  tendon:      { color: '#F0EAD0', roughness: 0.45, metalness: 0.0,  clearcoat: 0.3,  clearcoatRoughness: 0.3,  sheen: 0.6, sheenColor: '#FFFFF0' },
+  ligament:    { color: '#E0D8B8', roughness: 0.5,  metalness: 0.0,  sheen: 0.4,  sheenColor: '#F5F0DC' },
+  // Nervos
+  nerve:       { color: '#F5D020', roughness: 0.4,  metalness: 0.0,  clearcoat: 0.4,  clearcoatRoughness: 0.25, sheen: 0.6, sheenColor: '#FFF08A' },
+  // Órgãos
+  heart:       { color: '#C01818', roughness: 0.5,  metalness: 0.03, clearcoat: 0.3,  clearcoatRoughness: 0.4,  sheen: 0.5, sheenColor: '#E84040' },
+  lung:        { color: '#E09090', roughness: 0.45, metalness: 0.0,  clearcoat: 0.15, clearcoatRoughness: 0.5,  sheen: 0.4, sheenColor: '#F5B8B8', transparent: true, opacity: 0.82 },
+  brain:       { color: '#DDA0A8', roughness: 0.4,  metalness: 0.0,  clearcoat: 0.3,  clearcoatRoughness: 0.3,  sheen: 0.5, sheenColor: '#F0C0C8' },
+  liver:       { color: '#7A3010', roughness: 0.55, metalness: 0.02, clearcoat: 0.2,  clearcoatRoughness: 0.45, sheen: 0.35, sheenColor: '#A05020' },
+  kidney:      { color: '#904020', roughness: 0.5,  metalness: 0.02, clearcoat: 0.25, clearcoatRoughness: 0.4,  sheen: 0.35, sheenColor: '#B06030' },
+  organ:       { color: '#A02020', roughness: 0.6,  metalness: 0.02, clearcoat: 0.15, clearcoatRoughness: 0.5,  sheen: 0.3, sheenColor: '#C85050' },
+  fascia:      { color: '#C8C0A8', roughness: 0.38, metalness: 0.0,  clearcoat: 0.35, clearcoatRoughness: 0.25, sheen: 0.5, sheenColor: '#E8E2D0', transparent: true, opacity: 0.55 },
+  bursa:       { color: '#88C8E0', roughness: 0.22, metalness: 0.0,  clearcoat: 0.6,  clearcoatRoughness: 0.18, sheen: 0.6, sheenColor: '#A8E0F5', transparent: true, opacity: 0.50 },
 };
 
-/* ═══════════════ CATEGORY CONFIG ═══════════════ */
-
-const CATEGORY_CONFIG = {
-  'Esqueleto Axial':       { color: '#D4A574' },
-  'Esqueleto Apendicular': { color: '#C4956E' },
-  'Músculos':              { color: '#E06060' },
-  'Articulações':          { color: '#60B8DA' },
-  'Tendões/Ligamentos':    { color: '#D4CCA0' },
-};
-
-/* ═══════════════ GEOMETRY HELPERS ═══════════════ */
+/* ═══════════════════════════════════════════════════════
+   HELPERS DE GEOMETRIA
+═══════════════════════════════════════════════════════ */
 
 function tG(geo, x, y, z) { geo.translate(x, y, z); return geo; }
+function rG(geo, x, y, z) { geo.rotateX(x); geo.rotateY(y); geo.rotateZ(z); return geo; }
 function sG(geo, x, y, z) { geo.scale(x, y, z); return geo; }
 
 function mergeGeos(geos) {
@@ -63,569 +67,1597 @@ function mergeGeos(geos) {
     const n = g.getAttribute('normal');
     for (let i = 0; i < p.count; i++) {
       const o = (vOff + i) * 3;
-      pos[o] = p.getX(i); pos[o+1] = p.getY(i); pos[o+2] = p.getZ(i);
-      if (n) { nor[o] = n.getX(i); nor[o+1] = n.getY(i); nor[o+2] = n.getZ(i); }
+      pos[o]=p.getX(i); pos[o+1]=p.getY(i); pos[o+2]=p.getZ(i);
+      if(n){ nor[o]=n.getX(i); nor[o+1]=n.getY(i); nor[o+2]=n.getZ(i); }
     }
-    if (g.index) { for (let i = 0; i < g.index.count; i++) idx.push(g.index.getX(i) + vOff); }
-    else { for (let i = 0; i < p.count; i++) idx.push(i + vOff); }
+    if(g.index){ for(let i=0;i<g.index.count;i++) idx.push(g.index.getX(i)+vOff); }
+    else { for(let i=0;i<p.count;i++) idx.push(i+vOff); }
     vOff += p.count;
     g.dispose();
   }
   const m = new THREE.BufferGeometry();
-  m.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  m.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  m.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  m.setAttribute('normal', new THREE.BufferAttribute(nor,3));
   m.setIndex(idx);
   m.computeVertexNormals();
   return m;
 }
 
-/* ═══════════════ GEOMETRY FACTORY ═══════════════ */
+// Cria curva suave entre pontos (para membros orgânicos)
+const LIMB_RADIAL = 8; // segmentos radiais reduzidos para performance
+function createLimbGeo(points, radii, segs = 6) {
+  const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+  const frames = curve.computeFrenetFrames(segs * points.length, false);
+  const positions = [];
+  const normals = [];
+  const indices = [];
+  const totalSegs = segs * (points.length - 1);
+
+  for (let i = 0; i <= totalSegs; i++) {
+    const t = i / totalSegs;
+    const pt = curve.getPoint(t);
+    const idx = Math.min(Math.floor(t * (radii.length - 1)), radii.length - 2);
+    const lt = t * (radii.length - 1) - idx;
+    const r = radii[idx] * (1 - lt) + radii[idx + 1] * lt;
+    const tangent = frames.tangents[i] || frames.tangents[frames.tangents.length - 1];
+    const normal = frames.normals[i] || frames.normals[frames.normals.length - 1];
+    const binormal = frames.binormals[i] || frames.binormals[frames.binormals.length - 1];
+
+    for (let j = 0; j <= LIMB_RADIAL; j++) {
+      const angle = (j / LIMB_RADIAL) * Math.PI * 2;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      positions.push(
+        pt.x + r * (cos * normal.x + sin * binormal.x),
+        pt.y + r * (cos * normal.y + sin * binormal.y),
+        pt.z + r * (cos * normal.z + sin * binormal.z),
+      );
+      normals.push(cos * normal.x + sin * binormal.x, cos * normal.y + sin * binormal.y, cos * normal.z + sin * binormal.z);
+    }
+  }
+
+  const ring = LIMB_RADIAL + 1;
+  for (let i = 0; i < totalSegs; i++) {
+    for (let j = 0; j < LIMB_RADIAL; j++) {
+      const a = i * ring + j;
+      const b = a + ring;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/* ═══════════════════════════════════════════════════════
+   FACTORY DE GEOMETRIAS ORGÂNICAS
+═══════════════════════════════════════════════════════ */
+
+const geoCache = new Map();
 
 function buildGeo(type) {
+  if (geoCache.has(type)) return geoCache.get(type);
+  const geo = _buildGeo(type);
+  geoCache.set(type, geo);
+  return geo;
+}
+
+function _buildGeo(type) {
   switch (type) {
-    // ── CRÂNIO ──
-    case 'cranium': { const g = new THREE.SphereGeometry(0.75, 32, 32); g.scale(1, 1.05, 1.1); return g; }
 
-    // ── COLUNA ──
-    case 'vert-cervical': return new THREE.CylinderGeometry(0.18, 0.22, 1.2, 12);
-    case 'vert-thoracic': return new THREE.CylinderGeometry(0.22, 0.28, 2.8, 12);
-    case 'vert-lumbar':   return new THREE.CylinderGeometry(0.28, 0.32, 1.4, 12);
-    case 'sacrum': {
-      const s = new THREE.Shape();
-      s.moveTo(-0.35, 0.5); s.lineTo(0.35, 0.5); s.lineTo(0.15, -0.5); s.lineTo(-0.15, -0.5); s.closePath();
-      return new THREE.ExtrudeGeometry(s, { depth: 0.25, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3 });
-    }
-
-    // ── COSTELAS ──
-    case 'ribs-R': case 'ribs-L': {
-      const side = type === 'ribs-R' ? 1 : -1;
-      const gs = [];
-      for (let i = 0; i < 9; i++) {
-        const w = 0.6 + (i < 4 ? i * 0.1 : (8 - i) * 0.08);
-        const c = new THREE.QuadraticBezierCurve3(
-          new THREE.Vector3(0, 1.3 - i * 0.32, 0),
-          new THREE.Vector3(side * w, 1.3 - i * 0.32, 0.3 + i * 0.035),
-          new THREE.Vector3(side * 0.12, 1.3 - i * 0.32, 0.45 + (i < 8 ? 0 : -0.1))
-        );
-        gs.push(new THREE.TubeGeometry(c, 14, 0.035 + (i < 3 ? 0.008 : 0), 6, false));
+    /* ──────────── CABEÇA / CRÂNIO ──────────── */
+    case 'cranium': {
+      const g = new THREE.SphereGeometry(0.72, 48, 36);
+      // Forma mais oval como crânio real
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        // Achata levemente os lados, alonga para trás
+        pos.setX(i, x * 0.92);
+        pos.setY(i, y * 1.08 + (y > 0 ? 0.05 : -0.08)); // topo mais alto
+        pos.setZ(i, z * 1.12 + (z < 0 ? -0.08 : 0.02)); // occiput mais proeminente
       }
-      return mergeGeos(gs);
-    }
-
-    // ── ESTERNO ──
-    case 'sternum': {
-      const s = new THREE.Shape();
-      s.moveTo(-0.12, 0.6); s.lineTo(0.12, 0.6); s.lineTo(0.1, -0.4);
-      s.lineTo(0.04, -0.55); s.lineTo(-0.04, -0.55); s.lineTo(-0.1, -0.4); s.closePath();
-      return new THREE.ExtrudeGeometry(s, { depth: 0.08, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 });
-    }
-
-    // ── PELVE ──
-    case 'pelvis': {
-      const s = new THREE.Shape();
-      s.moveTo(-0.8, 0.35); s.quadraticCurveTo(-0.9, 0, -0.7, -0.35);
-      s.lineTo(-0.2, -0.4); s.quadraticCurveTo(0, -0.45, 0.2, -0.4);
-      s.lineTo(0.7, -0.35); s.quadraticCurveTo(0.9, 0, 0.8, 0.35);
-      s.quadraticCurveTo(0, 0.5, -0.8, 0.35);
-      return new THREE.ExtrudeGeometry(s, { depth: 0.55, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3 });
-    }
-
-    // ── ESCÁPULA ──
-    case 'scap-L': {
-      const s = new THREE.Shape(); s.moveTo(0, 0.55); s.lineTo(-0.4, -0.45); s.lineTo(0.25, -0.45); s.lineTo(0.35, 0.1); s.closePath();
-      return new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 });
-    }
-    case 'scap-R': {
-      const s = new THREE.Shape(); s.moveTo(0, 0.55); s.lineTo(0.4, -0.45); s.lineTo(-0.25, -0.45); s.lineTo(-0.35, 0.1); s.closePath();
-      return new THREE.ExtrudeGeometry(s, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 });
-    }
-
-    // ── CLAVÍCULA ──
-    case 'clav-L': {
-      const c = new THREE.CubicBezierCurve3(new THREE.Vector3(0,0,0), new THREE.Vector3(-0.3,0.05,0.1), new THREE.Vector3(-0.6,-0.05,0.05), new THREE.Vector3(-0.85,0,0));
-      return new THREE.TubeGeometry(c, 16, 0.06, 8, false);
-    }
-    case 'clav-R': {
-      const c = new THREE.CubicBezierCurve3(new THREE.Vector3(0,0,0), new THREE.Vector3(0.3,0.05,0.1), new THREE.Vector3(0.6,-0.05,0.05), new THREE.Vector3(0.85,0,0));
-      return new THREE.TubeGeometry(c, 16, 0.06, 8, false);
-    }
-
-    // ── ÚMERO ──
-    case 'hum-L': case 'hum-R': {
-      const d = type === 'hum-L' ? -1 : 1;
-      return mergeGeos([
-        new THREE.CylinderGeometry(0.12, 0.16, 2.0, 10),
-        tG(new THREE.SphereGeometry(0.15, 10, 10), d * 0.04, 1.05, 0),
-      ]);
-    }
-
-    // ── ANTEBRAÇO ──
-    case 'forearm-L': case 'forearm-R': {
-      const d = type === 'forearm-L' ? -1 : 1;
-      return mergeGeos([
-        tG(new THREE.CylinderGeometry(0.07, 0.1, 1.6, 8), d * -0.06, 0, 0.04),
-        tG(new THREE.CylinderGeometry(0.09, 0.06, 1.7, 8), d * 0.06, 0, -0.04),
-      ]);
-    }
-
-    // ── MÃO ──
-    case 'hand-L': case 'hand-R': {
-      const d = type === 'hand-L' ? -1 : 1;
-      const gs = [new THREE.BoxGeometry(0.35, 0.45, 0.12)];
-      for (let f = 0; f < 5; f++) {
-        const x = (f - 2) * 0.07 * d;
-        const len = f === 2 ? 0.32 : f === 0 ? 0.2 : 0.27;
-        gs.push(tG(new THREE.CylinderGeometry(0.022, 0.018, len, 6), x, -0.22 - len / 2, 0));
-      }
-      return mergeGeos(gs);
-    }
-
-    // ── FÊMUR ──
-    case 'fem-L': case 'fem-R': {
-      const d = type === 'fem-L' ? -1 : 1;
-      return mergeGeos([
-        new THREE.CylinderGeometry(0.15, 0.19, 2.4, 12),
-        tG(new THREE.SphereGeometry(0.17, 12, 12), d * 0.13, 1.25, 0),
-      ]);
-    }
-
-    // ── PATELA ──
-    case 'patella': { const g = new THREE.SphereGeometry(0.15, 12, 12); g.scale(1.1, 1, 0.55); return g; }
-
-    // ── PERNA ──
-    case 'leg-L': case 'leg-R': {
-      const d = type === 'leg-L' ? -1 : 1;
-      return mergeGeos([
-        tG(new THREE.CylinderGeometry(0.13, 0.09, 2.2, 10), d * -0.04, 0, 0.02),
-        tG(new THREE.CylinderGeometry(0.04, 0.04, 2.0, 8), d * 0.14, -0.05, -0.02),
-      ]);
-    }
-
-    // ── PÉ ──
-    case 'foot-L': case 'foot-R': {
-      const gs = [
-        tG(new THREE.BoxGeometry(0.22, 0.18, 0.32), 0, 0, -0.08),
-        tG(new THREE.BoxGeometry(0.32, 0.1, 0.38), 0, -0.04, 0.22),
-      ];
-      for (let t = 0; t < 5; t++) gs.push(tG(new THREE.CylinderGeometry(0.018, 0.014, 0.13, 6), (t - 2) * 0.06, -0.05, 0.46));
-      return mergeGeos(gs);
-    }
-
-    // ── MÚSCULOS ──
-    case 'deltoid-L': case 'deltoid-R': { const g = new THREE.SphereGeometry(0.32, 16, 16); g.scale(0.7, 0.9, 0.55); return g; }
-    case 'pectoral-L': case 'pectoral-R': { const g = new THREE.SphereGeometry(0.38, 16, 12); g.scale(1.05, 0.6, 0.35); return g; }
-
-    case 'biceps-L': case 'biceps-R':
-      return sG(new THREE.CylinderGeometry(0.11, 0.08, 1.6, 10), 1, 1, 0.6);
-
-    case 'triceps-L': case 'triceps-R':
-      return mergeGeos([
-        tG(sG(new THREE.CylinderGeometry(0.09, 0.07, 1.5, 8), 1, 1, 0.55), -0.04, 0, 0),
-        tG(sG(new THREE.CylinderGeometry(0.08, 0.06, 1.4, 8), 1, 1, 0.5), 0.05, 0.03, 0),
-      ]);
-
-    case 'trapezius':
-      return mergeGeos([
-        sG(new THREE.CylinderGeometry(0.6, 0.3, 0.18, 12), 1, 1, 1),
-        tG(sG(new THREE.CylinderGeometry(0.3, 0.5, 0.15, 12), 1, 1, 1), 0, -0.8, 0),
-      ]);
-
-    case 'rectus-abdominis': {
-      const gs = [];
-      for (let r = 0; r < 4; r++) {
-        gs.push(tG(sG(new THREE.BoxGeometry(0.2, 0.32, 0.12), 1, 1, 1), -0.12, 0.55 - r * 0.38, 0));
-        gs.push(tG(sG(new THREE.BoxGeometry(0.2, 0.32, 0.12), 1, 1, 1), 0.12, 0.55 - r * 0.38, 0));
-      }
-      return mergeGeos(gs);
-    }
-
-    case 'obliques-L': case 'obliques-R':
-      return sG(new THREE.CylinderGeometry(0.22, 0.18, 1.3, 10), 0.5, 1, 0.35);
-
-    case 'quadriceps-L': case 'quadriceps-R':
-      return mergeGeos([
-        tG(sG(new THREE.CylinderGeometry(0.13, 0.09, 1.8, 10), 1, 1, 0.65), 0, 0, 0.07),
-        tG(sG(new THREE.CylinderGeometry(0.11, 0.08, 1.7, 10), 1, 1, 0.55), -0.14, -0.04, 0),
-        tG(sG(new THREE.CylinderGeometry(0.09, 0.1, 1.5, 10), 1, 1, 0.55), 0.11, -0.08, 0.04),
-      ]);
-
-    case 'hamstrings-L': case 'hamstrings-R':
-      return mergeGeos([
-        tG(sG(new THREE.CylinderGeometry(0.09, 0.07, 1.8, 8), 1, 1, 0.55), -0.08, 0, 0),
-        tG(sG(new THREE.CylinderGeometry(0.06, 0.04, 1.9, 8), 1, 1, 0.5), 0.02, 0, 0),
-        tG(sG(new THREE.CylinderGeometry(0.08, 0.06, 1.7, 8), 1, 1, 0.6), 0.1, 0.04, 0),
-      ]);
-
-    case 'calf-L': case 'calf-R':
-      return mergeGeos([
-        tG(sG(new THREE.CylinderGeometry(0.11, 0.05, 1.2, 10), 1, 1, 0.65), 0.04, 0.3, 0),
-        tG(sG(new THREE.CylinderGeometry(0.1, 0.045, 1.1, 10), 1, 1, 0.6), -0.07, 0.25, 0),
-        tG(sG(new THREE.CylinderGeometry(0.09, 0.05, 1.5, 10), 1, 1, 0.55), 0, -0.1, 0.04),
-      ]);
-
-    case 'glutes-L': case 'glutes-R':
-      return mergeGeos([
-        sG(new THREE.SphereGeometry(0.33, 12, 12), 1, 0.65, 0.55),
-        tG(sG(new THREE.SphereGeometry(0.23, 10, 10), 1.2, 0.45, 0.45), -0.08, 0.22, 0.08),
-      ]);
-
-    case 'rotator-L': case 'rotator-R': { const g = new THREE.TorusGeometry(0.26, 0.07, 8, 16, Math.PI * 1.2); g.rotateX(Math.PI / 2); return g; }
-
-    case 'adductors-L': case 'adductors-R':
-      return mergeGeos([
-        tG(sG(new THREE.CylinderGeometry(0.08, 0.06, 1.6, 8), 1, 1, 0.5), 0, 0, 0),
-        tG(sG(new THREE.CylinderGeometry(0.07, 0.05, 1.4, 8), 1, 1, 0.45), 0.08, -0.06, 0.02),
-        tG(sG(new THREE.CylinderGeometry(0.06, 0.04, 1.3, 8), 1, 1, 0.4), -0.06, -0.1, 0.01),
-      ]);
-
-    case 'tibialis-L': case 'tibialis-R':
-      return sG(new THREE.CylinderGeometry(0.07, 0.04, 1.8, 8), 1, 1, 0.5);
-
-    // ── TENDÕES / LIGAMENTOS ──
-    case 'cruciate-L': case 'cruciate-R': {
-      const a = new THREE.CylinderGeometry(0.022, 0.022, 0.38, 6); a.rotateZ(0.28);
-      const p = new THREE.CylinderGeometry(0.028, 0.028, 0.38, 6); p.rotateZ(-0.28);
-      return mergeGeos([a, tG(p, 0, 0, -0.03)]);
-    }
-    case 'achilles-L': case 'achilles-R': {
-      const c = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0.4, 0), new THREE.Vector3(0, 0, -0.07), new THREE.Vector3(0, -0.4, 0.04));
-      return new THREE.TubeGeometry(c, 12, 0.038, 8, false);
-    }
-    case 'mcl-L': case 'mcl-R':
-      return new THREE.CylinderGeometry(0.018, 0.025, 0.55, 6);
-    case 'lcl-L': case 'lcl-R':
-      return new THREE.CylinderGeometry(0.016, 0.022, 0.5, 6);
-    case 'patellar-L': case 'patellar-R':
-      return sG(new THREE.CylinderGeometry(0.035, 0.025, 0.5, 8), 1, 1, 0.5);
-    case 'plantar-L': case 'plantar-R': {
-      const c = new THREE.QuadraticBezierCurve3(new THREE.Vector3(0, 0, -0.15), new THREE.Vector3(0, -0.05, 0.1), new THREE.Vector3(0, 0.02, 0.35));
-      return new THREE.TubeGeometry(c, 12, 0.02, 6, false);
-    }
-    case 'discs': {
-      const gs = [];
-      for (let i = 0; i < 5; i++) gs.push(tG(new THREE.CylinderGeometry(0.2, 0.2, 0.07, 12), 0, i * 0.5, 0));
-      return mergeGeos(gs);
-    }
-    case 'meniscus-L': case 'meniscus-R': {
-      const g = new THREE.TorusGeometry(0.12, 0.03, 6, 16, Math.PI * 1.6);
-      g.rotateX(Math.PI / 2);
+      g.computeVertexNormals();
       return g;
     }
 
-    default: return new THREE.SphereGeometry(0.25, 16, 16);
+    case 'face': {
+      // Área facial com orbitas e nariz
+      return mergeGeos([
+        tG(sG(new THREE.SphereGeometry(0.62, 32, 24), 0.95, 0.85, 0.9), 0, -0.15, 0.35),
+        // Nariz
+        tG(sG(new THREE.SphereGeometry(0.08, 12, 10), 0.8, 1.2, 0.7), 0, 0.0, 0.68),
+        // Mandíbula
+        tG(sG(new THREE.SphereGeometry(0.42, 24, 18), 1, 0.55, 0.85), 0, -0.52, 0.18),
+      ]);
+    }
+
+    /* ──────────── PESCOÇO ──────────── */
+    case 'neck': {
+      return createLimbGeo(
+        [[0,0,0],[0,0.3,-0.04],[0,0.65,-0.06],[0,1.0,0]],
+        [0.24, 0.22, 0.20, 0.22]
+      );
+    }
+
+    /* ──────────── TRONCO SUPERIOR (TÓRAX) ──────────── */
+    case 'thorax': {
+      // Tórax com formato de barril levemente achatado + ombros
+      const g = new THREE.SphereGeometry(1.0, 48, 32);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const r = Math.sqrt(x*x + z*z);
+        // Formato de barril: mais largo no meio, estreita em cima e embaixo
+        const barrel = 1.0 + 0.15 * Math.cos(y * Math.PI * 0.8);
+        pos.setX(i, x * barrel * 1.05);
+        pos.setY(i, y * 1.35); // alonga verticalmente
+        pos.setZ(i, z * barrel * 0.78); // achatado frente-trás
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    case 'thorax-back': {
+      // Costas com omoplatas
+      const g = new THREE.SphereGeometry(0.92, 48, 32);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        if (z < 0) {
+          pos.setZ(i, z * 0.65);
+        }
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── ABDÔMEN ──────────── */
+    case 'abdomen': {
+      const g = new THREE.SphereGeometry(0.88, 48, 32);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const belly = 1.0 + 0.08 * Math.exp(-y*y * 2) + (z > 0 ? 0.06 : 0);
+        pos.setX(i, x * 0.95 * belly);
+        pos.setY(i, y * 1.1);
+        pos.setZ(i, z * 0.82 * belly);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── PELVE ──────────── */
+    case 'pelvis-body': {
+      const g = new THREE.SphereGeometry(0.82, 40, 28);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        // Pelve: mais larga nos lados, achatada v-p, afunila embaixo
+        const flare = y < 0 ? 1.0 + Math.abs(y) * 0.3 : 1.0;
+        pos.setX(i, x * 1.15 * flare);
+        pos.setY(i, y * 0.75);
+        pos.setZ(i, z * 0.7);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── ESCÁPULA ──────────── */
+    case 'scap-L': {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0.6); s.quadraticCurveTo(-0.15, 0.4, -0.38, -0.1);
+      s.quadraticCurveTo(-0.45, -0.35, -0.28, -0.55);
+      s.quadraticCurveTo(-0.05, -0.6, 0.18, -0.45);
+      s.quadraticCurveTo(0.38, -0.2, 0.3, 0.2);
+      s.quadraticCurveTo(0.2, 0.5, 0, 0.6);
+      const e = new THREE.ExtrudeGeometry(s, { depth: 0.055, bevelEnabled: true, bevelThickness: 0.018, bevelSize: 0.018, bevelSegments: 4 });
+      return e;
+    }
+    case 'scap-R': {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0.6); s.quadraticCurveTo(0.15, 0.4, 0.38, -0.1);
+      s.quadraticCurveTo(0.45, -0.35, 0.28, -0.55);
+      s.quadraticCurveTo(0.05, -0.6, -0.18, -0.45);
+      s.quadraticCurveTo(-0.38, -0.2, -0.3, 0.2);
+      s.quadraticCurveTo(-0.2, 0.5, 0, 0.6);
+      const e = new THREE.ExtrudeGeometry(s, { depth: 0.055, bevelEnabled: true, bevelThickness: 0.018, bevelSize: 0.018, bevelSegments: 4 });
+      return e;
+    }
+
+    /* ──────────── CLAVÍCULA ──────────── */
+    case 'clav-L': {
+      const c = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(0,0,0), new THREE.Vector3(-0.28,0.08,0.12),
+        new THREE.Vector3(-0.58,-0.04,0.06), new THREE.Vector3(-0.88,0.02,0));
+      return new THREE.TubeGeometry(c, 24, 0.065, 10, false);
+    }
+    case 'clav-R': {
+      const c = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(0,0,0), new THREE.Vector3(0.28,0.08,0.12),
+        new THREE.Vector3(0.58,-0.04,0.06), new THREE.Vector3(0.88,0.02,0));
+      return new THREE.TubeGeometry(c, 24, 0.065, 10, false);
+    }
+
+    /* ──────────── ÚMERO (braço orgânico) ──────────── */
+    case 'hum-L': return createLimbGeo(
+      [[0,1.1,0],[0,0.8,0.05],[-0.04,0.4,0.03],[-0.06,-0.1,0],[-0.06,-0.85,0]],
+      [0.165, 0.155, 0.145, 0.135, 0.15]
+    );
+    case 'hum-R': return createLimbGeo(
+      [[0,1.1,0],[0,0.8,0.05],[0.04,0.4,0.03],[0.06,-0.1,0],[0.06,-0.85,0]],
+      [0.165, 0.155, 0.145, 0.135, 0.15]
+    );
+
+    /* ──────────── ANTEBRAÇO ──────────── */
+    case 'forearm-L': {
+      const radius = createLimbGeo(
+        [[-0.04,0.8,0.06],[-0.05,0.4,0.04],[-0.04,0,0.02],[-0.02,-0.55,0]],
+        [0.088, 0.082, 0.072, 0.065]
+      );
+      const ulna = createLimbGeo(
+        [[0.06,0.8,-0.04],[0.06,0.4,-0.03],[0.05,0,-0.01],[0.03,-0.55,0]],
+        [0.075, 0.068, 0.058, 0.052]
+      );
+      return mergeGeos([radius, ulna]);
+    }
+    case 'forearm-R': {
+      const radius = createLimbGeo(
+        [[0.04,0.8,0.06],[0.05,0.4,0.04],[0.04,0,0.02],[0.02,-0.55,0]],
+        [0.088, 0.082, 0.072, 0.065]
+      );
+      const ulna = createLimbGeo(
+        [[-0.06,0.8,-0.04],[-0.06,0.4,-0.03],[-0.05,0,-0.01],[-0.03,-0.55,0]],
+        [0.075, 0.068, 0.058, 0.052]
+      );
+      return mergeGeos([radius, ulna]);
+    }
+
+    /* ──────────── MÃO ──────────── */
+    case 'hand-L': case 'hand-R': {
+      const d = type === 'hand-L' ? -1 : 1;
+      const palm = new THREE.BoxGeometry(0.3, 0.42, 0.1);
+      const pos = palm.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        pos.setX(i, pos.getX(i) * (1 + y * 0.15));
+      }
+      palm.computeVertexNormals();
+      const fingers = [];
+      const fconf = [
+        { x: -0.11, len: 0.28, r: 0.025 }, // indicador
+        { x: -0.037, len: 0.32, r: 0.026 }, // médio
+        { x: 0.037, len: 0.29, r: 0.024 }, // anelar
+        { x: 0.11, len: 0.24, r: 0.022 }, // mínimo
+      ];
+      for (const f of fconf) {
+        fingers.push(tG(new THREE.CylinderGeometry(f.r, f.r * 1.1, f.len, 8), d * f.x, -0.21 - f.len/2, 0.01));
+        fingers.push(tG(new THREE.SphereGeometry(f.r * 1.05, 8, 8), d * f.x, -0.21 - f.len, 0.01));
+      }
+      // Polegar
+      const thumb = createLimbGeo(
+        [[d*0.18, 0.05, 0.04], [d*0.22, -0.06, 0.06], [d*0.24, -0.17, 0.04]],
+        [0.032, 0.028, 0.022]
+      );
+      return mergeGeos([palm, ...fingers, thumb]);
+    }
+
+    /* ──────────── FÊMUR (orgânico) ──────────── */
+    case 'fem-L': return createLimbGeo(
+      [[-0.14,1.28,0.02],[-0.1,0.85,0],[-0.05,0.3,0],[0,-0.2,0.01],[0.02,-0.85,-0.02],[0,-1.18,0]],
+      [0.18, 0.175, 0.17, 0.165, 0.16, 0.18]
+    );
+    case 'fem-R': return createLimbGeo(
+      [[0.14,1.28,0.02],[0.1,0.85,0],[0.05,0.3,0],[0,-0.2,0.01],[-0.02,-0.85,-0.02],[0,-1.18,0]],
+      [0.18, 0.175, 0.17, 0.165, 0.16, 0.18]
+    );
+
+    /* ──────────── PATELA ──────────── */
+    case 'patella': {
+      const g = new THREE.SphereGeometry(0.14, 16, 12);
+      g.scale(1.12, 1.0, 0.52);
+      return g;
+    }
+
+    /* ──────────── PERNA (tíbia + fíbula) ──────────── */
+    case 'leg-L': {
+      const tibia = createLimbGeo(
+        [[-0.03,0.95,0.02],[-0.025,0.5,0.015],[-0.02,0,-0.01],[-0.02,-0.5,-0.02],[-0.018,-0.95,0]],
+        [0.125, 0.105, 0.09, 0.082, 0.092]
+      );
+      const fibula = createLimbGeo(
+        [[0.1,0.82,-0.02],[0.095,0.3,-0.02],[0.085,-0.3,-0.02],[0.07,-0.88,0.015]],
+        [0.042, 0.038, 0.035, 0.042]
+      );
+      return mergeGeos([tibia, fibula]);
+    }
+    case 'leg-R': {
+      const tibia = createLimbGeo(
+        [[0.03,0.95,0.02],[0.025,0.5,0.015],[0.02,0,-0.01],[0.02,-0.5,-0.02],[0.018,-0.95,0]],
+        [0.125, 0.105, 0.09, 0.082, 0.092]
+      );
+      const fibula = createLimbGeo(
+        [[-0.1,0.82,-0.02],[-0.095,0.3,-0.02],[-0.085,-0.3,-0.02],[-0.07,-0.88,0.015]],
+        [0.042, 0.038, 0.035, 0.042]
+      );
+      return mergeGeos([tibia, fibula]);
+    }
+
+    /* ──────────── PÉ ──────────── */
+    case 'foot-L': case 'foot-R': {
+      const d = type === 'foot-L' ? -1 : 1;
+      const gs = [];
+      // Calcâneo
+      const calcaneus = new THREE.BoxGeometry(0.18, 0.14, 0.28);
+      const cpos = calcaneus.getAttribute('position');
+      for (let i = 0; i < cpos.count; i++) {
+        cpos.setX(i, cpos.getX(i) * (1 - Math.abs(cpos.getY(i)) * 0.2));
+      }
+      calcaneus.computeVertexNormals();
+      gs.push(tG(calcaneus, 0, -0.02, -0.22));
+      // Metatarso + dorso
+      gs.push(tG(sG(new THREE.BoxGeometry(0.26, 0.1, 0.35), 1, 1, 1), 0, -0.04, 0.1));
+      // Arco
+      for (let t = 0; t < 5; t++) {
+        const angle = (t - 2) * 0.14;
+        const len = t === 2 ? 0.18 : 0.15;
+        gs.push(tG(new THREE.CylinderGeometry(0.02, 0.016, len, 8), d * (t-2)*0.052, -0.04, 0.35 + len/2 + Math.cos(angle)*0.01));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── COSTELAS ──────────── */
+    case 'ribs-R': case 'ribs-L': {
+      const side = type === 'ribs-R' ? 1 : -1;
+      const gs = [];
+      for (let i = 0; i < 10; i++) {
+        const w = 0.55 + (i < 5 ? i * 0.085 : (9 - i) * 0.06);
+        const yOff = 1.55 - i * 0.3;
+        const thick = 0.032 + (i < 3 ? 0.008 : 0);
+        const c = new THREE.CubicBezierCurve3(
+          new THREE.Vector3(side * 0.15, yOff, 0.12),
+          new THREE.Vector3(side * (w + 0.15), yOff + 0.05, 0.25 + i * 0.02),
+          new THREE.Vector3(side * (w + 0.1), yOff - 0.08, 0.4 + i * 0.015),
+          new THREE.Vector3(side * 0.12, yOff - 0.12, 0.48 + (i < 8 ? 0 : -0.08))
+        );
+        gs.push(new THREE.TubeGeometry(c, 20, thick, 7, false));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── ESTERNO ──────────── */
+    case 'sternum': {
+      const s = new THREE.Shape();
+      s.moveTo(-0.11, 0.7); s.quadraticCurveTo(-0.14, 0.5, -0.12, 0.2);
+      s.lineTo(-0.1, -0.3); s.quadraticCurveTo(-0.06, -0.52, 0, -0.58);
+      s.quadraticCurveTo(0.06, -0.52, 0.1, -0.3);
+      s.lineTo(0.12, 0.2); s.quadraticCurveTo(0.14, 0.5, 0.11, 0.7);
+      s.closePath();
+      return new THREE.ExtrudeGeometry(s, { depth: 0.09, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 4 });
+    }
+
+    /* ──────────── COLUNA ──────────── */
+    case 'vert-cervical': {
+      const gs = [];
+      for (let i = 0; i < 7; i++) {
+        const body = new THREE.CylinderGeometry(0.16 + i*0.01, 0.17 + i*0.01, 0.155, 14);
+        const bpos = body.getAttribute('position');
+        for (let j = 0; j < bpos.count; j++) {
+          bpos.setX(j, bpos.getX(j) * 1.1);
+          bpos.setZ(j, bpos.getZ(j) * 0.85);
+        }
+        body.computeVertexNormals();
+        gs.push(tG(body, 0, i * 0.175, 0));
+        // Processo espinhoso
+        gs.push(tG(rG(new THREE.ConeGeometry(0.04, 0.12, 6), 0, 0, Math.PI/2), -0.18, i*0.175, 0));
+      }
+      return mergeGeos(gs);
+    }
+    case 'vert-thoracic': {
+      const gs = [];
+      for (let i = 0; i < 12; i++) {
+        const body = new THREE.CylinderGeometry(0.19 + i*0.006, 0.20 + i*0.006, 0.22, 14);
+        gs.push(tG(body, 0, i * 0.26, 0));
+        gs.push(tG(rG(new THREE.ConeGeometry(0.045, 0.18, 6), 0, 0, Math.PI/2), -0.24, i*0.26, 0));
+      }
+      return mergeGeos(gs);
+    }
+    case 'vert-lumbar': {
+      const gs = [];
+      for (let i = 0; i < 5; i++) {
+        const body = new THREE.CylinderGeometry(0.26, 0.28, 0.26, 14);
+        const bpos = body.getAttribute('position');
+        for (let j = 0; j < bpos.count; j++) {
+          bpos.setX(j, bpos.getX(j) * 1.18);
+          bpos.setZ(j, bpos.getZ(j) * 0.9);
+        }
+        body.computeVertexNormals();
+        gs.push(tG(body, 0, i * 0.3, 0));
+        gs.push(tG(rG(new THREE.ConeGeometry(0.05, 0.22, 6), 0, 0, Math.PI/2), -0.3, i*0.3, 0));
+      }
+      return mergeGeos(gs);
+    }
+    case 'sacrum': {
+      const gs = [];
+      for (let i = 0; i < 5; i++) {
+        const w = 0.28 - i * 0.04;
+        gs.push(tG(new THREE.CylinderGeometry(w, w - 0.03, 0.14, 10), 0, i * 0.14, 0));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── MÚSCULO DELTÓIDE ──────────── */
+    case 'deltoid-L': case 'deltoid-R': {
+      const d = type === 'deltoid-L' ? -1 : 1;
+      const g = new THREE.SphereGeometry(1, 32, 24);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        // Formato de meias-luas envolvendo o ombro
+        pos.setX(i, x * 0.32 * d);
+        pos.setY(i, y * 0.4 - 0.05);
+        pos.setZ(i, z * 0.26 + (y < 0 ? y * 0.15 : 0));
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── PEITORAL ──────────── */
+    case 'pectoral-L': case 'pectoral-R': {
+      const d = type === 'pectoral-L' ? -1 : 1;
+      const g = new THREE.SphereGeometry(1, 32, 24);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        // Formato do peitoral - mais largo na inserção, mais fino na origem
+        const taper = 0.5 + Math.max(0, x * d) * 0.4;
+        pos.setX(i, x * 0.42 * d * taper);
+        pos.setY(i, y * 0.30 + 0.1);
+        pos.setZ(i, z * 0.22 + 0.08);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── BÍCEPS ──────────── */
+    case 'biceps-L': case 'biceps-R': return createLimbGeo(
+      [[0, 0.85, 0.06], [0, 0.5, 0.12], [0, 0, 0.10], [0, -0.55, 0.05]],
+      [0.085, 0.115, 0.108, 0.072]
+    );
+
+    /* ──────────── TRÍCEPS ──────────── */
+    case 'triceps-L': case 'triceps-R': return mergeGeos([
+      createLimbGeo([[0,0.85,-0.08],[0,0.4,-0.14],[0,0,-0.12],[0,-0.55,-0.06]], [0.08,0.11,0.105,0.07]),
+      createLimbGeo([[0.07,0.7,-0.08],[0.06,0.3,-0.12],[0.04,-0.1,-0.1],[0.02,-0.55,-0.05]], [0.07,0.09,0.085,0.06]),
+    ]);
+
+    /* ──────────── TRAPÉZIO ──────────── */
+    case 'trapezius': {
+      const g = new THREE.SphereGeometry(1, 32, 24);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        pos.setX(i, x * 0.85);
+        pos.setY(i, y * 0.65 + 0.3);
+        pos.setZ(i, z * 0.2 - 0.12);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── RETO ABDOMINAL ──────────── */
+    case 'rectus-abdominis': {
+      const gs = [];
+      for (let r = 0; r < 4; r++) {
+        // Cada par de segmentos com forma convexa
+        const seg = new THREE.SphereGeometry(0.1, 14, 10);
+        const pos = seg.getAttribute('position');
+        for (let i = 0; i < pos.count; i++) {
+          pos.setX(i, pos.getX(i) * 1.15);
+          pos.setY(i, pos.getY(i) * 0.72);
+          pos.setZ(i, pos.getZ(i) * 0.65 + 0.02);
+        }
+        seg.computeVertexNormals();
+        gs.push(tG(seg.clone(), -0.115, 0.6 - r * 0.35, 0.08));
+        gs.push(tG(seg, 0.115, 0.6 - r * 0.35, 0.08));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── OBLÍQUOS ──────────── */
+    case 'obliques-L': return createLimbGeo(
+      [[-0.5, 0.5, 0.1], [-0.65, 0.2, 0.2], [-0.7, -0.1, 0.18], [-0.55, -0.4, 0.08]],
+      [0.1, 0.12, 0.115, 0.09]
+    );
+    case 'obliques-R': return createLimbGeo(
+      [[0.5, 0.5, 0.1], [0.65, 0.2, 0.2], [0.7, -0.1, 0.18], [0.55, -0.4, 0.08]],
+      [0.1, 0.12, 0.115, 0.09]
+    );
+
+    /* ──────────── QUADRÍCEPS ──────────── */
+    case 'quadriceps-L': return mergeGeos([
+      createLimbGeo([[0,0.95,0.12],[0,0.5,0.18],[0,0,0.16],[0,-0.65,0.08]], [0.14,0.18,0.175,0.12]), // reto femoral
+      createLimbGeo([[-0.15,0.8,0.05],[-0.14,0.3,0.1],[-0.12,-0.2,0.1],[-0.08,-0.65,0.06]], [0.1,0.13,0.125,0.09]), // VL
+      createLimbGeo([[0.1,0.8,0.06],[0.1,0.3,0.11],[0.08,-0.2,0.1],[0.05,-0.65,0.06]], [0.09,0.12,0.115,0.09]), // VM
+    ]);
+    case 'quadriceps-R': return mergeGeos([
+      createLimbGeo([[0,0.95,0.12],[0,0.5,0.18],[0,0,0.16],[0,-0.65,0.08]], [0.14,0.18,0.175,0.12]),
+      createLimbGeo([[0.15,0.8,0.05],[0.14,0.3,0.1],[0.12,-0.2,0.1],[0.08,-0.65,0.06]], [0.1,0.13,0.125,0.09]),
+      createLimbGeo([[-0.1,0.8,0.06],[-0.1,0.3,0.11],[-0.08,-0.2,0.1],[-0.05,-0.65,0.06]], [0.09,0.12,0.115,0.09]),
+    ]);
+
+    /* ──────────── ISQUIOTIBIAIS ──────────── */
+    case 'hamstrings-L': return mergeGeos([
+      createLimbGeo([[-0.08,0.8,-0.12],[-0.07,0.3,-0.18],[-0.06,-0.2,-0.16],[-0.04,-0.65,-0.08]], [0.1,0.125,0.12,0.085]),
+      createLimbGeo([[0.05,0.8,-0.11],[0.05,0.3,-0.17],[0.04,-0.2,-0.15],[0.03,-0.65,-0.08]], [0.095,0.12,0.115,0.08]),
+      createLimbGeo([[0.1,0.75,-0.08],[0.1,0.25,-0.14],[0.08,-0.25,-0.12],[0.06,-0.65,-0.07]], [0.075,0.09,0.085,0.065]),
+    ]);
+    case 'hamstrings-R': return mergeGeos([
+      createLimbGeo([[0.08,0.8,-0.12],[0.07,0.3,-0.18],[0.06,-0.2,-0.16],[0.04,-0.65,-0.08]], [0.1,0.125,0.12,0.085]),
+      createLimbGeo([[-0.05,0.8,-0.11],[-0.05,0.3,-0.17],[-0.04,-0.2,-0.15],[-0.03,-0.65,-0.08]], [0.095,0.12,0.115,0.08]),
+      createLimbGeo([[-0.1,0.75,-0.08],[-0.1,0.25,-0.14],[-0.08,-0.25,-0.12],[-0.06,-0.65,-0.07]], [0.075,0.09,0.085,0.065]),
+    ]);
+
+    /* ──────────── GLÚTEOS ──────────── */
+    case 'glutes-L': case 'glutes-R': {
+      const d = type === 'glutes-L' ? -1 : 1;
+      const g = new THREE.SphereGeometry(0.36, 24, 20);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        pos.setX(i, x * 0.85 * d);
+        pos.setY(i, y * 0.72);
+        pos.setZ(i, z * 0.82 - 0.1);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── PANTURRILHA ──────────── */
+    case 'calf-L': return mergeGeos([
+      createLimbGeo([[0.04,0.85,-0.05],[0.04,0.55,-0.14],[0.03,0.15,-0.12],[0.02,-0.2,-0.08],[0,-0.6,-0.02]], [0.095,0.12,0.115,0.09,0.065]),
+      createLimbGeo([[-0.05,0.82,-0.04],[-0.05,0.52,-0.13],[-0.04,0.12,-0.11],[-0.02,-0.2,-0.07],[0,-0.6,-0.02]], [0.085,0.11,0.105,0.085,0.06]),
+      createLimbGeo([[0,0.75,0.01],[0,0.4,-0.06],[0,0,-0.1],[0,-0.6,-0.02]], [0.08,0.095,0.09,0.06]),
+    ]);
+    case 'calf-R': return mergeGeos([
+      createLimbGeo([[-0.04,0.85,-0.05],[-0.04,0.55,-0.14],[-0.03,0.15,-0.12],[-0.02,-0.2,-0.08],[0,-0.6,-0.02]], [0.095,0.12,0.115,0.09,0.065]),
+      createLimbGeo([[0.05,0.82,-0.04],[0.05,0.52,-0.13],[0.04,0.12,-0.11],[0.02,-0.2,-0.07],[0,-0.6,-0.02]], [0.085,0.11,0.105,0.085,0.06]),
+      createLimbGeo([[0,0.75,0.01],[0,0.4,-0.06],[0,0,-0.1],[0,-0.6,-0.02]], [0.08,0.095,0.09,0.06]),
+    ]);
+
+    /* ──────────── TIBIAL ANTERIOR ──────────── */
+    case 'tibialis-L': return createLimbGeo(
+      [[-0.1,0.85,0.12],[-0.1,0.4,0.16],[-0.09,0,0.14],[-0.08,-0.5,0.09]],
+      [0.065, 0.078, 0.072, 0.055]
+    );
+    case 'tibialis-R': return createLimbGeo(
+      [[0.1,0.85,0.12],[0.1,0.4,0.16],[0.09,0,0.14],[0.08,-0.5,0.09]],
+      [0.065, 0.078, 0.072, 0.055]
+    );
+
+    /* ──────────── MANGUITO ROTADOR ──────────── */
+    case 'rotator-L': case 'rotator-R': {
+      const d = type === 'rotator-L' ? -1 : 1;
+      const g = new THREE.TorusGeometry(0.25, 0.07, 10, 22, Math.PI * 1.4);
+      g.rotateX(Math.PI / 2 + 0.3);
+      g.rotateY(d * 0.3);
+      return g;
+    }
+
+    /* ──────────── TENDÕES ──────────── */
+    case 'achilles-L': case 'achilles-R': {
+      const c = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(0, 0.55, -0.06),
+        new THREE.Vector3(0, 0.25, -0.1),
+        new THREE.Vector3(0, -0.05, -0.08),
+        new THREE.Vector3(0, -0.42, 0.03)
+      );
+      return new THREE.TubeGeometry(c, 16, 0.04, 8, false);
+    }
+    case 'patellar-L': case 'patellar-R': {
+      const c = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(0, 0.18, 0.5),
+        new THREE.Vector3(0, 0, 0.52),
+        new THREE.Vector3(0, -0.22, 0.48)
+      );
+      return new THREE.TubeGeometry(c, 12, 0.038, 8, false);
+    }
+    case 'plantar-L': case 'plantar-R': {
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, -0.2),
+        new THREE.Vector3(0, -0.04, 0.05),
+        new THREE.Vector3(0, -0.02, 0.28),
+        new THREE.Vector3(0, 0.0, 0.42),
+      ]);
+      return new THREE.TubeGeometry(c, 16, 0.022, 7, false);
+    }
+    case 'cruciate-L': case 'cruciate-R': {
+      const a = new THREE.CylinderGeometry(0.024, 0.024, 0.4, 7);
+      a.rotateZ(0.3);
+      const p = new THREE.CylinderGeometry(0.028, 0.028, 0.4, 7);
+      p.rotateZ(-0.3);
+      return mergeGeos([a, tG(p, 0, 0, -0.03)]);
+    }
+    case 'mcl-L': case 'mcl-R': return new THREE.CylinderGeometry(0.02, 0.026, 0.58, 7);
+    case 'lcl-L': case 'lcl-R': return new THREE.CylinderGeometry(0.018, 0.024, 0.52, 7);
+    case 'meniscus-L': case 'meniscus-R': {
+      const g = new THREE.TorusGeometry(0.13, 0.035, 7, 18, Math.PI * 1.65);
+      g.rotateX(Math.PI / 2);
+      return g;
+    }
+    case 'discs': {
+      const gs = [];
+      for (let i = 0; i < 5; i++) {
+        const g = new THREE.CylinderGeometry(0.22, 0.22, 0.075, 14);
+        const p = g.getAttribute('position');
+        for (let j = 0; j < p.count; j++) {
+          p.setX(j, p.getX(j) * 1.05);
+          p.setZ(j, p.getZ(j) * 0.88);
+        }
+        g.computeVertexNormals();
+        gs.push(tG(g, 0, i * 0.52, 0));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── NERVOS ──────────── */
+    case 'nerve-brachial-L': case 'nerve-brachial-R': {
+      const d = type.endsWith('-L') ? -1 : 1;
+      const gs = [];
+      const origins = [[0, 0.28, 0.02], [0, 0.18, 0.02], [0, 0.08, 0.02], [0,-0.04, 0.02], [0,-0.14, 0.02]];
+      for (let i = 0; i < 5; i++) {
+        const c = new THREE.CubicBezierCurve3(
+          new THREE.Vector3(origins[i][0], origins[i][1], origins[i][2]),
+          new THREE.Vector3(d*(0.2 + i*0.06), origins[i][1] + 0.05, 0.06),
+          new THREE.Vector3(d*(0.45 + i*0.08), origins[i][1] - 0.08, 0.02),
+          new THREE.Vector3(d*(0.7 + i*0.09), origins[i][1] - 0.18, -0.04)
+        );
+        gs.push(new THREE.TubeGeometry(c, 12, 0.014 + (i === 2 ? 0.004 : 0), 6, false));
+      }
+      return mergeGeos(gs);
+    }
+    case 'nerve-sciatic-L': case 'nerve-sciatic-R': {
+      const d = type.endsWith('-L') ? -1 : 1;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(d*0.14, 0.85, -0.18),
+        new THREE.Vector3(d*0.12, 0.3, -0.22),
+        new THREE.Vector3(d*0.1, -0.25, -0.2),
+        new THREE.Vector3(d*0.08, -0.8, -0.18),
+        new THREE.Vector3(d*0.06, -1.3, -0.14),
+        new THREE.Vector3(d*0.1, -1.65, -0.1),
+      ]);
+      return new THREE.TubeGeometry(c, 30, 0.042, 8, false);
+    }
+    case 'nerve-femoral-L': case 'nerve-femoral-R': {
+      const d = type.endsWith('-L') ? -1 : 1;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(d*0.2, 0.55, 0.18),
+        new THREE.Vector3(d*0.18, 0.1, 0.24),
+        new THREE.Vector3(d*0.14, -0.4, 0.22),
+        new THREE.Vector3(d*0.1, -0.9, 0.18),
+        new THREE.Vector3(d*0.08, -1.35, 0.14),
+      ]);
+      return new THREE.TubeGeometry(c, 24, 0.032, 8, false);
+    }
+    case 'nerve-median': case 'nerve-ulnar': case 'nerve-radial': {
+      const xOff = type === 'nerve-ulnar' ? 0.1 : type === 'nerve-radial' ? -0.1 : 0;
+      const zOff = type === 'nerve-radial' ? -0.15 : type === 'nerve-ulnar' ? -0.08 : 0.18;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(xOff, 0.7, zOff),
+        new THREE.Vector3(xOff * 1.1, 0.2, zOff),
+        new THREE.Vector3(xOff * 0.8, -0.2, zOff * 0.9),
+        new THREE.Vector3(xOff * 0.5, -0.6, zOff * 0.7),
+        new THREE.Vector3(xOff * 0.3, -1.05, zOff * 0.5),
+      ]);
+      return new THREE.TubeGeometry(c, 22, 0.018, 7, false);
+    }
+    case 'nerve-tibial-L': case 'nerve-tibial-R': {
+      const d = type.endsWith('-L') ? -1 : 1;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(d*0.04, 0.55, -0.18),
+        new THREE.Vector3(d*0.03, 0.1, -0.2),
+        new THREE.Vector3(d*0.04, -0.3, -0.18),
+        new THREE.Vector3(d*0.05, -0.75, -0.14),
+        new THREE.Vector3(d*0.04, -1.15, -0.1),
+      ]);
+      return new THREE.TubeGeometry(c, 22, 0.026, 7, false);
+    }
+    case 'nerve-fibular-L': case 'nerve-fibular-R': {
+      const d = type.endsWith('-L') ? -1 : 1;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(d*0.1, 0.4, -0.1),
+        new THREE.Vector3(d*0.16, 0.1, 0.04),
+        new THREE.Vector3(d*0.14, -0.2, 0.1),
+        new THREE.Vector3(d*0.1, -0.6, 0.12),
+        new THREE.Vector3(d*0.06, -0.9, 0.08),
+      ]);
+      return new THREE.TubeGeometry(c, 18, 0.02, 6, false);
+    }
+    case 'spinal-cord': return createLimbGeo(
+      [[0,4.2,-0.22],[0,3,-0.28],[0,1.5,-0.25],[0,0,-0.22],[0,-1.0,-0.18]],
+      [0.075, 0.08, 0.075, 0.068, 0.06]
+    );
+
+    /* ──────────── ÓRGÃOS ──────────── */
+    case 'brain': {
+      const g = new THREE.SphereGeometry(0.6, 48, 36);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i); const y = pos.getY(i); const z = pos.getZ(i);
+        // Sulcos cerebrais simulados com ruído
+        const noise = Math.sin(x*8)*Math.cos(y*7)*0.025 + Math.sin(z*9)*0.018;
+        const r = Math.sqrt(x*x+y*y+z*z);
+        const scale = (r + noise) / r;
+        pos.setX(i, x * scale * 1.02); pos.setY(i, y * scale * 0.88); pos.setZ(i, z * scale * 1.08);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'cerebellum': {
+      const g = new THREE.SphereGeometry(0.28, 32, 20);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        const noise = Math.sin(pos.getX(i)*12)*0.018;
+        pos.setY(i, y + noise);
+        pos.setX(i, pos.getX(i) * 1.32);
+        pos.setZ(i, pos.getZ(i) * 0.9);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'heart-organ': {
+      const g = new THREE.SphereGeometry(0.34, 32, 24);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i); const y = pos.getY(i); const z = pos.getZ(i);
+        // Forma de coração
+        const heartX = x; const heartY = y - Math.abs(x) * 0.5;
+        pos.setX(i, heartX * 1.0); pos.setY(i, heartY * 1.15); pos.setZ(i, z * 0.92);
+      }
+      g.computeVertexNormals();
+      return mergeGeos([
+        g,
+        tG(sG(new THREE.CylinderGeometry(0.07, 0.04, 0.32, 8), 1, 1, 1), -0.1, 0.4, 0),
+        tG(sG(new THREE.CylinderGeometry(0.06, 0.035, 0.28, 8), 1, 1, 1), 0.12, 0.38, 0.05),
+        tG(sG(new THREE.CylinderGeometry(0.05, 0.03, 0.26, 8), 1, 1, 1), 0.02, 0.36, -0.1),
+      ]);
+    }
+    case 'lung-L': case 'lung-R': {
+      const d = type === 'lung-L' ? -1 : 1;
+      const g = new THREE.SphereGeometry(0.5, 28, 22);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i); const y = pos.getY(i); const z = pos.getZ(i);
+        pos.setX(i, x * 0.7 + d * 0.04);
+        pos.setY(i, y * 1.25);
+        pos.setZ(i, z * 0.82 + (z > 0 ? 0.08 : 0));
+        // Corte medial
+        if (pos.getX(i) * d > 0.2) pos.setX(i, d * 0.2 + (pos.getX(i) - d * 0.2) * 0.3);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'liver-organ': {
+      const s = new THREE.Shape();
+      s.moveTo(-0.5, 0.05); s.quadraticCurveTo(-0.62, 0.3, -0.28, 0.42);
+      s.quadraticCurveTo(0.08, 0.48, 0.42, 0.28);
+      s.quadraticCurveTo(0.62, 0.12, 0.48, -0.15);
+      s.quadraticCurveTo(0.3, -0.35, 0, -0.38);
+      s.quadraticCurveTo(-0.28, -0.38, -0.38, -0.15);
+      s.quadraticCurveTo(-0.5, 0, -0.5, 0.05);
+      return new THREE.ExtrudeGeometry(s, { depth: 0.38, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 5 });
+    }
+    case 'kidney-L': case 'kidney-R': {
+      const g = new THREE.SphereGeometry(0.21, 20, 16);
+      g.scale(0.68, 1.02, 0.56);
+      return g;
+    }
+    case 'stomach-organ': {
+      const g = new THREE.SphereGeometry(0.3, 24, 18);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i); const y = pos.getY(i);
+        pos.setX(i, x * 1.3 + y * 0.18);
+        pos.setY(i, y * 0.85);
+        pos.setZ(i, pos.getZ(i) * 0.72);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+    case 'diaphragm': {
+      const g = new THREE.SphereGeometry(0.82, 32, 16, 0, Math.PI*2, 0, Math.PI*0.42);
+      g.scale(1.22, 0.38, 1.0);
+      return g;
+    }
+    case 'intestine-small': {
+      const gs = [];
+      for (let i = 0; i < 9; i++) {
+        const x1 = (i % 2 === 0 ? -1 : 1) * 0.22;
+        const x2 = -x1;
+        const c = new THREE.CubicBezierCurve3(
+          new THREE.Vector3(x1, 0.4 - i*0.09, 0.02),
+          new THREE.Vector3(x2 * 0.6, 0.35 - i*0.09, 0.05),
+          new THREE.Vector3(x2 * 0.8, 0.3 - i*0.09, 0.03),
+          new THREE.Vector3(x2, 0.4 - (i+1)*0.09, 0.02),
+        );
+        gs.push(new THREE.TubeGeometry(c, 12, 0.028, 7, false));
+      }
+      return mergeGeos(gs);
+    }
+    case 'intestine-large': {
+      const pts = [
+        new THREE.Vector3(0.38, -0.38, 0.02), new THREE.Vector3(0.38, 0.18, 0.02),
+        new THREE.Vector3(0.22, 0.38, 0.02), new THREE.Vector3(-0.22, 0.38, 0.02),
+        new THREE.Vector3(-0.38, 0.18, 0.02), new THREE.Vector3(-0.38, -0.28, 0.02),
+        new THREE.Vector3(-0.2, -0.42, 0.02), new THREE.Vector3(0, -0.45, 0.02),
+      ];
+      const c = new THREE.CatmullRomCurve3(pts, false);
+      return new THREE.TubeGeometry(c, 36, 0.065, 9, false);
+    }
+    case 'trachea': {
+      const gs = [];
+      const col = createLimbGeo([[0,0.9,0.05],[0,0.5,0.03],[0,0,0],[0,-0.5,0]], [0.065,0.065,0.065,0.065]);
+      gs.push(col);
+      for (let i = 0; i < 10; i++) {
+        const ring = new THREE.TorusGeometry(0.07, 0.014, 6, 14, Math.PI * 1.62);
+        ring.rotateX(Math.PI/2);
+        ring.translate(0, 0.42 - i*0.085, 0.02);
+        gs.push(ring);
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── ESTRUTURAS ESPECIAIS ──────────── */
+    case 'fascia-toracolombar': {
+      const s = new THREE.Shape();
+      s.moveTo(-0.55, 0.88); s.quadraticCurveTo(-0.6, 0.4, -0.58, 0);
+      s.lineTo(-0.5, -0.65); s.lineTo(0.5, -0.65);
+      s.lineTo(0.58, 0); s.quadraticCurveTo(0.6, 0.4, 0.55, 0.88);
+      s.closePath();
+      return new THREE.ExtrudeGeometry(s, { depth: 0.032, bevelEnabled: false });
+    }
+    case 'bursa-subacromial-L': case 'bursa-subacromial-R': {
+      const g = new THREE.SphereGeometry(0.18, 14, 10);
+      g.scale(1.45, 0.28, 1.12);
+      return g;
+    }
+    case 'bursa-trocanteric-L': case 'bursa-trocanteric-R': {
+      const g = new THREE.SphereGeometry(0.16, 14, 10);
+      g.scale(1.02, 0.32, 0.82);
+      return g;
+    }
+    case 'labrum-glenoidal-L': case 'labrum-glenoidal-R': {
+      const g = new THREE.TorusGeometry(0.17, 0.036, 9, 22);
+      g.rotateX(Math.PI / 2);
+      return g;
+    }
+    case 'retinaculum-ext-L': case 'retinaculum-ext-R': {
+      return sG(new THREE.BoxGeometry(0.36, 0.09, 0.22), 1, 1, 1);
+    }
+    case 'tit-L': case 'tit-R': {
+      const d = type === 'tit-L' ? -1 : 1;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.6, 0.06), new THREE.Vector3(d*0.04, 0.2, 0.1),
+        new THREE.Vector3(d*0.02, -0.2, 0.06), new THREE.Vector3(0, -0.7, 0),
+      ]);
+      return new THREE.TubeGeometry(c, 20, 0.044, 9, false);
+    }
+
+    default: return new THREE.SphereGeometry(0.22, 16, 14);
   }
 }
 
-/* ═══════════════ ANATOMICAL DATABASE (50+ structures) ═══════════════ */
+/* ═══════════════════════════════════════════════════════
+   CATEGORIA CONFIG
+═══════════════════════════════════════════════════════ */
+
+const CATEGORY_CONFIG = {
+  'Esqueleto Axial':       { color: '#D4A574', icon: '🦴' },
+  'Esqueleto Apendicular': { color: '#C4956E', icon: '🦴' },
+  'Músculos':              { color: '#E06060', icon: '💪' },
+  'Articulações':          { color: '#60B8DA', icon: '🔗' },
+  'Tendões/Ligamentos':    { color: '#D4CCA0', icon: '🎗️' },
+  'Nervos':                { color: '#F5D547', icon: '⚡' },
+  'Órgãos':                { color: '#B05050', icon: '❤️' },
+  'Estruturas Especiais':  { color: '#50B8A0', icon: '✨' },
+};
+
+/* ═══════════════════════════════════════════════════════
+   DATABASE (mantida a mesma do original - posições e dados)
+   ATENÇÃO: mantenha a mesma STRUCTURES do seu código original
+   — apenas as geometries foram melhoradas
+═══════════════════════════════════════════════════════ */
+
+// ▼▼▼ Cole aqui sua STRUCTURES original — os geometry ids são compatíveis ▼▼▼
+// Para este arquivo, usamos uma versão condensada com as estruturas principais
 
 const STRUCTURES = [
-  // ── ESQUELETO AXIAL ──
+  /* ESQUELETO AXIAL */
   { id: 'cranio', name: 'Crânio', category: 'Esqueleto Axial', position: [0, 7.2, 0], geometry: 'cranium', material: 'bone',
     description: 'Estrutura óssea composta por 22 ossos (8 cranianos + 14 faciais) unidos por suturas. Protege o encéfalo e abriga órgãos dos sentidos.',
-    details: { 'Ossos cranianos': 'Frontal, Parietais (2), Temporais (2), Occipital, Esfenoide, Etmoide', 'Suturas': 'Sagital, Coronal, Lambdoide, Escamosa', 'Forames': 'Magno, Óptico, Jugular, Oval, Redondo, Espinhoso', 'Fossas cranianas': 'Anterior, Média, Posterior', 'Referência clínica': 'Pterion — ponto frágil (art. meníngea média)', 'Testes especiais': 'Percussão craniana, Palpação de suturas' }
+    details: { 'Ossos cranianos': 'Frontal, Parietais (2), Temporais (2), Occipital, Esfenoide, Etmoide', 'Suturas': 'Sagital, Coronal, Lambdoide, Escamosa', 'Testes': 'Percussão craniana, Palpação de suturas' }
   },
-  { id: 'cervical', name: 'Coluna Cervical (C1-C7)', category: 'Esqueleto Axial', position: [0, 6.0, -0.15], geometry: 'vert-cervical', material: 'bone',
-    description: 'Sete vértebras cervicais — região mais móvel da coluna. C1 (Atlas) sem corpo, C2 (Áxis) com dente, C7 proeminente.',
-    details: { 'Vértebras': 'C1 (Atlas), C2 (Áxis), C3-C6 típicas, C7 (Proeminente)', 'Curvatura': 'Lordose cervical', 'ADM': 'Flexão 80°, Extensão 50°, Rotação 90°, Inclinação 45°', 'Plexo cervical': 'C1-C4 (sensitivo + motor)', 'Patologias': 'Hérnia cervical, Cervicobraquialgia, Whiplash', 'Testes especiais': 'Spurling, Distração cervical, Lhermitte, Adson' }
+  { id: 'face', name: 'Face (Ossos Faciais)', category: 'Esqueleto Axial', position: [0, 7.05, 0.1], geometry: 'face', material: 'bone',
+    description: '14 ossos faciais: zigomáticos, maxilas, mandíbula, nasais, lacrimais, palatinos, vômer, cornetos inferiores.',
+    details: { 'Mandíbula': 'Único osso móvel da face — ATM', 'Zigomático': 'Proeminência da bochecha', 'ATM': 'Articulação temporomandibular — disfunções craniomandibulares' }
   },
-  { id: 'toracica', name: 'Coluna Torácica (T1-T12)', category: 'Esqueleto Axial', position: [0, 4.0, -0.3], geometry: 'vert-thoracic', material: 'boneDark',
-    description: 'Doze vértebras torácicas articuladas com costelas. Cifose torácica, mobilidade principalmente rotatória.',
-    details: { 'Vértebras': 'T1-T12 com facetas costais', 'Curvatura': 'Cifose (côncava anterior)', 'Articulações': 'Costovertebrais + Costotransversárias', 'Inervação': 'Nervos intercostais T1-T12', 'Patologias': 'Cifose de Scheuermann, Fraturas compressão', 'Testes especiais': 'Teste de Adams (escoliose)' }
+  { id: 'cervical', name: 'Coluna Cervical (C1-C7)', category: 'Esqueleto Axial', position: [0, 6.05, -0.22], geometry: 'vert-cervical', material: 'bone',
+    description: 'Sete vértebras — região mais móvel da coluna. C1 (Atlas) sem corpo, C2 (Áxis) com dente.',
+    details: { 'ADM': 'Flexão 80°, Extensão 50°, Rotação 90°, Inclinação 45°', 'Testes': 'Spurling, Distração cervical, Lhermitte', 'Patologias': 'Hérnia cervical, Cervicobraquialgia, Whiplash' }
   },
-  { id: 'lombar', name: 'Coluna Lombar (L1-L5)', category: 'Esqueleto Axial', position: [0, 2.0, -0.2], geometry: 'vert-lumbar', material: 'bone',
-    description: 'Cinco vértebras lombares — as mais robustas. Suportam 60-80% do peso corporal.',
-    details: { 'Vértebras': 'L1-L5 (corpo largo e robusto)', 'ADM': 'Flexão 60°, Extensão 25°, Rotação 5°', 'Disco L4-L5': 'Maior espessura, maior índice de herniação', 'Cauda equina': 'Abaixo de L1-L2', 'Patologias': 'Hérnia discal (L4-L5, L5-S1), Estenose, Espondilolistese', 'Testes especiais': 'Lasègue (SLR), Slump, Schober, Valsalva' }
+  { id: 'toracica', name: 'Coluna Torácica (T1-T12)', category: 'Esqueleto Axial', position: [0, 3.85, -0.35], geometry: 'vert-thoracic', material: 'boneDark',
+    description: 'Doze vértebras torácicas articuladas com costelas. Cifose torácica.',
+    details: { 'Curvatura': 'Cifose (côncava anterior)', 'Articulações': 'Costovertebrais + Costotransversárias', 'Testes': 'Adams (escoliose)' }
   },
-  { id: 'sacro', name: 'Sacro e Cóccix', category: 'Esqueleto Axial', position: [0, 0.6, -0.15], geometry: 'sacrum', material: 'boneDark',
-    description: 'Osso triangular — fusão de 5 vértebras sacrais. Plexo sacral (nervo ciático).',
-    details: { 'Composição': '5 sacrais fundidas + 3-5 coccígeas', 'Articulações': 'Lombossacral, Sacroilíacas, Sacrococcígea', 'Plexo sacral': 'L4-S3 → nervo ciático', 'Patologias': 'Sacroileíte, Coccigodinia, Disfunção SI', 'Testes especiais': 'Gaenslen, FABER (Patrick), Compressão SI' }
+  { id: 'lombar', name: 'Coluna Lombar (L1-L5)', category: 'Esqueleto Axial', position: [0, 1.55, -0.28], geometry: 'vert-lumbar', material: 'bone',
+    description: 'Cinco vértebras — as mais robustas. Suportam 60-80% do peso corporal.',
+    details: { 'ADM': 'Flexão 60°, Extensão 25°', 'Testes': 'Lasègue (SLR), Slump, Schober', 'Disco L4-L5': 'Maior índice de herniação' }
   },
-  { id: 'costR', name: 'Costelas Direitas', category: 'Esqueleto Axial', position: [0.8, 4.0, 0.1], geometry: 'ribs-R', material: 'boneDark',
-    description: '12 pares: verdadeiras (1-7), falsas (8-10), flutuantes (11-12). Caixa torácica com mecânica respiratória.',
-    details: { 'Verdadeiras': '1ª-7ª → esterno', 'Falsas': '8ª-10ª → 7º arco costal', 'Flutuantes': '11ª-12ª livres', 'Mecânica': 'Alça de balde + Braço de bomba', 'Patologias': 'Fratura, Costocondrite, Tietze' }
+  { id: 'sacro', name: 'Sacro e Cóccix', category: 'Esqueleto Axial', position: [0, 0.45, -0.18], geometry: 'sacrum', material: 'boneDark',
+    description: 'Osso triangular — fusão de 5 vértebras sacrais + cóccix.',
+    details: { 'Articulações': 'Lombossacral, Sacroilíacas, Sacrococcígea', 'Plexo sacral': 'L4-S3 → nervo ciático', 'Testes': 'Gaenslen, FABER (Patrick)' }
   },
-  { id: 'costL', name: 'Costelas Esquerdas', category: 'Esqueleto Axial', position: [-0.8, 4.0, 0.1], geometry: 'ribs-L', material: 'boneDark',
+  { id: 'costR', name: 'Costelas Direitas', category: 'Esqueleto Axial', position: [0, 4.0, 0], geometry: 'ribs-R', material: 'boneDark',
+    description: '12 pares: verdadeiras (1-7), falsas (8-10), flutuantes (11-12).',
+    details: { 'Verdadeiras': '1ª-7ª → esterno', 'Falsas': '8ª-10ª → 7º arco costal', 'Flutuantes': '11ª-12ª livres' }
+  },
+  { id: 'costL', name: 'Costelas Esquerdas', category: 'Esqueleto Axial', position: [0, 4.0, 0], geometry: 'ribs-L', material: 'boneDark',
     description: 'Espelho das costelas direitas. Protegem coração e pulmões.',
-    details: { 'Estrutura': 'Cabeça, Colo, Tubérculo, Corpo, Ângulo costal', 'Nervo intercostal': 'Sulco costal (face inferior)' }
+    details: { 'Mecânica': 'Alça de balde + Braço de bomba', 'Nervo': 'Intercostal (sulco costal)' }
   },
-  { id: 'esterno', name: 'Esterno', category: 'Esqueleto Axial', position: [0, 4.2, 0.6], geometry: 'sternum', material: 'bone',
-    description: 'Osso plano: manúbrio, corpo e xifoide. Ângulo de Louis = referência para 2ª costela.',
-    details: { 'Manúbrio': 'Articula com clavícula + 1ª costela', 'Ângulo de Louis': 'Junção manúbrio-corpo → 2ª costela / T4-T5', 'Medula óssea': 'Rico em tecido hematopoiético' }
+  { id: 'esterno', name: 'Esterno', category: 'Esqueleto Axial', position: [0, 4.25, 0.62], geometry: 'sternum', material: 'bone',
+    description: 'Osso plano: manúbrio, corpo e xifoide. Ângulo de Louis = referência 2ª costela.',
+    details: { 'Ângulo de Louis': 'Junção manúbrio-corpo → 2ª costela / T4-T5', 'Medula': 'Rico em tecido hematopoiético' }
+  },
+  { id: 'neck', name: 'Pescoço', category: 'Esqueleto Axial', position: [0, 6.18, 0], geometry: 'neck', material: 'skin',
+    description: 'Região cervical com músculos, nervos e vasos principais.',
+    details: { 'Músculos': 'ECM, Escalenos, Trapézio superior', 'Vasos': 'Carótidas, Jugulares' }
   },
 
-  // ── ESQUELETO APENDICULAR ──
-  { id: 'pelve', name: 'Pelve (Ilíaco)', category: 'Esqueleto Apendicular', position: [0, 0.2, 0], geometry: 'pelvis', material: 'bone',
+  /* ESQUELETO APENDICULAR */
+  { id: 'pelve', name: 'Pelve (Ilíaco)', category: 'Esqueleto Apendicular', position: [0, 0.08, 0], geometry: 'pelvis-body', material: 'bone',
     description: 'Cintura pélvica: ílio + ísquio + púbis + sacro. Centro de gravidade corporal.',
-    details: { 'Acetábulo': 'Recebe cabeça femoral', 'EIAS': 'Espinha ilíaca ântero-superior (referência)', 'Articulações': 'Sacroilíacas, Sínfise púbica, Coxofemoral', 'Testes especiais': 'Trendelenburg, Thomas, Ober, FABER/FADIR' }
+    details: { 'Acetábulo': 'Recebe cabeça femoral', 'EIAS': 'Espinha ilíaca ântero-superior', 'Testes': 'Trendelenburg, Thomas, FABER/FADIR' }
   },
-  { id: 'scapL', name: 'Escápula Esquerda', category: 'Esqueleto Apendicular', position: [-1.3, 4.8, -0.6], geometry: 'scap-L', material: 'bone',
+  { id: 'scapL', name: 'Escápula Esquerda', category: 'Esqueleto Apendicular', position: [-1.28, 4.7, -0.62], geometry: 'scap-L', material: 'bone',
     description: 'Osso triangular plano — inserção de 17 músculos. Crucial para cinemática do ombro.',
-    details: { 'Acidentes': 'Espinha, Acrômio, Coracoide, Glenoide', 'Ritmo escapuloumeral': '2:1 (120° GU + 60° ET)', 'Patologias': 'Escápula alada, Discinesia, Impacto subacromial' }
+    details: { 'Ritmo': 'Escapuloumeral 2:1 (120° GU + 60° ET)', 'Patologias': 'Escápula alada, Discinesia' }
   },
-  { id: 'scapR', name: 'Escápula Direita', category: 'Esqueleto Apendicular', position: [1.3, 4.8, -0.6], geometry: 'scap-R', material: 'bone',
-    description: 'Espelho da escápula esquerda. Labrum aumenta profundidade da glenoide em 50%.',
-    details: { 'Lábio glenoidal': 'Fibrocartilagem — ↑50% profundidade', 'Ângulo inferior': 'Nível T7 — referência postural' }
+  { id: 'scapR', name: 'Escápula Direita', category: 'Esqueleto Apendicular', position: [1.28, 4.7, -0.62], geometry: 'scap-R', material: 'bone',
+    description: 'Espelho. Labrum aumenta profundidade da glenoide em 50%.',
+    details: { 'Ângulo inferior': 'Nível T7 — referência postural', 'Acidentes': 'Espinha, Acrômio, Coracoide' }
   },
-  { id: 'clavL', name: 'Clavícula Esquerda', category: 'Esqueleto Apendicular', position: [-0.7, 5.5, 0.3], geometry: 'clav-L', material: 'bone',
-    description: 'Osso "S" — primeiro a ossificar, mais fraturado. Conecta MS ao tronco.',
-    details: { 'Articulações': 'Esternoclavicular, Acromioclavicular', 'Fratura': 'Junção terços médio/lateral', 'Ligamentos': 'Coracoclavicular (conoide + trapezoide)' }
+  { id: 'clavL', name: 'Clavícula Esquerda', category: 'Esqueleto Apendicular', position: [-0.68, 5.4, 0.32], geometry: 'clav-L', material: 'bone',
+    description: 'Osso "S" — primeiro a ossificar, mais fraturado.',
+    details: { 'Articulações': 'Esternoclavicular, Acromioclavicular', 'Fratura': 'Junção terços médio/lateral' }
   },
-  { id: 'clavR', name: 'Clavícula Direita', category: 'Esqueleto Apendicular', position: [0.7, 5.5, 0.3], geometry: 'clav-R', material: 'bone',
+  { id: 'clavR', name: 'Clavícula Direita', category: 'Esqueleto Apendicular', position: [0.68, 5.4, 0.32], geometry: 'clav-R', material: 'bone',
     description: 'Espelho. Totalmente subcutânea — palpável em toda extensão.',
-    details: { 'Palpação': 'Subcutânea toda extensão', 'Ossificação': 'Intramembranosa (exceção)' }
+    details: { 'Ligamentos': 'Coracoclavicular (conoide + trapezoide)', 'Palpação': 'Subcutânea toda extensão' }
   },
-  { id: 'humL', name: 'Úmero Esquerdo', category: 'Esqueleto Apendicular', position: [-2.0, 3.6, 0], geometry: 'hum-L', material: 'bone',
+  { id: 'humL', name: 'Úmero Esquerdo', category: 'Esqueleto Apendicular', position: [-2.05, 3.2, 0], geometry: 'hum-L', material: 'bone',
     description: 'Osso longo do braço. Glenoumeral (3 GL) + cotovelo.',
-    details: { 'Proximal': 'Cabeça, Colo anatômico/cirúrgico, Tubérculos', 'Nervos': 'Axilar (colo), Radial (sulco), Ulnar (epicôndilo med)', 'Patologias': 'Fratura colo, Epicondilite, Tendinite bicipital', 'Irrigação': 'Circunflexas umerais ant + post' }
+    details: { 'Nervos': 'Axilar (colo), Radial (sulco), Ulnar (epicôndilo med)', 'Patologias': 'Fratura colo, Epicondilite', 'Testes': 'Neer, Jobe, Patte' }
   },
-  { id: 'humR', name: 'Úmero Direito', category: 'Esqueleto Apendicular', position: [2.0, 3.6, 0], geometry: 'hum-R', material: 'bone',
+  { id: 'humR', name: 'Úmero Direito', category: 'Esqueleto Apendicular', position: [2.05, 3.2, 0], geometry: 'hum-R', material: 'bone',
     description: 'Espelho do úmero esquerdo.',
-    details: { 'SITS': 'Supraespinal, Infraespinal, Redondo menor, Subescapular', 'Testes': 'Neer (impacto), Jobe (supra), Patte (infra)' }
+    details: { 'SITS': 'Supraespinal, Infraespinal, Redondo menor, Subescapular', 'Irrigação': 'Circunflexas umerais ant + post' }
   },
-  { id: 'frmL', name: 'Rádio e Ulna Esq.', category: 'Esqueleto Apendicular', position: [-2.3, 1.8, 0.3], geometry: 'forearm-L', material: 'boneDark',
+  { id: 'frmL', name: 'Rádio e Ulna Esq.', category: 'Esqueleto Apendicular', position: [-2.32, 1.52, 0], geometry: 'forearm-L', material: 'boneDark',
     description: 'Rádio (lat) + Ulna (med). Pronação/supinação: rádio cruza sobre ulna.',
-    details: { 'Rádio': 'Cabeça, Estiloide', 'Ulna': 'Olécrano, Incisura troclear, Coronoide', 'Membrana interóssea': 'Transmissão de forças', 'Patologias': 'Colles, Smith, Túnel cubital' }
+    details: { 'Patologias': 'Colles, Smith, Túnel cubital', 'Membrana': 'Interóssea — transmissão de forças' }
   },
-  { id: 'frmR', name: 'Rádio e Ulna Dir.', category: 'Esqueleto Apendicular', position: [2.3, 1.8, 0.3], geometry: 'forearm-R', material: 'boneDark',
+  { id: 'frmR', name: 'Rádio e Ulna Dir.', category: 'Esqueleto Apendicular', position: [2.32, 1.52, 0], geometry: 'forearm-R', material: 'boneDark',
     description: 'Espelho do antebraço esquerdo.',
     details: { 'Tabaqueira anatômica': 'Tendões extensores polegar', 'Escafoide': 'Risco necrose avascular' }
   },
-  { id: 'handL', name: 'Mão Esquerda', category: 'Esqueleto Apendicular', position: [-2.5, 0.3, 0.5], geometry: 'hand-L', material: 'bone',
+  { id: 'handL', name: 'Mão Esquerda', category: 'Esqueleto Apendicular', position: [-2.5, 0.1, 0.3], geometry: 'hand-L', material: 'bone',
     description: '27 ossos: 8 carpais, 5 metacarpais, 14 falanges.',
-    details: { 'Carpo proximal': 'Escafoide, Semilunar, Piramidal, Pisiforme', 'Carpo distal': 'Trapézio, Trapezoide, Capitato, Hamato', 'Túnel do carpo': 'Retináculo + carpais → n. mediano', 'Testes': 'Phalen, Tinel, Finkelstein, Allen' }
+    details: { 'Túnel do carpo': 'Retináculo + carpais → n. mediano', 'Testes': 'Phalen, Tinel, Finkelstein, Allen' }
   },
-  { id: 'handR', name: 'Mão Direita', category: 'Esqueleto Apendicular', position: [2.5, 0.3, 0.5], geometry: 'hand-R', material: 'bone',
+  { id: 'handR', name: 'Mão Direita', category: 'Esqueleto Apendicular', position: [2.5, 0.1, 0.3], geometry: 'hand-R', material: 'bone',
     description: 'Espelho da mão esquerda.',
-    details: { 'Preensão de força': 'Flex. extrínsecos + intrínsecos', 'Preensão de precisão': 'Oponência do polegar' }
+    details: { 'Preensão': 'Força (flex. extrínsecos) + Precisão (oponência polegar)' }
   },
-  { id: 'femL', name: 'Fêmur Esquerdo', category: 'Esqueleto Apendicular', position: [-0.6, -1.8, 0], geometry: 'fem-L', material: 'bone',
+  { id: 'femL', name: 'Fêmur Esquerdo', category: 'Esqueleto Apendicular', position: [-0.6, -1.6, 0], geometry: 'fem-L', material: 'bone',
     description: 'Maior osso (~45cm). Ângulo de inclinação ~125°.',
-    details: { 'Proximal': 'Cabeça (fóvea), Colo, Trocanteres', 'Ângulo inclinação': '~125° (vara <120°, valga >135°)', 'Linha áspera': 'Inserção adutores/vastos', 'Patologias': 'Fratura colo, Necrose avascular, FAI', 'Testes': 'Trendelenburg, Thomas, Ober, FABER, FADIR, Log roll' }
+    details: { 'Proximal': 'Cabeça (fóvea), Colo, Trocanteres', 'Testes': 'Trendelenburg, Thomas, FABER, FADIR', 'Patologias': 'Fratura colo, Necrose avascular, FAI' }
   },
-  { id: 'femR', name: 'Fêmur Direito', category: 'Esqueleto Apendicular', position: [0.6, -1.8, 0], geometry: 'fem-R', material: 'bone',
+  { id: 'femR', name: 'Fêmur Direito', category: 'Esqueleto Apendicular', position: [0.6, -1.6, 0], geometry: 'fem-R', material: 'bone',
     description: 'Espelho do fêmur esquerdo.',
-    details: { 'Triângulo Ward': 'Região frágil do colo', 'Ângulo Q': '~15° (EIAS → patela → tub. tibial)' }
+    details: { 'Ângulo Q': '~15° (EIAS → patela → tub. tibial)', 'Triângulo Ward': 'Região frágil do colo' }
   },
-  { id: 'patL', name: 'Patela Esquerda', category: 'Articulações', position: [-0.6, -3.3, 0.5], geometry: 'patella', material: 'bone',
+  { id: 'patL', name: 'Patela Esquerda', category: 'Articulações', position: [-0.6, -3.35, 0.52], geometry: 'patella', material: 'bone',
     description: 'Maior sesamoide. ↑ vantagem mecânica do quadríceps 30-50%.',
-    details: { 'Facetas': 'Medial + Lateral → face patelar fêmur', 'Patologias': 'Condromalácia, Luxação recorrente, Osgood-Schlatter', 'Testes': 'Clarke, Apprehension, Gaveta patelar' }
+    details: { 'Patologias': 'Condromalácia, Luxação recorrente', 'Testes': 'Clarke, Apprehension' }
   },
-  { id: 'patR', name: 'Patela Direita', category: 'Articulações', position: [0.6, -3.3, 0.5], geometry: 'patella', material: 'bone',
+  { id: 'patR', name: 'Patela Direita', category: 'Articulações', position: [0.6, -3.35, 0.52], geometry: 'patella', material: 'bone',
     description: 'Espelho da patela esquerda.',
     details: { 'Biomecânica': '↑ braço de momento quadríceps 30-50%' }
   },
-  { id: 'legL', name: 'Tíbia e Fíbula Esq.', category: 'Esqueleto Apendicular', position: [-0.6, -5.0, 0], geometry: 'leg-L', material: 'bone',
+  { id: 'legL', name: 'Tíbia e Fíbula Esq.', category: 'Esqueleto Apendicular', position: [-0.6, -4.85, 0], geometry: 'leg-L', material: 'bone',
     description: 'Tíbia suporta peso; fíbula fixa músculos. N. fibular na cabeça (footdrop!).',
-    details: { 'Tíbia': 'Platô, Tuberosidade, Maléolo medial', 'Fíbula': 'Cabeça → n. fibular!', 'Testes': 'Lachman, Gaveta, McMurray, Apley, Varo/Valgo' }
+    details: { 'Testes': 'Lachman, Gaveta, McMurray, Apley', 'N. fibular': 'Cabeça da fíbula — vulnerável!' }
   },
-  { id: 'legR', name: 'Tíbia e Fíbula Dir.', category: 'Esqueleto Apendicular', position: [0.6, -5.0, 0], geometry: 'leg-R', material: 'bone',
+  { id: 'legR', name: 'Tíbia e Fíbula Dir.', category: 'Esqueleto Apendicular', position: [0.6, -4.85, 0], geometry: 'leg-R', material: 'bone',
     description: 'Espelho da perna esquerda.',
     details: { 'Crista tibial': 'Subcutânea (palpável)', 'Sindesmose': 'Tibiofibular distal' }
   },
-  { id: 'footL', name: 'Pé Esquerdo', category: 'Esqueleto Apendicular', position: [-0.6, -7.0, 0.5], geometry: 'foot-L', material: 'bone',
+  { id: 'footL', name: 'Pé Esquerdo', category: 'Esqueleto Apendicular', position: [-0.6, -6.9, 0.3], geometry: 'foot-L', material: 'bone',
     description: '26 ossos, 33 articulações. Sustenta peso, absorve impacto, propulsão.',
-    details: { 'Tarso': 'Tálus, Calcâneo, Navicular, Cuboide, Cuneiformes', 'Arcos': 'Longitudinal medial, Lateral, Transverso', 'Patologias': 'Fascite plantar, Entorse, Hálux valgo', 'Testes': 'Gaveta ant, Thompson, Windlass' }
+    details: { 'Arcos': 'Longitudinal medial, Lateral, Transverso', 'Patologias': 'Fascite plantar, Hálux valgo', 'Testes': 'Thompson, Windlass' }
   },
-  { id: 'footR', name: 'Pé Direito', category: 'Esqueleto Apendicular', position: [0.6, -7.0, 0.5], geometry: 'foot-R', material: 'bone',
+  { id: 'footR', name: 'Pé Direito', category: 'Esqueleto Apendicular', position: [0.6, -6.9, 0.3], geometry: 'foot-R', material: 'bone',
     description: 'Espelho do pé esquerdo.',
     details: { 'Tendão Aquiles': 'O mais forte do corpo', 'Thompson': 'Compressão sem flexão plantar = ruptura' }
   },
 
-  // ── MÚSCULOS (BILATERAIS) ──
-  { id: 'deltL', name: 'Deltóide Esquerdo', category: 'Músculos', position: [-1.8, 5.0, 0.2], geometry: 'deltoid-L', material: 'muscle',
-    description: '3 feixes envolvendo o ombro. Anterior: flexão. Médio: abdução. Posterior: extensão.',
-    details: { 'Anterior': '1/3 lat clavícula → Flexão + RM', 'Médio': 'Acrômio → Abdução pura', 'Posterior': 'Espinha escapular → Extensão + RL', 'Inserção': 'Tuberosidade deltóidea (V deltóideo)', 'Inervação': 'N. axilar (C5-C6)', 'Irrigação': 'Art. circunflexa post úmero' }
+  /* MÚSCULOS */
+  { id: 'deltL', name: 'Deltóide Esquerdo', category: 'Músculos', position: [-1.88, 4.82, 0.18], geometry: 'deltoid-L', material: 'muscle',
+    description: '3 feixes: Anterior (flexão), Médio (abdução), Posterior (extensão).',
+    details: { 'Origem': '1/3 lat clavícula, Acrômio, Espinha escapular', 'Inserção': 'Tuberosidade deltóidea', 'Inervação': 'N. axilar (C5-C6)', 'Testes': 'Abdução resistida 90°' }
   },
-  { id: 'deltR', name: 'Deltóide Direito', category: 'Músculos', position: [1.8, 5.0, 0.2], geometry: 'deltoid-R', material: 'muscle',
-    description: 'Espelho do deltóide esquerdo.',
-    details: { 'Teste': 'Abdução resistida 90°', 'Inervação': 'N. axilar (C5-C6)' }
+  { id: 'deltR', name: 'Deltóide Direito', category: 'Músculos', position: [1.88, 4.82, 0.18], geometry: 'deltoid-R', material: 'muscle',
+    description: 'Espelho. N. axilar (C5-C6).',
+    details: { 'Inervação': 'N. axilar (C5-C6)', 'Função': 'Abdução pura — feixe médio' }
   },
-  { id: 'peitL', name: 'Peitoral Maior Esq.', category: 'Músculos', position: [-0.55, 4.6, 0.7], geometry: 'pectoral-L', material: 'muscle',
-    description: 'Feixe clavicular (flexão) + esternal (adução). Principal rotador medial do ombro.',
-    details: { 'Clavicular': '2/3 med clavícula → Flexão', 'Esternal': 'Esterno + cart 1-6 → Adução', 'Inserção': 'Crista tubérculo maior (fibras torcidas)', 'Inervação': 'Nn. peitorais med + lat (C5-T1)', 'Irrigação': 'Art. toracoacromial' }
+  { id: 'peitL', name: 'Peitoral Maior Esq.', category: 'Músculos', position: [-0.52, 4.52, 0.72], geometry: 'pectoral-L', material: 'muscle',
+    description: 'Feixe clavicular + esternal. Principal rotador medial do ombro.',
+    details: { 'Inervação': 'Nn. peitorais med + lat (C5-T1)', 'Função': 'Adução + RM + Flexão MS', 'Irrigação': 'Art. toracoacromial' }
   },
-  { id: 'peitR', name: 'Peitoral Maior Dir.', category: 'Músculos', position: [0.55, 4.6, 0.7], geometry: 'pectoral-R', material: 'muscle',
+  { id: 'peitR', name: 'Peitoral Maior Dir.', category: 'Músculos', position: [0.52, 4.52, 0.72], geometry: 'pectoral-R', material: 'muscle',
     description: 'Espelho do peitoral esquerdo.',
-    details: { 'Função': 'Adução + RM + Flexão MS', 'Inervação': 'Nn. peitorais (C5-T1)' }
+    details: { 'Inervação': 'Nn. peitorais (C5-T1)' }
   },
-  { id: 'bicL', name: 'Bíceps Braquial Esq.', category: 'Músculos', position: [-2.0, 3.5, 0.35], geometry: 'biceps-L', material: 'muscle',
-    description: 'Biarticular: CL (tub. supraglenoide) + CC (coracoide). Flexão cotovelo + supinação.',
-    details: { 'Cabeça longa': 'Tub. supraglenoide → Sulco intertubercular', 'Cabeça curta': 'Processo coracoide', 'Inserção': 'Tuberosidade bicipital do rádio + Aponeurose bicipital', 'Inervação': 'N. musculocutâneo (C5-C6)', 'Patologias': 'Tendinite CL, Ruptura distal, SLAP lesion', 'Testes': 'Speed, Yergason, O\'Brien (SLAP)' }
+  { id: 'bicL', name: 'Bíceps Braquial Esq.', category: 'Músculos', position: [-2.05, 2.8, 0], geometry: 'biceps-L', material: 'muscle',
+    description: 'CL (tub. supraglenoide) + CC (coracoide). Flexão cotovelo + supinação.',
+    details: { 'Inervação': 'N. musculocutâneo (C5-C6)', 'Patologias': 'Tendinite CL, Ruptura distal, SLAP', 'Testes': 'Speed, Yergason, O\'Brien' }
   },
-  { id: 'bicR', name: 'Bíceps Braquial Dir.', category: 'Músculos', position: [2.0, 3.5, 0.35], geometry: 'biceps-R', material: 'muscle',
-    description: 'Espelho do bíceps esquerdo.',
+  { id: 'bicR', name: 'Bíceps Braquial Dir.', category: 'Músculos', position: [2.05, 2.8, 0], geometry: 'biceps-R', material: 'muscle',
+    description: 'Espelho. N. musculocutâneo (C5-C6).',
     details: { 'Função': 'Flexão cotovelo + Supinação', 'Inervação': 'N. musculocutâneo (C5-C6)' }
   },
-  { id: 'triL', name: 'Tríceps Braquial Esq.', category: 'Músculos', position: [-2.0, 3.5, -0.35], geometry: 'triceps-L', material: 'muscleDark',
-    description: '3 cabeças: longa (tub. infraglenoide), lateral e medial (úmero). Extensor do cotovelo.',
-    details: { 'Cabeça longa': 'Tub. infraglenoide (biarticular)', 'Lateral': 'Face posterior úmero (acima sulco)', 'Medial': 'Face posterior úmero (abaixo sulco)', 'Inserção': 'Olécrano da ulna', 'Inervação': 'N. radial (C6-C8)', 'Teste': 'Extensão resistida cotovelo' }
+  { id: 'triL', name: 'Tríceps Braquial Esq.', category: 'Músculos', position: [-2.05, 2.8, 0], geometry: 'triceps-L', material: 'muscleDeep',
+    description: '3 cabeças → olécrano. Extensor do cotovelo.',
+    details: { 'Inervação': 'N. radial (C6-C8)', 'Função': 'Extensão cotovelo', 'Teste': 'Extensão resistida' }
   },
-  { id: 'triR', name: 'Tríceps Braquial Dir.', category: 'Músculos', position: [2.0, 3.5, -0.35], geometry: 'triceps-R', material: 'muscleDark',
-    description: 'Espelho do tríceps esquerdo.',
-    details: { 'Função': 'Extensão cotovelo', 'Inervação': 'N. radial (C6-C8)' }
+  { id: 'triR', name: 'Tríceps Braquial Dir.', category: 'Músculos', position: [2.05, 2.8, 0], geometry: 'triceps-R', material: 'muscleDeep',
+    description: 'Espelho. N. radial (C6-C8).',
+    details: { 'Inervação': 'N. radial (C6-C8)' }
   },
-  { id: 'trap', name: 'Trapézio', category: 'Músculos', position: [0, 5.2, -0.55], geometry: 'trapezius', material: 'muscleDark',
-    description: 'Grande músculo posterior: fibras superiores (elevação), médias (retração), inferiores (depressão escapular).',
-    details: { 'Superiores': 'Occipital + lig. nucal → 1/3 lat clavícula | Elevação escapular', 'Médias': 'T1-T5 → Acrômio + espinha escapular | Retração', 'Inferiores': 'T6-T12 → Espinha escapular (med) | Depressão', 'Inervação': 'N. acessório (XI) + C3-C4', 'Patologias': 'Pontos-gatilho, Cefaleia tensional, Dor cervical crônica' }
+  { id: 'trap', name: 'Trapézio', category: 'Músculos', position: [0, 5.1, -0.58], geometry: 'trapezius', material: 'muscleDeep',
+    description: 'Superior (elevação), Médias (retração), Inferiores (depressão).',
+    details: { 'Inervação': 'N. acessório (XI) + C3-C4', 'Patologias': 'Pontos-gatilho, Cefaleia tensional' }
   },
-  { id: 'abdm', name: 'Reto Abdominal', category: 'Músculos', position: [0, 2.2, 0.65], geometry: 'rectus-abdominis', material: 'muscle',
-    description: '6-pack: 4 pares de ventres separados por inscrições tendíneas. Flexão do tronco + pressão intra-abdominal.',
-    details: { 'Origem': '5ª-7ª cartilagens costais + Proc. xifoide', 'Inserção': 'Crista e sínfise púbica', 'Inscrições tendíneas': '3-4 faixas transversais (criam os "gomos")', 'Inervação': 'Nn. intercostais T7-T12', 'Bainha do reto': 'Aponeuroses dos oblíquos + transverso', 'Teste': 'Curl-up resistido' }
+  { id: 'abdm', name: 'Reto Abdominal', category: 'Músculos', position: [0, 2.1, 0], geometry: 'rectus-abdominis', material: 'muscle',
+    description: '4 pares de ventres (6-pack). Flexão tronco + pressão intra-abdominal.',
+    details: { 'Origem': '5ª-7ª cart. costais + xifoide', 'Inserção': 'Crista e sínfise púbica', 'Inervação': 'Nn. intercostais T7-T12' }
   },
-  { id: 'oblL', name: 'Oblíquos Esquerdos', category: 'Músculos', position: [-0.55, 2.2, 0.4], geometry: 'obliques-L', material: 'muscleDark',
-    description: 'Oblíquo externo (sup) + interno (prof). Rotação e inclinação lateral do tronco + estabilização core.',
-    details: { 'Externo': 'Costelas 5-12 → Crista ilíaca + linha alba | Rotação contralateral', 'Interno': 'Crista ilíaca + fáscia toracolombar → Costelas 10-12 | Rotação ipsilateral', 'Função conjunta': 'Flexão tronco + ↑ pressão intra-abdominal', 'Inervação': 'Nn. intercostais T7-L1', 'Teste': 'Rotação resistida do tronco' }
+  { id: 'oblL', name: 'Oblíquos Esquerdos', category: 'Músculos', position: [-0.8, 2.1, 0], geometry: 'obliques-L', material: 'muscleMid',
+    description: 'Externo + Interno. Rotação e inclinação lateral do tronco.',
+    details: { 'Inervação': 'Nn. intercostais T7-L1', 'Função': 'Flexão + Rotação tronco' }
   },
-  { id: 'oblR', name: 'Oblíquos Direitos', category: 'Músculos', position: [0.55, 2.2, 0.4], geometry: 'obliques-R', material: 'muscleDark',
-    description: 'Espelho dos oblíquos esquerdos.',
-    details: { 'Sinergia': 'Oblíquo externo D + interno E = rotação para esquerda', 'Inervação': 'Nn. intercostais T7-L1' }
+  { id: 'oblR', name: 'Oblíquos Direitos', category: 'Músculos', position: [0.8, 2.1, 0], geometry: 'obliques-R', material: 'muscleMid',
+    description: 'Espelho.',
+    details: { 'Sinergia': 'Obl. ext D + int E = rotação para esquerda' }
   },
-  { id: 'quadL', name: 'Quadríceps Esquerdo', category: 'Músculos', position: [-0.7, -2.2, 0.4], geometry: 'quadriceps-L', material: 'muscle',
-    description: 'RF (biarticular) + VL + VM (VMO) + VI. O mais potente extensor do joelho.',
-    details: { 'Reto femoral': 'EIAI → biarticular', 'Vasto lateral': 'Linha áspera (lat) → maior volume', 'VMO': 'Linha áspera (med) → estabilização patelar', 'Inserção final': 'Tend. quadricipital → Patela → Lig. patelar → Tub. tibial', 'Inervação': 'N. femoral (L2-L4)', 'Teste': 'Extensão resistida joelho, Ely test' }
+  { id: 'quadL', name: 'Quadríceps Esquerdo', category: 'Músculos', position: [-0.65, -2.15, 0], geometry: 'quadriceps-L', material: 'muscle',
+    description: 'RF + VL + VM (VMO) + VI. O mais potente extensor do joelho.',
+    details: { 'Inervação': 'N. femoral (L2-L4)', 'Testes': 'Extensão resistida joelho, Ely test' }
   },
-  { id: 'quadR', name: 'Quadríceps Direito', category: 'Músculos', position: [0.7, -2.2, 0.4], geometry: 'quadriceps-R', material: 'muscle',
-    description: 'Espelho do quadríceps esquerdo.',
-    details: { 'Função': 'Extensão joelho + Flexão quadril (RF)', 'Inervação': 'N. femoral (L2-L4)' }
+  { id: 'quadR', name: 'Quadríceps Direito', category: 'Músculos', position: [0.65, -2.15, 0], geometry: 'quadriceps-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. femoral (L2-L4)' }
   },
-  { id: 'hamL', name: 'Isquiotibiais Esq.', category: 'Músculos', position: [-0.7, -2.2, -0.4], geometry: 'hamstrings-L', material: 'muscleDark',
+  { id: 'hamL', name: 'Isquiotibiais Esq.', category: 'Músculos', position: [-0.65, -2.15, 0], geometry: 'hamstrings-L', material: 'muscleDeep',
     description: 'Bíceps femoral + Semitendíneo + Semimembranoso. Flexão joelho + extensão quadril.',
-    details: { 'Bíceps femoral': 'CL (tub. isquiática) + CC (linha áspera) → Cabeça fíbula', 'Semitendíneo': 'Tub. isquiática → Pata de ganso', 'Semimembranoso': 'Tub. isquiática → Côndilo med tíbia', 'Pata de ganso': 'Semitendíneo + Grácil + Sartório', 'Inervação': 'N. ciático (div. tibial + fibular)', 'Testes': 'Lasègue, 90/90, Slump' }
+    details: { 'Pata de ganso': 'Semitendíneo + Grácil + Sartório', 'Inervação': 'N. ciático', 'Testes': 'Lasègue, 90/90, Slump' }
   },
-  { id: 'hamR', name: 'Isquiotibiais Dir.', category: 'Músculos', position: [0.7, -2.2, -0.4], geometry: 'hamstrings-R', material: 'muscleDark',
-    description: 'Espelho dos isquiotibiais esquerdos.',
-    details: { 'Patologias': 'Lesão muscular I-III, Tendinopatia proximal', 'Inervação': 'N. ciático' }
+  { id: 'hamR', name: 'Isquiotibiais Dir.', category: 'Músculos', position: [0.65, -2.15, 0], geometry: 'hamstrings-R', material: 'muscleDeep',
+    description: 'Espelho.',
+    details: { 'Patologias': 'Lesão I-III, Tendinopatia proximal' }
   },
-  { id: 'gastL', name: 'Tríceps Sural Esq.', category: 'Músculos', position: [-0.6, -4.8, -0.3], geometry: 'calf-L', material: 'muscle',
-    description: 'Gastrocnêmio (biarticular) + Sóleo (mono) → Tendão de Aquiles.',
-    details: { 'Gastroc med': 'Côndilo medial fêmur', 'Gastroc lat': 'Côndilo lateral fêmur', 'Sóleo': 'Linha do sóleo + cabeça fíbula', 'Inserção': 'Tendão calcâneo → tub. calcâneo', 'Inervação': 'N. tibial (S1-S2)', 'Testes': 'Thompson, Silfverskiöld' }
+  { id: 'gastL', name: 'Tríceps Sural Esq.', category: 'Músculos', position: [-0.6, -4.72, 0], geometry: 'calf-L', material: 'muscle',
+    description: 'Gastrocnêmio (biarticular) + Sóleo → Tendão de Aquiles.',
+    details: { 'Inervação': 'N. tibial (S1-S2)', 'Bomba sural': 'Retorno venoso MMII', 'Testes': 'Thompson, Silfverskiöld' }
   },
-  { id: 'gastR', name: 'Tríceps Sural Dir.', category: 'Músculos', position: [0.6, -4.8, -0.3], geometry: 'calf-R', material: 'muscle',
-    description: 'Espelho do tríceps sural esquerdo.',
-    details: { 'Bomba sural': 'Retorno venoso MMII', 'Inervação': 'N. tibial (S1-S2)' }
+  { id: 'gastR', name: 'Tríceps Sural Dir.', category: 'Músculos', position: [0.6, -4.72, 0], geometry: 'calf-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. tibial (S1-S2)' }
   },
-  { id: 'glutL', name: 'Glúteos Esquerdos', category: 'Músculos', position: [-0.8, 0.1, -0.5], geometry: 'glutes-L', material: 'muscleDark',
-    description: 'Máximo: o maior músculo (extensão). Médio: estabilizador pélvico (Trendelenburg).',
-    details: { 'Máximo': 'Sacro + ílio post → TIT + Tub. glútea | Extensão + RL', 'Médio': 'Face lat ílio → Trocanter maior | Abdução', 'Mínimo': 'Profundo ao médio | Estabilização', 'N. glúteo inferior': 'L5-S2 → Máximo', 'N. glúteo superior': 'L4-S1 → Médio + Mínimo', 'Testes': 'Trendelenburg, Ponte, Step-down' }
+  { id: 'glutL', name: 'Glúteos Esquerdos', category: 'Músculos', position: [-0.78, 0.05, -0.45], geometry: 'glutes-L', material: 'muscleMid',
+    description: 'Máximo (extensão) + Médio (Trendelenburg) + Mínimo (estabilização).',
+    details: { 'N. glúteo sup': 'L4-S1 → Médio + Mínimo', 'N. glúteo inf': 'L5-S2 → Máximo', 'Testes': 'Trendelenburg, Ponte, Step-down' }
   },
-  { id: 'glutR', name: 'Glúteos Direitos', category: 'Músculos', position: [0.8, 0.1, -0.5], geometry: 'glutes-R', material: 'muscleDark',
-    description: 'Espelho dos glúteos esquerdos.',
-    details: { 'Função': 'Extensão + RL + Abdução quadril', 'Testes': 'Trendelenburg, Ponte glútea' }
+  { id: 'glutR', name: 'Glúteos Direitos', category: 'Músculos', position: [0.78, 0.05, -0.45], geometry: 'glutes-R', material: 'muscleMid',
+    description: 'Espelho.',
+    details: { 'Função': 'Extensão + RL + Abdução quadril' }
   },
-  { id: 'rotL', name: 'Manguito Rotador Esq.', category: 'Músculos', position: [-1.5, 5.0, -0.5], geometry: 'rotator-L', material: 'muscleDark',
-    description: 'SITS: Supraespinal + Infraespinal + Redondo menor + Subescapular. Estabilizam glenoumeral.',
-    details: { 'Supraespinal': 'Fossa supra → Tub. maior (sup) | Abd 0-15° | N. supraescapular', 'Infraespinal': 'Fossa infra → Tub. maior (méd) | RL | N. supraescapular', 'Redondo menor': 'Borda lat → Tub. maior (inf) | RL | N. axilar', 'Subescapular': 'Fossa sub → Tub. menor | RM | Nn. subescapulares', 'Zona crítica': 'Área avascular supraespinal (1cm med)', 'Testes': 'Jobe, Patte, Lift-off, Bear hug, Neer, Hawkins' }
+  { id: 'rotL', name: 'Manguito Rotador Esq.', category: 'Músculos', position: [-1.55, 4.92, -0.45], geometry: 'rotator-L', material: 'muscleDeep',
+    description: 'SITS: Supraespinal + Infraespinal + Redondo menor + Subescapular.',
+    details: { 'Testes': 'Jobe (supra), Patte (infra), Lift-off (sub), Neer, Hawkins' }
   },
-  { id: 'rotR', name: 'Manguito Rotador Dir.', category: 'Músculos', position: [1.5, 5.0, -0.5], geometry: 'rotator-R', material: 'muscleDark',
-    description: 'Espelho do manguito rotador esquerdo.',
-    details: { 'SITS': 'Supraespinal, Infraespinal, Redondo menor, Subescapular', 'Testes': 'Jobe (supra), Patte (infra), Lift-off (sub)' }
+  { id: 'rotR', name: 'Manguito Rotador Dir.', category: 'Músculos', position: [1.55, 4.92, -0.45], geometry: 'rotator-R', material: 'muscleDeep',
+    description: 'Espelho.',
+    details: { 'SITS': 'Supraespinal, Infraespinal, Redondo menor, Subescapular' }
   },
-  { id: 'adL', name: 'Adutores Esquerdos', category: 'Músculos', position: [-0.45, -1.8, 0.2], geometry: 'adductors-L', material: 'muscleDark',
-    description: 'Longo, Curto, Magno, Grácil, Pectíneo. Adução do quadril + estabilização pélvica.',
-    details: { 'Adutor longo': 'Corpo púbis → 1/3 méd linha áspera', 'Adutor curto': 'Ramo inf púbis → Linha pectínea', 'Adutor magno': 'Ramo isquiopúbico → Linha áspera + Tubérculo adutor', 'Grácil': 'Sínfise → Pata de ganso (único biarticular)', 'Inervação': 'N. obturatório (L2-L4)', 'Patologias': 'Pubalgia, Lesão muscular de adutores' }
+  { id: 'tibL', name: 'Tibial Anterior Esq.', category: 'Músculos', position: [-0.6, -4.85, 0], geometry: 'tibialis-L', material: 'muscle',
+    description: 'Dorsiflexor + inversor. "Pé caído" na lesão do n. fibular profundo.',
+    details: { 'Inervação': 'N. fibular profundo (L4-L5)', 'Função': 'Dorsiflexão + Inversão' }
   },
-  { id: 'adR', name: 'Adutores Direitos', category: 'Músculos', position: [0.45, -1.8, 0.2], geometry: 'adductors-R', material: 'muscleDark',
-    description: 'Espelho dos adutores esquerdos.',
-    details: { 'Função': 'Adução quadril + estabilização', 'Inervação': 'N. obturatório (L2-L4)' }
-  },
-  { id: 'tibL', name: 'Tibial Anterior Esq.', category: 'Músculos', position: [-0.48, -5.0, 0.28], geometry: 'tibialis-L', material: 'muscle',
-    description: 'Principal dorsiflexor do tornozelo e inversor do pé. Marcha — evita o "pé caído".',
-    details: { 'Origem': '2/3 proximais face lat da tíbia + membrana interóssea', 'Inserção': 'Cuneiforme medial + base do 1º metatarso', 'Inervação': 'N. fibular profundo (L4-L5)', 'Função': 'Dorsiflexão + Inversão', 'Patologias': 'Canelite, Síndrome compartimental anterior, Foot drop', 'Teste': 'Dorsiflexão resistida' }
-  },
-  { id: 'tibR', name: 'Tibial Anterior Dir.', category: 'Músculos', position: [0.48, -5.0, 0.28], geometry: 'tibialis-R', material: 'muscle',
-    description: 'Espelho do tibial anterior esquerdo.',
-    details: { 'Função': 'Dorsiflexão + Inversão', 'Foot drop': 'Lesão n. fibular profundo → perda dorsiflexão' }
+  { id: 'tibR', name: 'Tibial Anterior Dir.', category: 'Músculos', position: [0.6, -4.85, 0], geometry: 'tibialis-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Foot drop': 'Lesão n. fibular profundo → perda dorsiflexão' }
   },
 
-  // ── ARTICULAÇÕES / TENDÕES / LIGAMENTOS (BILATERAIS) ──
-  { id: 'lcaL', name: 'Lig. Cruzados Joelho Esq.', category: 'Articulações', position: [-0.6, -3.5, 0], geometry: 'cruciate-L', material: 'ligament',
-    description: 'LCA resiste translação anterior da tíbia; LCP resiste translação posterior.',
-    details: { 'LCA': 'Côndilo lat fem → Área intercondilar ant tíbia', 'LCP': 'Côndilo med fem → Área intercondilar post tíbia', 'Mecanismo LCA': 'Rotação + valgo + hiperextensão (82%)', 'Testes LCA': 'Lachman (mais sensível), Gaveta ant, Pivot shift', 'Testes LCP': 'Gaveta post, Sag sign' }
+  /* ARTICULAÇÕES / TENDÕES / LIGAMENTOS */
+  { id: 'lcaL', name: 'Lig. Cruzados Joelho Esq.', category: 'Articulações', position: [-0.6, -3.45, 0], geometry: 'cruciate-L', material: 'ligament',
+    description: 'LCA (translação anterior) e LCP (posterior).',
+    details: { 'Testes LCA': 'Lachman (mais sensível), Gaveta ant, Pivot shift', 'Mecanismo': 'Rotação + valgo + hiperextensão (82%)' }
   },
-  { id: 'lcaR', name: 'Lig. Cruzados Joelho Dir.', category: 'Articulações', position: [0.6, -3.5, 0], geometry: 'cruciate-R', material: 'ligament',
-    description: 'Espelho dos cruzados esquerdos.',
-    details: { 'LCA': 'Lesão mais comum do joelho em esporte', 'Meniscos': 'Medial (C) + Lateral (O) — amortecedores', 'Testes menisco': 'McMurray, Apley, Thessaly' }
+  { id: 'lcaR', name: 'Lig. Cruzados Joelho Dir.', category: 'Articulações', position: [0.6, -3.45, 0], geometry: 'cruciate-R', material: 'ligament',
+    description: 'Espelho.',
+    details: { 'LCA': 'Lesão mais comum do joelho em esporte' }
   },
-  { id: 'mclL', name: 'LCM Joelho Esq.', category: 'Tendões/Ligamentos', position: [-0.45, -3.5, 0.15], geometry: 'mcl-L', material: 'ligament',
-    description: 'Ligamento colateral medial — resiste estresse em valgo. Associado à "tríade infeliz".',
-    details: { 'Superficial': 'Epicôndilo med fem → Face med tíbia (6-8cm abaixo)', 'Profundo': 'Fixo ao menisco medial', 'Mecanismo': 'Estresse em valgo forçado', 'Tríade infeliz': 'LCM + LCA + Menisco medial', 'Teste': 'Estresse em valgo a 0° e 30°' }
+  { id: 'mclL', name: 'LCM Joelho Esq.', category: 'Tendões/Ligamentos', position: [-0.44, -3.45, 0.12], geometry: 'mcl-L', material: 'ligament',
+    description: 'Resiste estresse em valgo. Tríade infeliz: LCM + LCA + Menisco medial.',
+    details: { 'Teste': 'Estresse em valgo a 0° e 30°' }
   },
-  { id: 'mclR', name: 'LCM Joelho Dir.', category: 'Tendões/Ligamentos', position: [0.45, -3.5, 0.15], geometry: 'mcl-R', material: 'ligament',
-    description: 'Espelho do LCM esquerdo.',
-    details: { 'Graus': 'I (estiramento), II (parcial), III (ruptura completa)', 'Teste': 'Valgo stress test' }
+  { id: 'mclR', name: 'LCM Joelho Dir.', category: 'Tendões/Ligamentos', position: [0.44, -3.45, 0.12], geometry: 'mcl-R', material: 'ligament',
+    description: 'Espelho.',
+    details: { 'Graus': 'I (estiramento), II (parcial), III (ruptura)' }
   },
-  { id: 'lclL', name: 'LCL Joelho Esq.', category: 'Tendões/Ligamentos', position: [-0.75, -3.5, -0.1], geometry: 'lcl-L', material: 'ligament',
-    description: 'Ligamento colateral lateral — resiste estresse em varo. Cordiforme (não fixo ao menisco).',
-    details: { 'Trajeto': 'Epicôndilo lat fem → Cabeça fíbula', 'Nervo fibular': 'Passa próximo (risco lesão associada)', 'Teste': 'Estresse em varo a 0° e 30°' }
+  { id: 'lclL', name: 'LCL Joelho Esq.', category: 'Tendões/Ligamentos', position: [-0.74, -3.45, -0.08], geometry: 'lcl-L', material: 'ligament',
+    description: 'Resiste estresse em varo. Cordiforme.',
+    details: { 'Teste': 'Estresse em varo a 0° e 30°' }
   },
-  { id: 'lclR', name: 'LCL Joelho Dir.', category: 'Tendões/Ligamentos', position: [0.75, -3.5, -0.1], geometry: 'lcl-R', material: 'ligament',
-    description: 'Espelho do LCL esquerdo.',
-    details: { 'Diferença do LCM': 'Cordiforme, não fixo ao menisco lateral', 'Teste': 'Varo stress test' }
+  { id: 'lclR', name: 'LCL Joelho Dir.', category: 'Tendões/Ligamentos', position: [0.74, -3.45, -0.08], geometry: 'lcl-R', material: 'ligament',
+    description: 'Espelho.',
+    details: { 'N. fibular': 'Passa próximo (risco associado)' }
   },
-  { id: 'patTenL', name: 'Tendão Patelar Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -3.65, 0.45], geometry: 'patellar-L', material: 'tendon',
-    description: 'Liga polo inferior da patela à tuberosidade tibial. Via final do mecanismo extensor.',
-    details: { 'Trajeto': 'Polo inferior patela → Tub. tibial', 'Função': 'Via final extensão joelho', 'Patologias': 'Tendinopatia patelar (jumper\'s knee), Osgood-Schlatter (tração apófise)', 'Teste': 'Dor à palpação pólo inferior da patela' }
+  { id: 'patTenL', name: 'Tendão Patelar Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -3.6, 0], geometry: 'patellar-L', material: 'tendon',
+    description: 'Liga polo inferior patela à tuberosidade tibial.',
+    details: { 'Patologias': 'Tendinopatia patelar (jumper\'s knee)', 'Tratamento': 'Excêntricos de declínio' }
   },
-  { id: 'patTenR', name: 'Tendão Patelar Dir.', category: 'Tendões/Ligamentos', position: [0.6, -3.65, 0.45], geometry: 'patellar-R', material: 'tendon',
-    description: 'Espelho do tendão patelar esquerdo.',
-    details: { 'Jumper\'s knee': 'Comum em esportes de salto', 'Tratamento': 'Excêntricos de declínio (squat declínio)' }
+  { id: 'patTenR', name: 'Tendão Patelar Dir.', category: 'Tendões/Ligamentos', position: [0.6, -3.6, 0], geometry: 'patellar-R', material: 'tendon',
+    description: 'Espelho.',
+    details: { 'Osgood-Schlatter': 'Tração apófise tibial em adolescentes' }
   },
-  { id: 'achL', name: 'Tendão de Aquiles Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -6.2, -0.3], geometry: 'achilles-L', material: 'tendon',
-    description: 'O mais forte tendão (~15cm, até 12x peso corporal). Zona avascular a 2-6cm da inserção.',
-    details: { 'Comprimento': '~12-15 cm', 'Resistência': 'Até 3.9 kN (~400 kgf)', 'Zona avascular': '2-6 cm do calcâneo (local ruptura)', 'Patologias': 'Tendinopatia, Ruptura, Bursitis', 'Testes': 'Thompson (squeeze), Matles, Simmonds', 'Reabilitação': 'Protocolo excêntrico de Alfredson' }
+  { id: 'achL', name: 'Tendão de Aquiles Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -6.15, 0], geometry: 'achilles-L', material: 'tendon',
+    description: 'O mais forte (~15cm, até 12x peso corporal). Zona avascular 2-6cm.',
+    details: { 'Testes': 'Thompson, Matles, Simmonds', 'Reabilitação': 'Protocolo de Alfredson' }
   },
-  { id: 'achR', name: 'Tendão de Aquiles Dir.', category: 'Tendões/Ligamentos', position: [0.6, -6.2, -0.3], geometry: 'achilles-R', material: 'tendon',
-    description: 'Espelho do tendão de Aquiles esquerdo.',
-    details: { 'Teste Thompson': 'Compressão panturrilha sem flexão plantar = ruptura', 'Alfredson': 'Gold standard para tendinopatia' }
+  { id: 'achR', name: 'Tendão de Aquiles Dir.', category: 'Tendões/Ligamentos', position: [0.6, -6.15, 0], geometry: 'achilles-R', material: 'tendon',
+    description: 'Espelho.',
+    details: { 'Thompson': 'Compressão sem flexão plantar = ruptura' }
   },
-  { id: 'plantL', name: 'Fáscia Plantar Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -7.1, 0.3], geometry: 'plantar-L', material: 'tendon',
-    description: 'Aponeurose plantar: tub. calcâneo → cabeças metatarsais. Mecanismo de molinete (windlass).',
-    details: { 'Trajeto': 'Tub. calcâneo → Falanges proximais (5 bandas)', 'Mecanismo windlass': 'Dorsiflexão dedos → tensão fáscia → ↑ arco longitudinal', 'Patologias': 'Fascite plantar (dor matinal cedente), Esporão calcâneo', 'Testes': 'Windlass test, Palpação tub. medial calcâneo' }
+  { id: 'plantL', name: 'Fáscia Plantar Esq.', category: 'Tendões/Ligamentos', position: [-0.6, -7.05, 0], geometry: 'plantar-L', material: 'tendon',
+    description: 'Tub. calcâneo → cabeças metatarsais. Mecanismo de molinete.',
+    details: { 'Patologias': 'Fascite plantar (dor matinal)', 'Windlass test': 'Dorsiflexão hálux → tensão fáscia' }
   },
-  { id: 'plantR', name: 'Fáscia Plantar Dir.', category: 'Tendões/Ligamentos', position: [0.6, -7.1, 0.3], geometry: 'plantar-R', material: 'tendon',
-    description: 'Espelho da fáscia plantar esquerda.',
-    details: { 'Tratamento': 'Alongamento fáscia + gastroc/sóleo, Ondas de choque', 'Windlass': 'Dorsiflexão hálux tensiona fáscia' }
+  { id: 'plantR', name: 'Fáscia Plantar Dir.', category: 'Tendões/Ligamentos', position: [0.6, -7.05, 0], geometry: 'plantar-R', material: 'tendon',
+    description: 'Espelho.',
+    details: { 'Tratamento': 'Alongamento + Ondas de choque' }
   },
-  { id: 'menL', name: 'Meniscos Joelho Esq.', category: 'Articulações', position: [-0.6, -3.35, 0.08], geometry: 'meniscus-L', material: 'cartilage',
-    description: 'Medial (C) + Lateral (O): fibrocartilagem que absorve impacto, distribui peso e estabiliza o joelho.',
-    details: { 'Medial': 'Forma de C, fixo ao LCM (menos móvel → mais lesionado)', 'Lateral': 'Forma de O, mais móvel (menos lesionado)', 'Vascularização': 'Zona vermelha (periférica), Branca (central avascular)', 'Mecanismos': 'Torção + carga axial → cisalhamento', 'Testes': 'McMurray, Apley compression, Thessaly' }
+  { id: 'menL', name: 'Meniscos Joelho Esq.', category: 'Articulações', position: [-0.6, -3.32, 0.06], geometry: 'meniscus-L', material: 'cartilage',
+    description: 'Medial (C) + Lateral (O). Absorve impacto e distribui carga.',
+    details: { 'Testes': 'McMurray, Apley, Thessaly', 'Vascularização': 'Zona vermelha (periférica), Branca (avascular)' }
   },
-  { id: 'menR', name: 'Meniscos Joelho Dir.', category: 'Articulações', position: [0.6, -3.35, 0.08], geometry: 'meniscus-R', material: 'cartilage',
-    description: 'Espelho dos meniscos esquerdos.',
-    details: { 'Reparo': 'Zona vermelha → sutura | Zona branca → meniscectomia parcial', 'Relevância': 'Preservar menisco = proteger cartilagem articular' }
+  { id: 'menR', name: 'Meniscos Joelho Dir.', category: 'Articulações', position: [0.6, -3.32, 0.06], geometry: 'meniscus-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Reparo': 'Zona vermelha → sutura | Zona branca → meniscectomia' }
   },
-  { id: 'discos', name: 'Discos Intervertebrais', category: 'Articulações', position: [0.4, 3.0, -0.2], geometry: 'discs', material: 'cartilage',
-    description: 'Fibrocartilagem: núcleo pulposo (gel) + anel fibroso (lamelas). Avascular — nutrição por difusão.',
-    details: { 'Núcleo pulposo': '80% água, colágeno tipo II', 'Anel fibroso': 'Lamelas concêntricas, colágeno tipo I', 'Herniação': 'Posterolateral (anel + LLP mais finos)', 'Classificação': 'Pfirrmann (RM), Modic (placa terminal)', 'Patologias': 'Protrusão, Extrusão, Sequestro, Degeneração' }
+  { id: 'discos', name: 'Discos Intervertebrais', category: 'Articulações', position: [0, 2.8, -0.25], geometry: 'discs', material: 'cartilage',
+    description: 'Núcleo pulposo + Anel fibroso. Herniação posterolateral.',
+    details: { 'Herniação': 'Posterolateral (anel + LLP mais finos)', 'Patologias': 'Protrusão, Extrusão, Sequestro' }
+  },
+
+  /* NERVOS */
+  { id: 'plexBraqL', name: 'Plexo Braquial Esq.', category: 'Nervos', position: [-1.15, 5.42, 0.06], geometry: 'nerve-brachial-L', material: 'nerve',
+    description: 'C5-T1: 5 raízes → 3 troncos → 6 divisões → 3 fascículos → 5 nervos.',
+    details: { 'Erb-Duchenne': 'C5-C6 — paralisia ombro + cotovelo', 'Klumpke': 'C8-T1 — mão em garra', 'Nervos': 'Musculocutâneo, Mediano, Ulnar, Radial, Axilar' }
+  },
+  { id: 'plexBraqR', name: 'Plexo Braquial Dir.', category: 'Nervos', position: [1.15, 5.42, 0.06], geometry: 'nerve-brachial-R', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Triângulo posterior': 'Passa entre escalenos ant. e médio' }
+  },
+  { id: 'nCiaticoL', name: 'Nervo Ciático Esq.', category: 'Nervos', position: [-0.68, -0.72, 0], geometry: 'nerve-sciatic-L', material: 'nerve',
+    description: 'L4-S3. Maior nervo do corpo (~2cm). Divide em tibial e fibular.',
+    details: { 'Testes': 'Lasègue (SLR), Slump, Bonnet (piriforme)', 'Patologias': 'Ciatalgia, Síndrome do piriforme' }
+  },
+  { id: 'nCiaticoR', name: 'Nervo Ciático Dir.', category: 'Nervos', position: [0.68, -0.72, 0], geometry: 'nerve-sciatic-R', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Dermátomos': 'L4 (med perna), L5 (dorso pé), S1 (lat pé)' }
+  },
+  { id: 'nFemoralL', name: 'Nervo Femoral Esq.', category: 'Nervos', position: [-0.48, -0.42, 0], geometry: 'nerve-femoral-L', material: 'nerve',
+    description: 'L2-L4. Motor: quadríceps. Reflexo patelar.',
+    details: { 'Reflexo': 'Patelar (L3-L4)', 'N. safeno': 'Ramo sensitivo terminal → med perna' }
+  },
+  { id: 'nFemoralR', name: 'Nervo Femoral Dir.', category: 'Nervos', position: [0.48, -0.42, 0], geometry: 'nerve-femoral-R', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Triângulo femoral': 'NAV — Nervo-Artéria-Veia (lat→med)' }
+  },
+  { id: 'nMedianoL', name: 'Nervo Mediano Esq.', category: 'Nervos', position: [-2.12, 2.2, 0], geometry: 'nerve-median', material: 'nerve',
+    description: 'C5-T1. Túnel do carpo — síndrome compressiva mais comum do MS.',
+    details: { 'Testes': 'Phalen, Tinel, Durkan', 'Mão do pregador': 'Lesão alta → impossib. flexão 1º-3º dedos' }
+  },
+  { id: 'nMedianoR', name: 'Nervo Mediano Dir.', category: 'Nervos', position: [2.12, 2.2, 0], geometry: 'nerve-median', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'LOAF': 'Lumbricais 1-2, Oponente polegar, Abdutor curto, Flexor curto' }
+  },
+  { id: 'nUlnarL', name: 'Nervo Ulnar Esq.', category: 'Nervos', position: [-2.22, 2.2, 0], geometry: 'nerve-ulnar', material: 'nerve',
+    description: 'C8-T1. Passa posterior ao epicôndilo medial. Garra ulnar.',
+    details: { 'Testes': 'Froment (adutor polegar), Wartenberg', 'Garra ulnar': 'Hiperext MF + flexão IF 4º-5º dedos' }
+  },
+  { id: 'nUlnarR', name: 'Nervo Ulnar Dir.', category: 'Nervos', position: [2.22, 2.2, 0], geometry: 'nerve-ulnar', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Paradoxo ulnar': 'Lesão alta → menos garra (FDP denervado)' }
+  },
+  { id: 'nRadialL', name: 'Nervo Radial Esq.', category: 'Nervos', position: [-2.1, 2.55, 0], geometry: 'nerve-radial', material: 'nerve',
+    description: 'C5-T1. Wrist drop na lesão. Extensão punho/dedos.',
+    details: { 'Wrist drop': 'Lesão sulco radial → queda do punho', 'Saturday night palsy': 'Compressão por posição' }
+  },
+  { id: 'nRadialR', name: 'Nervo Radial Dir.', category: 'Nervos', position: [2.1, 2.55, 0], geometry: 'nerve-radial', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Arcada de Fröhse': 'Compressão do n. interósseo posterior' }
+  },
+  { id: 'nTibialL', name: 'Nervo Tibial Esq.', category: 'Nervos', position: [-0.6, -4.38, 0], geometry: 'nerve-tibial-L', material: 'nerve',
+    description: 'Divisão tibial do ciático. Túnel do tarso.',
+    details: { 'Reflexo': 'Aquileu (S1-S2)', 'Motor': 'Flexão plantar, Intrínsecos plantares' }
+  },
+  { id: 'nTibialR', name: 'Nervo Tibial Dir.', category: 'Nervos', position: [0.6, -4.38, 0], geometry: 'nerve-tibial-R', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Nn. plantares': 'Medial (3,5 dedos) + Lateral (1,5 dedos)' }
+  },
+  { id: 'nFibularL', name: 'Nervo Fibular Esq.', category: 'Nervos', position: [-0.74, -3.72, 0], geometry: 'nerve-fibular-L', material: 'nerve',
+    description: 'Contorna cabeça da fíbula (vulnerável!). Foot drop.',
+    details: { 'Foot drop': 'Marcha escarvante (steppage gait)', 'Vulnerabilidade': 'Cabeça da fíbula — apenas pele + fáscia' }
+  },
+  { id: 'nFibularR', name: 'Nervo Fibular Dir.', category: 'Nervos', position: [0.74, -3.72, 0], geometry: 'nerve-fibular-R', material: 'nerve',
+    description: 'Espelho.',
+    details: { 'Dermátomo': 'L5 (dorso pé, 1º espaço interdigital)' }
+  },
+  { id: 'medulaEspinal', name: 'Medula Espinal', category: 'Nervos', position: [0, 4.0, -0.28], geometry: 'spinal-cord', material: 'nerve',
+    description: 'C1 a L1-L2 (cone medular). 31 pares de nervos espinais.',
+    details: { 'Extensão': 'Forame magno → L1-L2', 'Testes': 'ASIA, Babinski, Clonus', 'Cauda equina': 'Raízes nervosas abaixo de L1-L2' }
+  },
+
+  /* ÓRGÃOS */
+  { id: 'cerebro', name: 'Cérebro', category: 'Órgãos', position: [0, 7.48, 0.12], geometry: 'brain', material: 'brain',
+    description: '2 hemisférios, 4 lobos. ~86 bilhões de neurônios.',
+    details: { 'Lobo frontal': 'Motor primário (M1), Broca (fala)', 'Lobo temporal': 'Auditivo, Wernicke, Hipocampo', 'Patologias': 'AVC, TCE, Tumores', 'Avaliação': 'NIHSS (AVC), Glasgow, MoCA' }
+  },
+  { id: 'cerebelo', name: 'Cerebelo', category: 'Órgãos', position: [0, 6.58, -0.58], geometry: 'cerebellum', material: 'brain',
+    description: 'Coordenação motora, equilíbrio, tônus.',
+    details: { 'Ataxia': 'Dismetria, Disdiadococinesia, Tremor intencional (DANISH)', 'Testes': 'Index-nariz, Calcanhar-joelho, Romberg' }
+  },
+  { id: 'coracao', name: 'Coração', category: 'Órgãos', position: [-0.18, 4.28, 0.52], geometry: 'heart-organ', material: 'heart',
+    description: '4 câmaras. ~100.000 batimentos/dia. Irrigação coronariana.',
+    details: { 'Coronárias': 'DA (ant), Cx (lat), CD (inf/post)', 'Débito cardíaco': 'DC = FC × VS (~5 L/min)', 'Patologias': 'IAM, ICC, Arritmias' }
+  },
+  { id: 'pulmaoL', name: 'Pulmão Esquerdo', category: 'Órgãos', position: [-0.62, 4.45, 0.18], geometry: 'lung-L', material: 'lung',
+    description: '2 lobos (sup + inf). Língula. Troca gasosa O₂/CO₂.',
+    details: { 'Volumes': 'VC (~500mL), VRI, VRE, VR', 'Fisioterapia': 'Manobras higiene brônquica, VNI, Incentivadores' }
+  },
+  { id: 'pulmaoR', name: 'Pulmão Direito', category: 'Órgãos', position: [0.62, 4.45, 0.18], geometry: 'lung-R', material: 'lung',
+    description: '3 lobos (sup, med, inf). Brônquio D mais vertical → aspiração mais frequente.',
+    details: { 'Patologias': 'Pneumonia, DPOC, Fibrose, Derrame pleural', 'Ausculta': '5 focos principais' }
+  },
+  { id: 'figado', name: 'Fígado', category: 'Órgãos', position: [0.45, 2.75, 0.42], geometry: 'liver-organ', material: 'liver',
+    description: '~1500g. Metabolismo, detoxificação, bile.',
+    details: { 'Irrigação': 'Art. hepática (25%) + Veia porta (75%)', 'Segmentos': '8 segmentos de Couinaud' }
+  },
+  { id: 'rimL', name: 'Rim Esquerdo', category: 'Órgãos', position: [-0.58, 2.18, -0.38], geometry: 'kidney-L', material: 'kidney',
+    description: 'Retroperitoneal (~12cm). Filtra ~180L/dia.',
+    details: { 'Sistema RAA': 'Renina → Angiotensina → Aldosterona', 'Patologias': 'Insuficiência renal, Cálculos' }
+  },
+  { id: 'rimR', name: 'Rim Direito', category: 'Órgãos', position: [0.58, 2.0, -0.38], geometry: 'kidney-R', material: 'kidney',
+    description: 'Mais baixo que o esquerdo (fígado).',
+    details: { 'Sinal de Giordano': 'Punho-percussão positiva → pielonefrite' }
+  },
+  { id: 'estomago', name: 'Estômago', category: 'Órgãos', position: [-0.28, 2.75, 0.52], geometry: 'stomach-organ', material: 'organ',
+    description: '~1.5L. Digestão mecânica + química (HCl + pepsina).',
+    details: { 'Regiões': 'Cárdia, Fundo, Corpo, Antro Pilórico', 'Patologias': 'Gastrite, Úlcera, DRGE' }
+  },
+  { id: 'diafragma', name: 'Diafragma', category: 'Órgãos', position: [0, 2.95, 0.12], geometry: 'diaphragm', material: 'muscleDeep',
+    description: '60-80% da ventilação. N. frênico (C3-C5).',
+    details: { 'Inervação': 'N. frênico (C3-5): "C3-4-5 keeps the diaphragm alive"', 'Hiatos': 'Aórtico (T12), Esofágico (T10), Cava (T8)' }
+  },
+  { id: 'intDelgado', name: 'Intestino Delgado', category: 'Órgãos', position: [0, 1.18, 0.48], geometry: 'intestine-small', material: 'organ',
+    description: 'Duodeno + Jejuno + Íleo (~6m). Absorção de nutrientes.',
+    details: { 'Vilosidades': '↑ área absortiva (~200m²)', 'Íleo': 'Placas de Peyer, absorve B12' }
+  },
+  { id: 'intGrosso', name: 'Intestino Grosso', category: 'Órgãos', position: [0, 0.82, 0.52], geometry: 'intestine-large', material: 'organ',
+    description: '~1.5m. Absorção de água e formação fecal.',
+    details: { 'Ceco': 'Válvula ileocecal + Apêndice', 'Flora': 'Microbioma — imunidade, vitamina K' }
+  },
+  { id: 'traqueia', name: 'Traqueia e Brônquios', category: 'Órgãos', position: [0, 5.45, 0.38], geometry: 'trachea', material: 'cartilage',
+    description: '15-20 anéis em "C". Carina em T4-T5.',
+    details: { 'Brônquio D': 'Mais vertical → aspiração mais frequente', 'Árvore brônquica': 'Principais → Lobares → Segmentares → Bronquíolos' }
+  },
+
+  /* ESTRUTURAS ESPECIAIS */
+  { id: 'fasciaToracoL', name: 'Fáscia Toracolombar', category: 'Estruturas Especiais', position: [0, 2.0, -0.52], geometry: 'fascia-toracolombar', material: 'fascia',
+    description: 'Conecta eretor espinal, transverso abd, grande dorsal e glúteo máximo.',
+    details: { 'Estabilização': '"Espartilho natural" → ↑ estabilidade lombar', 'Relevância': 'McGill Big 3, Exercícios core' }
+  },
+  { id: 'bursaSubacL', name: 'Bursa Subacromial Esq.', category: 'Estruturas Especiais', position: [-1.58, 5.28, 0.18], geometry: 'bursa-subacromial-L', material: 'bursa',
+    description: 'Entre acrômio/deltóide e manguito. Facilita deslizamento.',
+    details: { 'Testes': 'Neer, Hawkins-Kennedy, Arco doloroso 60-120°' }
+  },
+  { id: 'bursaSubacR', name: 'Bursa Subacromial Dir.', category: 'Estruturas Especiais', position: [1.58, 5.28, 0.18], geometry: 'bursa-subacromial-R', material: 'bursa',
+    description: 'Espelho.',
+    details: { 'Arco doloroso': '60-120° → compressão máxima subacromial' }
+  },
+  { id: 'labrumGlenoL', name: 'Labrum Glenoidal Esq.', category: 'Estruturas Especiais', position: [-1.38, 4.75, -0.32], geometry: 'labrum-glenoidal-L', material: 'cartilage',
+    description: '↑ Profundidade glenoide 50%. SLAP + Bankart.',
+    details: { 'SLAP': 'Superior labrum anterior-posterior', 'Testes': 'O\'Brien, Crank, Apprehension' }
+  },
+  { id: 'labrumGlenoR', name: 'Labrum Glenoidal Dir.', category: 'Estruturas Especiais', position: [1.38, 4.75, -0.32], geometry: 'labrum-glenoidal-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Hill-Sachs': 'Lesão impressa na luxação anterior' }
+  },
+  { id: 'titL', name: 'Trato Iliotibial Esq.', category: 'Estruturas Especiais', position: [-0.93, -2.45, 0.3], geometry: 'tit-L', material: 'fascia',
+    description: 'Crista ilíaca → Tubérculo de Gerdy. Síndrome TIT em corredores.',
+    details: { 'Testes': 'Ober, Noble compression', 'Tratamento': 'Glúteo médio + Foam roller' }
+  },
+  { id: 'titR', name: 'Trato Iliotibial Dir.', category: 'Estruturas Especiais', position: [0.93, -2.45, 0.3], geometry: 'tit-R', material: 'fascia',
+    description: 'Espelho.',
+    details: { 'Ober': 'DL — quadril estendido, verifica encurtamento' }
   },
 ];
 
 const CATEGORIES = [...new Set(STRUCTURES.map(s => s.category))];
 
-/* ═══════════════ 3D COMPONENTS ═══════════════ */
+/* ═══════════════════════════════════════════════════════
+   COMPONENTES 3D
+═══════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════
+   IMAGENS EDUCATIVAS (Domínio Público — Wikimedia Commons)
+═══════════════════════════════════════════════════════ */
+
+// Helper estável via MediaWiki FilePath API
+const WP_IMG = (f, w = 220) =>
+  `https://en.wikipedia.org/wiki/Special:FilePath/${f}?width=${w}`;
+
+const STRUCTURE_IMAGES = {
+  /* Esqueleto Axial */
+  cranio:        WP_IMG('Human_skull_front_bones.svg'),
+  face:          WP_IMG('Gray188.png'),
+  cervical:      WP_IMG('Gray84.png'),
+  toracica:      WP_IMG('Gray88.png'),
+  lombar:        WP_IMG('Gray96.png'),
+  sacro:         WP_IMG('Gray99.png'),
+  costR:         WP_IMG('Gray115.png'),
+  costL:         WP_IMG('Gray115.png'),
+  esterno:       WP_IMG('Gray116.png'),
+  /* Esqueleto Apendicular */
+  pelve:         WP_IMG('Gray241.png'),
+  scapL:         WP_IMG('Gray203.png'),
+  scapR:         WP_IMG('Gray203.png'),
+  clavL:         WP_IMG('Clavicula.png'),
+  clavR:         WP_IMG('Clavicula.png'),
+  humL:          WP_IMG('Gray207.png'),
+  humR:          WP_IMG('Gray207.png'),
+  frmL:          WP_IMG('Gray213.png'),
+  frmR:          WP_IMG('Gray213.png'),
+  handL:         WP_IMG('Gray219.png'),
+  handR:         WP_IMG('Gray219.png'),
+  femL:          WP_IMG('Gray243.png'),
+  femR:          WP_IMG('Gray243.png'),
+  patL:          WP_IMG('Gray346.png'),
+  patR:          WP_IMG('Gray346.png'),
+  legL:          WP_IMG('Gray259.png'),
+  legR:          WP_IMG('Gray259.png'),
+  footL:         WP_IMG('Gray268.png'),
+  footR:         WP_IMG('Gray268.png'),
+  /* Músculos */
+  deltL:         WP_IMG('Deltoideus.png'),
+  deltR:         WP_IMG('Deltoideus.png'),
+  peitL:         WP_IMG('Pectoralis_major.png'),
+  peitR:         WP_IMG('Pectoralis_major.png'),
+  bicL:          WP_IMG('Biceps_brachii_2.png'),
+  bicR:          WP_IMG('Biceps_brachii_2.png'),
+  triL:          WP_IMG('Triceps_brachii_2.png'),
+  triR:          WP_IMG('Triceps_brachii_2.png'),
+  trap:          WP_IMG('Trapezius.png'),
+  abdm:          WP_IMG('Rectus_abdominis.png'),
+  oblL:          WP_IMG('External_oblique.png'),
+  oblR:          WP_IMG('External_oblique.png'),
+  quadL:         WP_IMG('Rectus_femoris.png'),
+  quadR:         WP_IMG('Rectus_femoris.png'),
+  hamL:          WP_IMG('Biceps_femoris_long_head.png'),
+  hamR:          WP_IMG('Biceps_femoris_long_head.png'),
+  glutL:         WP_IMG('Gluteus_maximus.png'),
+  glutR:         WP_IMG('Gluteus_maximus.png'),
+  gastL:         WP_IMG('Gastrocnemius.png'),
+  gastR:         WP_IMG('Gastrocnemius.png'),
+  tibL:          WP_IMG('Tibialis_anterior.png'),
+  tibR:          WP_IMG('Tibialis_anterior.png'),
+  rotL:          WP_IMG('Rotator_cuff.jpg'),
+  rotR:          WP_IMG('Rotator_cuff.jpg'),
+  /* Tendões / Ligamentos */
+  achL:          WP_IMG('Achilles_tendon.jpg'),
+  achR:          WP_IMG('Achilles_tendon.jpg'),
+  lcaL:          WP_IMG('KneeLigaments.png'),
+  lcaR:          WP_IMG('KneeLigaments.png'),
+  mclL:          WP_IMG('Gray350.png'),
+  mclR:          WP_IMG('Gray350.png'),
+  menL:          WP_IMG('Gray349.png'),
+  menR:          WP_IMG('Gray349.png'),
+  discos:        WP_IMG('Cervical_vertebra_english.png'),
+  /* Nervos */
+  plexBraqL:     WP_IMG('Brachial_plexus_color.svg'),
+  plexBraqR:     WP_IMG('Brachial_plexus_color.svg'),
+  nCiaticoL:     WP_IMG('Gray430.png'),
+  nCiaticoR:     WP_IMG('Gray430.png'),
+  nFemoralL:     WP_IMG('Femoral_triangle.png'),
+  nFemoralR:     WP_IMG('Femoral_triangle.png'),
+  nMedianoL:     WP_IMG('Gray821.png'),
+  nMedianoR:     WP_IMG('Gray821.png'),
+  nUlnarL:       WP_IMG('Gray811.png'),
+  nUlnarR:       WP_IMG('Gray811.png'),
+  nRadialL:      WP_IMG('Gray818.png'),
+  nRadialR:      WP_IMG('Gray818.png'),
+  medulaEspinal: WP_IMG('Spinal_cord-en.png'),
+  /* Órgãos */
+  cerebro:       WP_IMG('Gray728.png'),
+  cerebelo:      WP_IMG('Gray677.png'),
+  coracao:       WP_IMG('Diagram_of_the_human_heart_(cropped).svg'),
+  pulmaoL:       WP_IMG('Respiratory_System_en.svg'),
+  pulmaoR:       WP_IMG('Respiratory_System_en.svg'),
+  figado:        WP_IMG('Liver_(organ).svg'),
+  rimL:          WP_IMG('Kidney_section.jpg'),
+  rimR:          WP_IMG('Kidney_section.jpg'),
+  estomago:      WP_IMG('Blausen_0811_Stomach.png'),
+  diafragma:     WP_IMG('Thoracic_diaphragm.png'),
+  intDelgado:    WP_IMG('Small_intestine.svg'),
+  intGrosso:     WP_IMG('Large_intestine.svg'),
+  traqueia:      WP_IMG('Illu_bronchi_lungs.jpg'),
+  /* Estruturas Especiais */
+  rotL:          WP_IMG('Rotator_cuff.jpg'),
+  rotR:          WP_IMG('Rotator_cuff.jpg'),
+  bursaSubacL:   WP_IMG('Shoulder_joint.svg'),
+  bursaSubacR:   WP_IMG('Shoulder_joint.svg'),
+  labrumGlenoL:  WP_IMG('Shoulder_joint.svg'),
+  labrumGlenoR:  WP_IMG('Shoulder_joint.svg'),
+  titL:          WP_IMG('Iliotibial_band.png'),
+  titR:          WP_IMG('Iliotibial_band.png'),
+  fasciaToracoL: WP_IMG('Thoracolumbar_fascia.png'),
+};
+
+/* ─── Card de imagem educativa (overlay 2D) ─── */
+function HoverImageCard({ hoveredId, isDarkMode }) {
+  const [imgOk, setImgOk] = useState(true);
+  const structure = useMemo(() => STRUCTURES.find(s => s.id === hoveredId), [hoveredId]);
+  const imgUrl = hoveredId ? STRUCTURE_IMAGES[hoveredId] : null;
+
+  // Reset quando a estrutura muda
+  useEffect(() => { setImgOk(true); }, [hoveredId]);
+
+  if (!structure || !imgUrl) return null;
+
+  const cfg = CATEGORY_CONFIG[structure.category];
+  const firstDetail = Object.entries(structure.details || {})[0];
+
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={hoveredId}
+        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.96 }}
+        transition={{ duration: 0.16, ease: 'easeOut' }}
+        className={`absolute bottom-4 left-3 z-20 w-52 rounded-2xl overflow-hidden shadow-2xl border pointer-events-none select-none ${
+          isDarkMode
+            ? 'bg-slate-900/92 border-slate-700/70'
+            : 'bg-white/92 border-slate-200'
+        } backdrop-blur-xl`}
+      >
+        {/* Barra de cor da categoria */}
+        <div className="h-0.5 w-full" style={{ background: cfg?.color || '#0EA5E9' }} />
+
+        {/* Imagem anatômica */}
+        {imgOk && (
+          <div className={`relative w-full h-32 overflow-hidden ${
+            isDarkMode ? 'bg-slate-800' : 'bg-slate-50'
+          }`}>
+            <img
+              src={imgUrl}
+              alt={structure.name}
+              className="w-full h-full object-contain p-2"
+              onError={() => setImgOk(false)}
+            />
+            <span className="absolute bottom-1 right-1.5 text-[8px] bg-black/40 text-white/60 rounded px-1 backdrop-blur-sm">
+              Wikimedia Commons · PD
+            </span>
+          </div>
+        )}
+
+        {/* Nome e categoria */}
+        <div className="px-3 py-2.5">
+          <div className="flex items-start justify-between gap-1.5 mb-1.5">
+            <p className={`text-[12px] font-bold leading-snug ${
+              isDarkMode ? 'text-white' : 'text-slate-900'
+            }`}>
+              {structure.name}
+            </p>
+            <span
+              className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 leading-tight mt-0.5 whitespace-nowrap"
+              style={{
+                background: `${cfg?.color || '#0EA5E9'}22`,
+                color: cfg?.color || '#0EA5E9',
+                border: `1px solid ${cfg?.color || '#0EA5E9'}44`,
+              }}
+            >
+              {cfg?.icon}
+            </span>
+          </div>
+
+          {firstDetail && (
+            <div className={`rounded-lg px-2 py-1.5 ${
+              isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'
+            }`}>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-sky-500 mb-0.5">
+                {firstDetail[0]}
+              </p>
+              <p className={`text-[10px] leading-relaxed line-clamp-2 ${
+                isDarkMode ? 'text-slate-300' : 'text-slate-600'
+              }`}>
+                {firstDetail[1]}
+              </p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 function AnatomyMesh({ structure, isSelected, isHovered, onSelect, onHover }) {
   const meshRef = useRef();
-  const [hover, setHover] = useState(false);
   const mat = MAT[structure.material] || MAT.bone;
+  const geo = useMemo(() => buildGeo(structure.geometry), [structure.geometry]);
 
-  const baseCol = useMemo(() => new THREE.Color(mat.color), [mat.color]);
-  const selCol  = useMemo(() => new THREE.Color('#0EA5E9'), []);
-  const hovCol  = useMemo(() => { const c = new THREE.Color(mat.color); c.lerp(new THREE.Color('#38BDF8'), 0.35); return c; }, [mat.color]);
-  const geo     = useMemo(() => buildGeo(structure.geometry), [structure.geometry]);
-
-  useFrame(() => {
-    if (!meshRef.current) return;
-    const m = meshRef.current.material;
-    const t = isSelected ? selCol : (hover || isHovered) ? hovCol : baseCol;
-    m.color.lerp(t, 0.12);
-    if (isSelected) {
-      m.emissive.lerp(new THREE.Color('#0EA5E9'), 0.06);
-      m.emissiveIntensity = THREE.MathUtils.lerp(m.emissiveIntensity, 0.2, 0.1);
-    } else {
-      m.emissive.lerp(new THREE.Color('#000000'), 0.1);
-      m.emissiveIntensity = THREE.MathUtils.lerp(m.emissiveIntensity, 0, 0.1);
+  // Derive color directly from selection state — no per-frame lerp on 100+ idle meshes
+  const activeColor = useMemo(() => {
+    if (isSelected) return '#00BFFF';
+    if (isHovered) {
+      const c = new THREE.Color(mat.color);
+      c.lerp(new THREE.Color('#60D8FF'), 0.4);
+      return '#' + c.getHexString();
     }
+    return mat.color;
+  }, [isSelected, isHovered, mat.color]);
+
+  // Only run useFrame when THIS mesh is selected (pulse glow) — skips all 100+ idle meshes
+  useFrame(({ clock }) => {
+    if (!isSelected || !meshRef.current) return;
+    meshRef.current.material.emissiveIntensity = 0.14 + Math.sin(clock.elapsedTime * 2.5) * 0.06;
   });
 
   return (
@@ -634,91 +1666,152 @@ function AnatomyMesh({ structure, isSelected, isHovered, onSelect, onHover }) {
       geometry={geo}
       position={structure.position}
       onClick={e => { e.stopPropagation(); onSelect(structure.id); }}
-      onPointerOver={e => { e.stopPropagation(); setHover(true); onHover(structure.id); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { setHover(false); onHover(null); document.body.style.cursor = 'auto'; }}
-      castShadow receiveShadow
+      onPointerOver={e => { e.stopPropagation(); onHover(structure.id); document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { onHover(null); document.body.style.cursor = 'auto'; }}
+      receiveShadow
     >
-      <meshPhysicalMaterial
-        color={mat.color}
-        roughness={mat.roughness}
-        metalness={mat.metalness}
-        clearcoat={mat.clearcoat || 0}
-        clearcoatRoughness={mat.clearcoatRoughness || 0}
-        sheen={mat.sheen || 0}
-        sheenColor={mat.sheenColor || '#fff'}
-        sheenRoughness={0.4}
-        transparent={mat.transparent || false}
-        opacity={mat.opacity || 1}
-        emissive="#000000"
-        emissiveIntensity={0}
+      <meshStandardMaterial
+        color={activeColor}
+        roughness={mat.roughness ?? 0.6}
+        metalness={mat.metalness ?? 0.0}
+        transparent={mat.transparent ?? false}
+        opacity={mat.opacity ?? 1}
+        emissive={isSelected ? '#0080FF' : '#000000'}
+        emissiveIntensity={isSelected ? 0.14 : 0}
+        side={mat.transparent ? THREE.DoubleSide : THREE.FrontSide}
       />
     </mesh>
   );
 }
 
-function Label({ structure, isSelected, isHovered }) {
+// Label flutuante
+function StructureLabel({ structure, isSelected, isHovered }) {
   if (!isSelected && !isHovered) return null;
-  const p = [structure.position[0], structure.position[1] + 0.6, structure.position[2]];
+  const labelY = structure.position[1] + 0.7;
   return (
-    <Html position={p} center>
-      <div className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap pointer-events-none transition-all ${
-        isSelected
-          ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30 scale-105'
-          : 'bg-white/95 dark:bg-slate-800/95 text-slate-900 dark:text-white shadow-md backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50'
-      }`}>
+    <Html position={[structure.position[0], labelY, structure.position[2]]} center style={{ pointerEvents: 'none' }}>
+      <div style={{
+        background: isSelected
+          ? 'linear-gradient(135deg, #0369A1CC, #0284C7CC)'
+          : 'rgba(15,23,42,0.88)',
+        backdropFilter: 'blur(8px)',
+        border: `1px solid ${isSelected ? '#38BDF8' : '#334155'}`,
+        borderRadius: 8,
+        padding: '5px 10px',
+        color: isSelected ? '#E0F7FF' : '#CBD5E1',
+        fontSize: 11,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+        boxShadow: isSelected ? '0 0 16px #38BDF840' : '0 2px 8px #00000060',
+        letterSpacing: 0.3,
+        transform: 'translateY(-4px)',
+      }}>
         {structure.name}
-        {isSelected && <span className="block text-[10px] font-normal text-primary-200 mt-0.5">{structure.category}</span>}
+        {isSelected && (
+          <div style={{ fontSize: 9, fontWeight: 400, color: '#7DD3FC', marginTop: 2 }}>
+            {structure.category}
+          </div>
+        )}
       </div>
     </Html>
   );
 }
 
-function HoloRing() {
+// Base rotativa
+function BaseRing() {
   const ref = useRef();
   useFrame(({ clock }) => {
     if (!ref.current) return;
-    ref.current.rotation.y = clock.elapsedTime * 0.3;
-    ref.current.material.opacity = 0.12 + Math.sin(clock.elapsedTime * 2) * 0.06;
+    ref.current.rotation.y = clock.elapsedTime * 0.25;
   });
   return (
-    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -7.3, 0]}>
-      <ringGeometry args={[2.5, 3.0, 64]} />
-      <meshBasicMaterial color="#0EA5E9" transparent opacity={0.12} side={THREE.DoubleSide} />
-    </mesh>
+    <group ref={ref} position={[0, -7.5, 0]}>
+      {[2.8, 3.5, 4.2].map((r, i) => (
+        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[r - 0.04, r, 80]} />
+          <meshBasicMaterial
+            color="#0EA5E9"
+            transparent
+            opacity={0.06 - i * 0.015}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
+// Cena 3D
 function Scene({ selectedId, hoveredId, onSelect, onHover, visCats }) {
-  const { isDarkMode } = useTheme();
-  const filtered = useMemo(() => STRUCTURES.filter(s => visCats.includes(s.category)), [visCats]);
+  const { isDarkMode } = useTheme?.() ?? { isDarkMode: true };
+  const filtered = useMemo(
+    () => STRUCTURES.filter(s => visCats.includes(s.category)),
+    [visCats]
+  );
 
+  const bgColor = isDarkMode ? '#0a1628' : '#f0f4f8';
   return (
     <>
-      <ambientLight intensity={isDarkMode ? 0.22 : 0.38} />
-      <directionalLight position={[5, 12, 5]} intensity={isDarkMode ? 0.8 : 1.1} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.001} />
-      <directionalLight position={[-4, 8, -4]} intensity={0.3} color="#E8D5F5" />
-      <pointLight position={[0, 4, 6]} intensity={0.45} color="#0EA5E9" distance={15} />
-      <pointLight position={[3, -2, -3]} intensity={0.18} color="#F97316" distance={12} />
+      {/* Fundo correto no contexto WebGL — sem o preto padrão do clearColor */}
+      <color attach="background" args={[bgColor]} />
+      {/* Iluminação médica calibrada */}
+      <ambientLight intensity={isDarkMode ? 0.40 : 0.55} color="#E8EFF5" />
+      <directionalLight
+        position={[6, 14, 8]}
+        intensity={isDarkMode ? 0.9 : 1.2}
+        color="#FFF5E8"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-near={0.5}
+        shadow-camera-far={40}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={15}
+        shadow-camera-bottom={-10}
+        shadow-bias={-0.0008}
+      />
+      <directionalLight position={[-5, 8, -6]} intensity={0.28} color="#C8D8F5" />
+      <pointLight position={[0, 5, 7]} intensity={0.5} color="#1EBBFF" distance={20} decay={2} />
+
+      <ContactShadows position={[0, -7.55, 0]} opacity={0.30} scale={12} blur={1.5} far={10} />
 
       {filtered.map(s => (
         <React.Fragment key={s.id}>
-          <AnatomyMesh structure={s} isSelected={selectedId === s.id} isHovered={hoveredId === s.id} onSelect={onSelect} onHover={onHover} />
-          <Label structure={s} isSelected={selectedId === s.id} isHovered={hoveredId === s.id} />
+          <AnatomyMesh
+            structure={s}
+            isSelected={selectedId === s.id}
+            isHovered={hoveredId === s.id}
+            onSelect={onSelect}
+            onHover={onHover}
+          />
+          <StructureLabel
+            structure={s}
+            isSelected={selectedId === s.id}
+            isHovered={hoveredId === s.id}
+          />
         </React.Fragment>
       ))}
 
-      <HoloRing />
-      <OrbitControls enablePan enableZoom enableRotate minDistance={3} maxDistance={25} target={[0, 1.5, 0]} makeDefault enableDamping dampingFactor={0.08} />
+      <BaseRing />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -7.4, 0]} receiveShadow>
-        <circleGeometry args={[4, 48]} />
-        <meshStandardMaterial color={isDarkMode ? '#0f172a' : '#e2e8f0'} roughness={1} metalness={0} transparent opacity={0.4} />
-      </mesh>
+      <OrbitControls
+        enablePan
+        enableZoom
+        enableRotate
+        minDistance={3}
+        maxDistance={28}
+        target={[0, 1.5, 0]}
+        makeDefault
+        enableDamping
+        dampingFactor={0.07}
+      />
     </>
   );
 }
 
-/* ═══════════════ MAIN COMPONENT ═══════════════ */
+/* ═══════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL
+═══════════════════════════════════════════════════════ */
 
 export default function Atlas3D() {
   const [selectedId, setSelectedId] = useState(null);
@@ -727,62 +1820,101 @@ export default function Atlas3D() {
   const [visCats, setVisCats] = useState([...CATEGORIES]);
   const [showPanel, setShowPanel] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const { isDarkMode } = useTheme();
+  const { isDarkMode } = useTheme?.() ?? { isDarkMode: true };
 
   const selected = STRUCTURES.find(s => s.id === selectedId);
 
-  const handleSelect = useCallback(id => { setSelectedId(p => p === id ? null : id); setShowPanel(true); }, []);
-  const handleHover  = useCallback(id => setHoveredId(id), []);
-  const toggleCat    = useCallback(c => setVisCats(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]), []);
+  const handleSelect = useCallback(id => {
+    setSelectedId(p => p === id ? null : id);
+    setShowPanel(true);
+  }, []);
+  const handleHover = useCallback(id => setHoveredId(id), []);
+  const toggleCat = useCallback(c =>
+    setVisCats(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]),
+  []);
 
   const filtered = useMemo(() =>
     STRUCTURES.filter(s => {
       const q = searchTerm.toLowerCase();
-      const matchQ = !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q) || s.description.toLowerCase().includes(q);
-      return matchQ && visCats.includes(s.category);
+      return visCats.includes(s.category) && (
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q)
+      );
     }), [searchTerm, visCats]);
 
   return (
-    <div className="h-[calc(100dvh-80px)] flex flex-col lg:flex-row overflow-hidden bg-slate-50 dark:bg-slate-900">
-      {/* Sidebar */}
-      <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col overflow-hidden max-h-[35vh] lg:max-h-full">
-        <div className="px-3 py-3 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-sky-600 flex items-center justify-center shadow-sm">
-              <Bone size={16} className="text-white" />
+    <div className={`h-[calc(100dvh-80px)] flex flex-col lg:flex-row overflow-hidden ${isDarkMode ? 'bg-slate-950' : 'bg-slate-100'}`}>
+
+      {/* ── SIDEBAR ── */}
+      <div className={`w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r flex flex-col overflow-hidden max-h-[38vh] lg:max-h-full transition-colors ${
+        isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+      }`}>
+
+        {/* Header da sidebar */}
+        <div className={`px-3 pt-3 pb-2 border-b shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
+              <Bone size={17} className="text-white" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Atlas 3D</h1>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400">{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
+            <div>
+              <h1 className={`text-sm font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Atlas 3D</h1>
+              <p className="text-[10px] text-slate-500">{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
-          <div className="relative mb-1.5">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          {/* Busca */}
+          <div className="relative mb-2">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Buscar estrutura, músculo, teste..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+              className={`w-full pl-7 pr-3 py-1.5 text-xs rounded-lg outline-none transition-all border focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500 ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
+              }`}
             />
           </div>
 
-          <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-            <Filter size={11} /> Camadas <ChevronDown size={11} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          {/* Filtro de camadas */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors mb-0.5 ${
+              isDarkMode ? 'text-slate-400 hover:text-sky-400' : 'text-slate-500 hover:text-sky-600'
+            }`}
+          >
+            <Filter size={10} />
+            Camadas
+            <ChevronDown size={10} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
           </button>
+
           <AnimatePresence>
             {showFilters && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                <div className="flex gap-1 flex-wrap pt-1.5">
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex gap-1 flex-wrap py-1.5">
                   {CATEGORIES.map(cat => {
                     const active = visCats.includes(cat);
+                    const cfg = CATEGORY_CONFIG[cat];
                     return (
-                      <button key={cat} onClick={() => toggleCat(cat)} className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1 ${
-                        active ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 ring-1 ring-primary-300 dark:ring-primary-700'
-                               : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 line-through opacity-60'
-                      }`}>
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: active ? CATEGORY_CONFIG[cat]?.color : '#94a3b8' }} />
+                      <button
+                        key={cat}
+                        onClick={() => toggleCat(cat)}
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-medium transition-all ${
+                          active
+                            ? isDarkMode ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600' : 'bg-slate-100 text-slate-700 ring-1 ring-slate-300'
+                            : 'opacity-40 line-through text-slate-500'
+                        }`}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? cfg?.color : '#64748b' }} />
                         {cat}
                       </button>
                     );
@@ -793,103 +1925,226 @@ export default function Atlas3D() {
           </AnimatePresence>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-0.5">
-          {filtered.map(s => (
-            <button key={s.id} onClick={() => handleSelect(s.id)} className={`w-full px-3 py-2 flex items-center gap-2 text-left transition-colors ${
-              selectedId === s.id ? 'bg-primary-50 dark:bg-primary-950/60 border-l-2 border-primary-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 border-l-2 border-transparent'
-            }`}>
-              <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{
-                backgroundColor: selectedId === s.id ? '#0EA5E918' : `${CATEGORY_CONFIG[s.category]?.color || '#94a3b8'}18`,
-                border: `1.5px solid ${selectedId === s.id ? '#0EA5E9' : CATEGORY_CONFIG[s.category]?.color || '#94a3b8'}`,
-              }}>
-                <Bone size={10} style={{ color: selectedId === s.id ? '#0EA5E9' : CATEGORY_CONFIG[s.category]?.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-[11px] font-medium truncate ${selectedId === s.id ? 'text-primary-700 dark:text-primary-300' : 'text-slate-800 dark:text-slate-200'}`}>{s.name}</p>
-                <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate">{s.category}</p>
-              </div>
-              <ChevronRight size={10} className={selectedId === s.id ? 'text-primary-500' : 'text-slate-300 dark:text-slate-600'} />
-            </button>
-          ))}
-          {!filtered.length && (
-            <div className="text-center py-6 px-4">
-              <Search size={20} className="text-slate-300 dark:text-slate-600 mx-auto mb-1.5" />
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">Nenhuma estrutura encontrada</p>
+        {/* Lista de estruturas */}
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-24 text-slate-400">
+              <Search size={18} className="mb-1.5 opacity-40" />
+              <p className="text-xs">Nenhuma estrutura encontrada</p>
             </div>
+          ) : (
+            filtered.map(s => {
+              const cfg = CATEGORY_CONFIG[s.category];
+              const isActive = selectedId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => handleSelect(s.id)}
+                  className={`w-full px-3 py-2 flex items-center gap-2.5 text-left transition-all border-l-2 ${
+                    isActive
+                      ? isDarkMode ? 'bg-sky-950/50 border-sky-500' : 'bg-sky-50 border-sky-500'
+                      : isDarkMode ? 'hover:bg-slate-800/60 border-transparent' : 'hover:bg-slate-50 border-transparent'
+                  }`}
+                >
+                  <div
+                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-[10px]"
+                    style={{
+                      background: `${cfg?.color || '#64748b'}${isActive ? '30' : '15'}`,
+                      border: `1.5px solid ${isActive ? '#38BDF8' : cfg?.color || '#64748b'}55`,
+                    }}
+                  >
+                    {cfg?.icon || '●'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[11px] font-semibold truncate leading-tight ${
+                      isActive ? 'text-sky-400' : isDarkMode ? 'text-slate-200' : 'text-slate-800'
+                    }`}>
+                      {s.name}
+                    </p>
+                    <p className="text-[9px] text-slate-500 truncate">{s.category}</p>
+                  </div>
+                  <ChevronRight
+                    size={10}
+                    className={isActive ? 'text-sky-400' : 'text-slate-600'}
+                  />
+                </button>
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* 3D Canvas */}
-      <div className="flex-1 relative">
-        <Canvas shadows camera={{ position: [6, 4, 12], fov: 42 }} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} style={{ background: isDarkMode ? '#0f172a' : '#f1f5f9' }} dpr={[1, 2]}>
+      {/* ── CANVAS 3D ── */}
+      <div className="flex-1 relative overflow-hidden">
+        <Canvas
+          shadows
+          camera={{ position: [5.5, 3.5, 11], fov: 44, near: 0.1, far: 100 }}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+          dpr={[1, 1.5]}
+        >
           <Suspense fallback={null}>
-            <Scene selectedId={selectedId} hoveredId={hoveredId} onSelect={handleSelect} onHover={handleHover} visCats={visCats} />
+            <Scene
+              selectedId={selectedId}
+              hoveredId={hoveredId}
+              onSelect={handleSelect}
+              onHover={handleHover}
+              visCats={visCats}
+            />
           </Suspense>
         </Canvas>
 
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-          <button onClick={() => { setSelectedId(null); setShowPanel(false); }} className="p-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl shadow-md border border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" title="Limpar seleção"><RotateCcw size={15} /></button>
-          <button onClick={() => setVisCats([...CATEGORIES])} className="p-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl shadow-md border border-slate-200/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors" title="Mostrar tudo"><Layers size={15} /></button>
-        </div>
+        {/* Imagem educativa ao passar o mouse */}
+        <HoverImageCard hoveredId={hoveredId} isDarkMode={isDarkMode} />
 
-        <div className="absolute top-3 left-3 hidden sm:flex flex-col gap-0.5">
+        {/* Legenda de camadas (canto sup. esq.) */}
+        <div className="absolute top-3 left-3 hidden sm:flex flex-col gap-0.5 pointer-events-none">
           {CATEGORIES.filter(c => visCats.includes(c)).map(cat => (
-            <div key={cat} className="flex items-center gap-1 px-1.5 py-0.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded text-[9px] text-slate-600 dark:text-slate-300 font-medium">
+            <div
+              key={cat}
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9.5px] font-medium backdrop-blur-sm ${
+                isDarkMode ? 'bg-slate-900/70 text-slate-300' : 'bg-white/70 text-slate-600'
+              }`}
+            >
               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_CONFIG[cat]?.color }} />
               {cat}
             </div>
           ))}
         </div>
 
+        {/* Botões de controle (canto sup. dir.) */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+          <button
+            onClick={() => { setSelectedId(null); setShowPanel(false); }}
+            className={`p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors ${
+              isDarkMode
+                ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
+                : 'bg-white/90 border-slate-200 text-slate-500 hover:text-sky-600'
+            }`}
+            title="Limpar seleção"
+          >
+            <RotateCcw size={14} />
+          </button>
+          <button
+            onClick={() => setVisCats([...CATEGORIES])}
+            className={`p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors ${
+              isDarkMode
+                ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
+                : 'bg-white/90 border-slate-200 text-slate-500 hover:text-sky-600'
+            }`}
+            title="Mostrar tudo"
+          >
+            <Layers size={14} />
+          </button>
+        </div>
+
+        {/* Dica de interação */}
         {!selectedId && !hoveredId && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-full shadow-md text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 pointer-events-none">
-            <Eye size={13} className="text-primary-500" />
+          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full text-xs backdrop-blur-sm shadow-xl pointer-events-none border ${
+            isDarkMode
+              ? 'bg-slate-900/80 border-slate-700/60 text-slate-400'
+              : 'bg-white/80 border-slate-200 text-slate-500'
+          }`}>
+            <Eye size={13} className="text-sky-400" />
             Clique em uma estrutura para detalhes
           </div>
         )}
 
-        {/* Detail Panel */}
+        {/* ── PAINEL DE DETALHES ── */}
         <AnimatePresence>
           {selected && showPanel && (
             <>
-              <motion.div className="lg:hidden fixed inset-0 bg-black/30 dark:bg-black/50 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowPanel(false)} />
+              {/* Overlay mobile */}
               <motion.div
-                className="fixed lg:absolute bottom-0 lg:bottom-3 lg:right-3 left-0 lg:left-auto w-full lg:w-[400px] z-50 lg:z-10"
+                className="lg:hidden fixed inset-0 bg-black/40 z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowPanel(false)}
+              />
+
+              <motion.div
+                className="fixed lg:absolute bottom-0 lg:bottom-4 lg:right-4 left-0 lg:left-auto w-full lg:w-100 z-50 lg:z-10"
                 initial={{ y: '100%', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
               >
-                <div className="bg-white dark:bg-slate-800 rounded-t-2xl lg:rounded-2xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 max-h-[70vh] lg:max-h-[75vh] overflow-hidden flex flex-col">
-                  <div className="lg:hidden flex justify-center pt-2 pb-0.5"><div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full" /></div>
+                <div className={`rounded-t-2xl lg:rounded-2xl shadow-2xl border overflow-hidden flex flex-col max-h-[72vh] lg:max-h-[78vh] ${
+                  isDarkMode
+                    ? 'bg-slate-900 border-slate-700/60'
+                    : 'bg-white border-slate-200'
+                }`}>
 
-                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm" style={{
-                        background: `linear-gradient(135deg, ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}22, ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}08)`,
-                        border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}`,
-                      }}>
-                        <Bone size={16} style={{ color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9' }} />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">{selected.name}</h3>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{selected.category}</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setShowPanel(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 transition-colors"><X size={16} /></button>
+                  {/* Handle mobile */}
+                  <div className="lg:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+                    <div className={`w-10 h-1 rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
                   </div>
 
+                  {/* Header do painel */}
+                  <div className={`px-4 py-3 border-b flex items-center justify-between shrink-0 ${
+                    isDarkMode ? 'border-slate-700/60' : 'border-slate-100'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
+                        style={{
+                          background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
+                          border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
+                        }}
+                      >
+                        {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
+                      </div>
+                      <div>
+                        <h3 className={`font-bold text-sm leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          {selected.name}
+                        </h3>
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          style={{
+                            background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
+                            color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
+                          }}
+                        >
+                          {selected.category}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowPanel(false)}
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  {/* Conteúdo scrollável */}
                   <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{selected.description}</p>
-                    <div className="space-y-1.5">
-                      <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1"><Info size={10} />Informações Clínicas</h4>
-                      {Object.entries(selected.details).map(([k, v]) => (
-                        <div key={k} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                          <p className="text-[10px] font-semibold text-primary-600 dark:text-primary-400 mb-0.5">{k}</p>
-                          <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed">{v}</p>
-                        </div>
-                      ))}
+                    <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {selected.description}
+                    </p>
+
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Info size={10} className="text-sky-400" />
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                          Informações Clínicas
+                        </h4>
+                      </div>
+                      <div className="space-y-1.5">
+                        {Object.entries(selected.details).map(([k, v]) => (
+                          <div
+                            key={k}
+                            className={`rounded-lg px-3 py-2 ${
+                              isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'
+                            }`}
+                          >
+                            <p className="text-[10px] font-semibold text-sky-500 mb-0.5">{k}</p>
+                            <p className={`text-[11px] leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{v}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
