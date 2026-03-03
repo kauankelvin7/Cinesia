@@ -21,10 +21,18 @@ const Modal = ({
   const closeButtonRef = useRef(null);
   const titleId = useId();
 
-  // Focus trap + ESC
+  // Focus close button only on initial open (not on every re-render)
   useEffect(() => {
     if (!isOpen) return;
-    closeButtonRef.current?.focus();
+    // Small delay ensures animation has started before stealing focus
+    const t = setTimeout(() => closeButtonRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
+  // Keyboard: ESC to close + Tab focus-trap (separate effect so focus
+  // above is NOT re-triggered when the onClose callback reference changes)
+  useEffect(() => {
+    if (!isOpen) return;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') { onClose(); return; }
@@ -65,7 +73,7 @@ const Modal = ({
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm z-[150]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -75,7 +83,7 @@ const Modal = ({
           />
 
           {/* Container */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" role="presentation">
             <motion.div
               ref={dialogRef}
               role="dialog"

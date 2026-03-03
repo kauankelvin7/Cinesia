@@ -51,8 +51,18 @@ export const ThemeProvider = ({ children }) => {
     if (mode !== 'system') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e) => setResolved(e.matches ? 'dark' : 'light');
-    mq.addEventListener?.('change', handler) ?? mq.addListener?.(handler);
-    return () => mq.removeEventListener?.('change', handler) ?? mq.removeListener?.(handler);
+    if (mq.addEventListener) {
+      mq.addEventListener('change', handler);
+    } else {
+      mq.addListener?.(handler);
+    }
+    return () => {
+      if (mq.removeEventListener) {
+        mq.removeEventListener('change', handler);
+      } else {
+        mq.removeListener?.(handler);
+      }
+    };
   }, [mode]);
 
   const setMode = useCallback((m) => {

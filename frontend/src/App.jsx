@@ -10,12 +10,13 @@
  * Resultado: Bundle inicial menor, navegação 60fps, instalável
  */
 
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext-firebase';
-import { DashboardDataProvider } from './contexts/DashboardDataContext';
+import { DashboardDataProvider, useDashboardData } from './contexts/DashboardDataContext';
+import { FocusModeProvider } from './contexts/FocusModeContext';
 import Layout from './components/Layout';
 import LoadingScreen from './components/ui/LoadingScreen';
 import PWAInstallBanner from './components/PWAInstallBanner';
@@ -37,6 +38,23 @@ const Atlas3D = lazy(() => import('./pages/Atlas3D'));
 const Notificacoes = lazy(() => import('./pages/Notificacoes'));
 const Configuracoes = lazy(() => import('./pages/Configuracoes'));
 const MeuPerfil = lazy(() => import('./pages/MeuPerfil'));
+const HistoricoSimulados = lazy(() => import('./pages/HistoricoSimulados'));
+const Conquistas = lazy(() => import('./pages/Conquistas'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+
+// FIX-003: Clear dashboard cache on logout to prevent cross-user data leaks
+function CacheCleaner() {
+  const { user } = useAuth();
+  const { clearCache } = useDashboardData();
+  const prevUserRef = useRef(null);
+  useEffect(() => {
+    if (prevUserRef.current !== null && user === null) {
+      clearCache();
+    }
+    prevUserRef.current = user;
+  }, [user, clearCache]);
+  return null;
+}
 
 // Componente de rota protegida
 const ProtectedRoute = ({ children }) => {
@@ -69,6 +87,8 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <DashboardDataProvider>
+              <FocusModeProvider>
+              <CacheCleaner />
               <Layout>
                 {/* Suspense interno para transições entre páginas protegidas */}
                 <Suspense fallback={<LoadingScreen />}>
@@ -84,9 +104,13 @@ function AppContent() {
                     <Route path="/notificacoes" element={<Notificacoes />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="/meu-perfil" element={<MeuPerfil />} />
+                    <Route path="/historico-simulados" element={<HistoricoSimulados />} />
+                    <Route path="/conquistas" element={<Conquistas />} />
+                    <Route path="/analytics" element={<Analytics />} />
                   </Routes>
                 </Suspense>
               </Layout>
+              </FocusModeProvider>
               </DashboardDataProvider>
             </ProtectedRoute>
           } 
@@ -111,17 +135,20 @@ function App() {
           <PWAInstallBanner />
           {/* Toast notifications */}
           <Toaster
-            position="top-right"
+            position="bottom-right"
+            expand={false}
+            richColors={false}
+            closeButton
             toastOptions={{
-              duration: 4000,
-              style: {
-                borderRadius: '12px',
-                fontSize: '14px',
-                fontWeight: '500',
+              duration: 5000,
+              classNames: {
+                toast:   'cinesia-toast',
+                success: 'cinesia-toast--success',
+                error:   'cinesia-toast--error',
+                warning: 'cinesia-toast--warning',
+                info:    'cinesia-toast--info',
               },
             }}
-            richColors
-            closeButton
           />
         </AuthProvider>
       </ThemeProvider>

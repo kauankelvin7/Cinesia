@@ -9,7 +9,7 @@
  * - Fornece loading e error states
  */
 
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { getDashboardStats } from '../services/dashboardService';
 
 const DashboardDataContext = createContext(null);
@@ -19,10 +19,14 @@ const MIN_REFETCH_INTERVAL = 30 * 1000;
 
 export const DashboardDataProvider = ({ children }) => {
   const [data, setData] = useState(null);
+  const dataRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const lastFetchRef = useRef(0);
   const currentUserRef = useRef(null);
+
+  // Keep dataRef in sync with data state to avoid stale closures in loadData
+  useEffect(() => { dataRef.current = data; }, [data]);
 
   /**
    * Carrega dados se ainda não foram carregados ou se forçado
@@ -39,11 +43,11 @@ export const DashboardDataProvider = ({ children }) => {
     // e o último fetch foi há menos de 30s, retorna o cache
     if (
       !force &&
-      data &&
+      dataRef.current &&
       currentUserRef.current === userId &&
       timeSinceLastFetch < MIN_REFETCH_INTERVAL
     ) {
-      return data;
+      return dataRef.current;
     }
 
     setIsLoading(true);
@@ -62,7 +66,8 @@ export const DashboardDataProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [data]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Força refetch dos dados (chamar após mutações)

@@ -46,13 +46,11 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setToken(idToken);
         
-        localStorage.setItem('token', idToken);
         localStorage.setItem('user', JSON.stringify(userData));
       } else {
         // Usuário não está logado
         setUser(null);
         setToken(null);
-        localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
       setLoading(false);

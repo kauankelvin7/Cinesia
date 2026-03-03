@@ -1,12 +1,13 @@
 /**
- * HOME — Premium Cinesia Dashboard v2
- * Fixes: spacing, bento grid balance, offensive pill, subject names,
- * compact agenda (no full calendar), 2-col bottom layout
+ * HOME — Cinesia Premium Dashboard v5
+ * Design System: Medical Precision meets Modern Study App
+ * Inspired by: Linear.app, Vercel Dashboard, Raycast
  *
- * Paleta: ciano (#06B6D4), azul-marinho (#0A1628), índigo
+ * Palette: Blue (#2563EB), Teal (#0D9488), Orange (#EA580C)
+ * Fonts: Sora (display), DM Sans (body), JetBrains Mono (numbers)
  */
 
-import { useState, useEffect, useMemo, memo, useRef } from 'react';
+import { useState, useEffect, useMemo, memo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, useInView } from 'framer-motion';
@@ -14,27 +15,21 @@ import {
   BookOpen,
   FileText,
   CreditCard,
-  Flame,
   Plus,
   Calendar,
   TrendingUp,
   ChevronRight,
   Bookmark,
-  Layers,
-  Brain,
-  Sparkles,
-  PenTool,
   Zap,
   Target,
-  Activity,
-  Search,
-  Bone,
   Trash2,
   CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useDashboardData } from '../contexts/DashboardDataContext';
-import { salvarEvento, deletarEvento } from '../services/firebaseService';
+import { salvarEvento, deletarEvento, listarFlashcards } from '../services/firebaseService';
+import { isDueForReview } from '../utils/sm2';
+import { useTheme } from '../contexts/ThemeContext';
 import AddEventModal from '../components/modals/AddEventModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import Button from '../components/ui/Button';
@@ -87,9 +82,7 @@ const timeAgo = (date) => {
 
 const staggerContainer = {
   hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
 const fadeUp = {
@@ -97,15 +90,10 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
-const fadeIn = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.4 } },
-};
-
 /* ═══════════════════════════════════════════
    ANIMATED COUNTER
    ═══════════════════════════════════════════ */
-const AnimatedNumber = ({ value, duration = 1.2 }) => {
+const AnimatedNumber = ({ value, duration = 1.2, className = 'tabular-nums font-mono', style }) => {
   const [display, setDisplay] = useState(0);
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
@@ -114,61 +102,196 @@ const AnimatedNumber = ({ value, duration = 1.2 }) => {
     if (!inView) return;
     const target = typeof value === 'number' ? value : 0;
     if (target === 0) { setDisplay(0); return; }
-
     const startTime = performance.now();
     const animate = (now) => {
       const progress = Math.min((now - startTime) / (duration * 1000), 1);
-      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const eased = 1 - Math.pow(1 - progress, 3);
       setDisplay(Math.round(eased * target));
       if (progress < 1) requestAnimationFrame(animate);
     };
     requestAnimationFrame(animate);
   }, [value, inView, duration]);
 
-  return <span ref={ref} className="tabular-nums">{display}</span>;
+  return <span ref={ref} className={className} style={style}>{display}</span>;
 };
 
 /* ═══════════════════════════════════════════
-   CIRCULAR PROGRESS
+   AVATAR WITH FALLBACK — never breaks
    ═══════════════════════════════════════════ */
-const CircularProgress = memo(({ percentage = 0, size = 88, strokeWidth = 7 }) => {
+const Avatar = memo(({ src, name, size = 56, ring = false, className = '' }) => {
+  const [error, setError] = useState(false);
+  const initials = useMemo(() =>
+    (name || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  , [name]);
+  const bgColor = useMemo(() => {
+    const colors = ['#2563EB','#0D9488','#7C3AED','#059669','#D97706','#DB2777'];
+    return colors[(name || '').charCodeAt(0) % colors.length || 0];
+  }, [name]);
+
+  const renderFallback = (w, h, fs) => (
+    <div
+      className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+      style={{ width: w, height: h, backgroundColor: bgColor, fontSize: fs }}
+    >
+      {initials}
+    </div>
+  );
+
+  if (!ring) {
+    return (
+      <div className={className}>
+        {(error || !src) ? renderFallback(size, size, size * 0.35) : (
+          <img
+            src={src} alt={name || ''}
+            className="rounded-full object-cover shrink-0"
+            style={{ width: size, height: size }}
+            onError={() => setError(true)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative shrink-0 ${className}`} style={{ width: size + 6, height: size + 6 }}>
+      <div
+        className="absolute inset-0 rounded-full opacity-80"
+        style={{
+          background: 'conic-gradient(from 0deg, #2563EB, #0D9488, #34D399, #2563EB)',
+          animation: 'spin-ring 4s linear infinite',
+        }}
+      />
+      <div className="absolute rounded-full" style={{ inset: '2px', background: 'var(--bg-app)' }} />
+      <div className="absolute" style={{ inset: '3px' }}>
+        {(error || !src) ? (
+          <div
+            className="rounded-full flex items-center justify-center text-white font-bold w-full h-full"
+            style={{ backgroundColor: bgColor, fontSize: size * 0.35 }}
+          >{initials}</div>
+        ) : (
+          <img
+            src={src} alt={name || ''}
+            className="rounded-full object-cover w-full h-full"
+            style={{ border: '2px solid rgba(255,255,255,0.2)' }}
+            onError={() => setError(true)}
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+Avatar.displayName = 'Avatar';
+
+/* ═══════════════════════════════════════════
+   KPI CARD — hero mini-card com linha colorida
+   ═══════════════════════════════════════════ */
+const KPI_VARIANTS = {
+  materias:  { color: '#60a5fa', icon: '📚', label: 'Matérias',   sublabel: 'cadastradas',    path: '/materias'  },
+  flashcard: { color: '#fb923c', icon: '🃏', label: 'Flashcards', sublabel: 'para revisão',   path: '/flashcards' },
+  resumos:   { color: '#34d399', icon: '📝', label: 'Resumos',    sublabel: 'salvos',          path: '/resumos'   },
+};
+
+const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDarkMode = true }) => {
+  const { color, icon, label, sublabel, path } = KPI_VARIANTS[variant] || {};
+  return (
+    <motion.div
+      role="listitem"
+      onClick={() => nav(path)}
+      className="relative overflow-hidden cursor-pointer"
+      style={{
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        borderRadius: '14px',
+        padding: '14px 12px 12px',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay }}
+      whileHover={{
+        background: 'rgba(255,255,255,0.10)',
+        borderColor: 'rgba(255,255,255,0.20)',
+        y: -2,
+      }}
+      whileTap={{ y: 0 }}
+    >
+      {/* Top color line */}
+      <div className="absolute pointer-events-none" style={{ top: 0, left: '14px', right: '14px', height: '2px', borderRadius: '0 0 2px 2px', background: color, opacity: 0.85 }} />
+
+      {/* Icon + label row */}
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span style={{ fontSize: '13px', lineHeight: 1 }}>{icon}</span>
+        <span className="uppercase font-bold" style={{ fontSize: '9px', letterSpacing: '0.06em', color: isDarkMode ? 'rgba(199,210,254,0.6)' : 'rgba(255,255,255,0.85)' }}>{label}</span>
+      </div>
+
+      {/* Value */}
+      {loading ? (
+        <div className="animate-pulse rounded-md" style={{ height: '32px', width: '55%', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+      ) : (
+        <AnimatedNumber
+          value={value}
+          duration={1.5}
+          className=""
+          style={{
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+            fontSize: 'clamp(24px, 3.5vw, 32px)',
+            fontWeight: 700,
+            lineHeight: 1,
+            letterSpacing: '-0.03em',
+            background: `linear-gradient(135deg, #ffffff 0%, ${color} 110%)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            display: 'block',
+          }}
+        />
+      )}
+
+      {/* Sub-label */}
+      <span style={{ fontSize: '10px', color: isDarkMode ? 'rgba(148,163,184,0.7)' : 'rgba(255,255,255,0.75)', marginTop: '3px', display: 'block', lineHeight: 1 }}>
+        {sublabel}
+      </span>
+    </motion.div>
+  );
+});
+KpiCard.displayName = 'KpiCard';
+
+/* ═══════════════════════════════════════════
+   CIRCULAR PROGRESS (SVG) for Meta Mensal
+   ═══════════════════════════════════════════ */
+const CircularProgress = memo(({ current = 0, total = 50, size = 90 }) => {
+  const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+  const percentage = total > 0 ? Math.min((current / total) * 100, 100) : 0;
   const offset = circumference - (percentage / 100) * circumference;
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
 
   return (
-    <div ref={ref} className="relative inline-flex items-center justify-center shrink-0">
+    <div ref={ref} className="relative inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke="rgba(255,255,255,0.06)"
-          strokeWidth={strokeWidth}
-        />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={strokeWidth} />
         <motion.circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke="url(#progressGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
+          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="url(#cpGradHome)"
+          strokeWidth={strokeWidth} strokeLinecap="round" strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={inView ? { strokeDashoffset: offset } : {}}
           transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
         />
         <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06B6D4" />
-            <stop offset="100%" stopColor="#3B82F6" />
+          <linearGradient id="cpGradHome" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--primary)" />
+            <stop offset="100%" stopColor="var(--teal)" />
           </linearGradient>
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-white tabular-nums">
-          <AnimatedNumber value={percentage} duration={1.5} />
-          <span className="text-sm">%</span>
+        <span className="font-mono font-bold" style={{ fontSize: '22px', color: 'var(--text-1)', lineHeight: 1 }}>
+          <AnimatedNumber value={current} duration={1.5} />
         </span>
-        <span className="text-[9px] text-slate-400 uppercase tracking-wider">completo</span>
+        <span style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>de {total}</span>
       </div>
     </div>
   );
@@ -176,92 +299,36 @@ const CircularProgress = memo(({ percentage = 0, size = 88, strokeWidth = 7 }) =
 CircularProgress.displayName = 'CircularProgress';
 
 /* ═══════════════════════════════════════════
-   FLAME ANIMATION
+   SECTION CARD — themed for light & dark • border + shadow
    ═══════════════════════════════════════════ */
-const AnimatedFlame = memo(({ size = 20 }) => (
-  <motion.div
-    animate={{
-      scale: [1, 1.15, 1],
-      filter: [
-        'drop-shadow(0 0 4px rgba(245,158,11,0.4))',
-        'drop-shadow(0 0 10px rgba(245,158,11,0.7))',
-        'drop-shadow(0 0 4px rgba(245,158,11,0.4))',
-      ],
-    }}
-    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-  >
-    <Flame size={size} className="text-amber-400" />
-  </motion.div>
-));
-AnimatedFlame.displayName = 'AnimatedFlame';
-
-/* ═══════════════════════════════════════════
-   USER AVATAR
-   ═══════════════════════════════════════════ */
-const UserAvatar = memo(({ user, size = 'lg', showStatus = false }) => {
-  const sizeMap = {
-    sm: 'w-9 h-9 text-sm',
-    md: 'w-12 h-12 text-lg',
-    lg: 'w-16 h-16 text-2xl',
-  };
-  const glowMap = {
-    sm: '-inset-0.5', md: '-inset-0.5', lg: '-inset-1',
-  };
-  const statusMap = {
-    sm: 'w-2.5 h-2.5 border', md: 'w-3 h-3 border-2', lg: 'w-3.5 h-3.5 border-2',
-  };
-  const initial = user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
-
+const SectionCard = memo(({ children, className = '', hover = true, onClick }) => {
+  const { isDarkMode } = useTheme();
   return (
-    <div className="relative shrink-0">
-      <div className={`absolute ${glowMap[size]} rounded-full bg-linear-to-br from-cyan-400 via-cyan-500 to-blue-500 opacity-50 blur-sm`} />
-      {user?.photoURL ? (
-        <img
-          src={user.photoURL}
-          alt={user.displayName || ''}
-          className={`${sizeMap[size]} rounded-full object-cover ring-2 ring-cyan-400/40 relative z-10`}
-        />
-      ) : (
-        <div className={`${sizeMap[size]} rounded-full bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold ring-2 ring-cyan-400/40 relative z-10`}>
-          {initial}
-        </div>
-      )}
-      {showStatus && (
-        <div className={`absolute -bottom-0.5 -right-0.5 ${statusMap[size]} bg-emerald-500 ring-2 ring-[#0A1628] rounded-full z-20`} />
-      )}
-    </div>
+    <motion.div
+      variants={fadeUp}
+      className={`relative overflow-hidden transition-all duration-300 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: '16px',
+        boxShadow: isDarkMode
+          ? '0 1px 3px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.3)'
+          : '0 1px 3px rgba(37,99,235,0.06), 0 4px 16px rgba(37,99,235,0.08)',
+      }}
+      onClick={onClick}
+      whileHover={hover && onClick ? { y: -2 } : undefined}
+    >
+      {children}
+    </motion.div>
   );
 });
-UserAvatar.displayName = 'UserAvatar';
+SectionCard.displayName = 'SectionCard';
 
 /* ═══════════════════════════════════════════
-   GLASS CARD
-   ═══════════════════════════════════════════ */
-const GlassCard = memo(({ children, className = '', onClick, hover = true }) => (
-  <motion.div
-    variants={fadeUp}
-    className={`
-      relative overflow-hidden rounded-2xl
-      bg-white/4 backdrop-blur-xl
-      border border-white/8
-      transition-all duration-300
-      ${hover ? 'hover:bg-white/7 hover:border-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/5' : ''}
-      ${onClick ? 'cursor-pointer' : ''}
-      ${className}
-    `}
-    onClick={onClick}
-    whileHover={onClick ? { y: -2 } : undefined}
-  >
-    {children}
-  </motion.div>
-));
-GlassCard.displayName = 'GlassCard';
-
-/* ═══════════════════════════════════════════
-   SKELETON LOADER
+   SKELETON
    ═══════════════════════════════════════════ */
 const SkeletonPulse = ({ className = '' }) => (
-  <div className={`animate-pulse bg-white/6 rounded-xl ${className}`} />
+  <div className={`animate-pulse rounded-xl ${className}`} style={{ backgroundColor: 'var(--bg-elevated)' }} />
 );
 
 /* ═══════════════════════════════════════════
@@ -269,19 +336,42 @@ const SkeletonPulse = ({ className = '' }) => (
    ═══════════════════════════════════════════ */
 const Home = () => {
   const { user } = useAuth();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const { data: cachedData, isLoading: cacheLoading, loadData, refreshData } = useDashboardData();
 
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Modal de Evento
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [selectedDateForEvent, setSelectedDateForEvent] = useState(new Date());
-
-  // Modal de Confirmação de Exclusão
   const [confirmDeleteEvento, setConfirmDeleteEvento] = useState({ isOpen: false, evento: null });
   const [isDeletingEvento, setIsDeletingEvento] = useState(false);
+  const [pendingReviews, setPendingReviews] = useState(0);
+
+  // Carregar contagem de flashcards pendentes de revisão (SM-2)
+  useEffect(() => {
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
+    listarFlashcards(userId)
+      .then(fcs => setPendingReviews(fcs.filter(fc => isDueForReview(fc)).length))
+      .catch(() => {});
+  }, [user, dashboardData]);
+
+  // Ouvir evento de alteração de resumo e re-fetchar o dashboard
+  useEffect(() => {
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
+    const handleResumoAlterado = async () => {
+      try {
+        const updatedData = await refreshData(userId);
+        setDashboardData(updatedData);
+      } catch (err) {
+        console.error('Erro ao atualizar após mudança de resumo:', err);
+      }
+    };
+    window.addEventListener('cinesia:resumo:alterado', handleResumoAlterado);
+    return () => window.removeEventListener('cinesia:resumo:alterado', handleResumoAlterado);
+  }, [user, refreshData]);
 
   useEffect(() => {
     if (!user) { setIsLoading(false); return; }
@@ -301,10 +391,10 @@ const Home = () => {
   }, [user]);
 
   /* ── Event handlers ── */
-  const handleOpenEventModal = (date = new Date()) => {
+  const handleOpenEventModal = useCallback((date = new Date()) => {
     setSelectedDateForEvent(date);
     setIsEventModalOpen(true);
-  };
+  }, []);
 
   const handleSaveEvent = async (newEvent) => {
     const userId = user?.id || user?.uid;
@@ -322,9 +412,9 @@ const Home = () => {
     }
   };
 
-  const handleDeleteEvento = (evento) => {
+  const handleDeleteEvento = useCallback((evento) => {
     setConfirmDeleteEvento({ isOpen: true, evento });
-  };
+  }, []);
 
   const confirmarExclusaoEvento = async () => {
     if (!confirmDeleteEvento.evento?.id) return;
@@ -353,7 +443,6 @@ const Home = () => {
     return Math.round((dashboardData.concluidas / dashboardData.totalMaterias) * 100);
   }, [dashboardData]);
 
-  // Próximos 3 eventos (para agenda compacta inline)
   const proximosEventos = useMemo(() => {
     const eventos = dashboardData?.proximosEventos || [];
     const hoje = new Date();
@@ -365,534 +454,266 @@ const Home = () => {
       .slice(0, 4);
   }, [dashboardData]);
 
-  // Feed de atividade recente
-  const recentActivity = useMemo(() => {
-    if (!dashboardData) return [];
-    const activities = [];
-    if (dashboardData.materiasRecentes?.length > 0) {
-      dashboardData.materiasRecentes.slice(0, 2).forEach(m => {
-        activities.push({
-          type: 'materia', icon: BookOpen,
-          text: `Acessou ${m.nome}`,
-          time: m.updatedAt || m.createdAt,
-          color: 'text-cyan-400', bg: 'bg-cyan-500/10',
-        });
-      });
-    }
-    if (dashboardData.totalResumos > 0) {
-      activities.push({
-        type: 'resumo', icon: FileText,
-        text: 'Resumo atualizado',
-        time: new Date(Date.now() - 3600000 * 2),
-        color: 'text-violet-400', bg: 'bg-violet-500/10',
-      });
-    }
-    if (dashboardData.totalFlashcards > 0) {
-      activities.push({
-        type: 'flashcard', icon: CreditCard,
-        text: 'Flashcards revisados',
-        time: new Date(Date.now() - 3600000 * 5),
-        color: 'text-blue-400', bg: 'bg-blue-500/10',
-      });
-    }
-    activities.push({
-      type: 'login', icon: Activity,
-      text: 'Sessão de estudo iniciada',
-      time: new Date(),
-      color: 'text-emerald-400', bg: 'bg-emerald-500/10',
-    });
-    return activities.slice(0, 5);
-  }, [dashboardData]);
+  /* recentActivity removed — replaced by real monthly stats */
 
-  /* ── Quick actions dock ── */
+  /* ── Quick actions with distinct colors ── */
   const quickActions = [
-    { icon: PenTool, label: 'Novo Resumo', onClick: () => navigate('/resumos', { state: { openNew: true } }), badge: 'Popular', color: 'from-violet-500/20 to-violet-600/10 text-violet-400 border-violet-500/20' },
-    { icon: Layers, label: 'Flashcards', onClick: () => navigate('/flashcards'), color: 'from-blue-500/20 to-blue-600/10 text-blue-400 border-blue-500/20' },
-    { icon: Brain, label: 'Simulado', onClick: () => navigate('/simulado'), color: 'from-emerald-500/20 to-emerald-600/10 text-emerald-400 border-emerald-500/20' },
-    { icon: Search, label: 'Consulta', onClick: () => navigate('/consulta-rapida'), color: 'from-amber-500/20 to-amber-600/10 text-amber-400 border-amber-500/20' },
-    { icon: Bone, label: 'Atlas 3D', onClick: () => navigate('/atlas-3d'), color: 'from-rose-500/20 to-rose-600/10 text-rose-400 border-rose-500/20' },
-    { icon: PenTool, label: 'Quadro', onClick: () => navigate('/quadro-branco'), color: 'from-cyan-500/20 to-cyan-600/10 text-cyan-400 border-cyan-500/20' },
+    { icon: '📝', label: 'Novo Resumo', badge: 'NOVO', onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
+    { icon: '🃏', label: 'Flashcards', onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
+    { icon: '🎯', label: 'Simulados', onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
+    { icon: '🔍', label: 'Consulta', onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
+    { icon: '🫀', label: 'Atlas 3D', onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
+    { icon: '✏️', label: 'Quadro', onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
   ];
 
   /* ═══════════════════════════════════════════
      RENDER
      ═══════════════════════════════════════════ */
   return (
-    <motion.div
-      className="min-h-screen pb-32"
-      initial="hidden"
-      animate="show"
-      variants={staggerContainer}
-    >
+    <motion.div className="min-h-screen pb-32" initial="hidden" animate="show" variants={staggerContainer}>
+
       {/* ═══════════════════════════════════════════
-          1. HEADER — Avatar + greeting + offensive pill inline
+          ① HERO HEADER — dark gradient + dot grid + ring avatar
           ═══════════════════════════════════════════ */}
-      <motion.div variants={fadeIn} className="relative overflow-hidden">
-        {/* Mesh gradient background */}
-        <div className="absolute inset-0 bg-linear-to-br from-[#0A1628] via-[#0F1E35] to-[#0A1628]">
-          <motion.div
-            className="absolute -top-32 -right-32 w-96 h-96 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)' }}
-            animate={{ scale: [1, 1.2, 1], x: [0, 20, 0], y: [0, -15, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <motion.div
-            className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)' }}
-            animate={{ scale: [1, 1.3, 1], x: [0, -10, 0], y: [0, 10, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
+      <motion.div
+        variants={fadeUp}
+        className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4"
+        style={{
+          borderRadius: '20px',
+          backgroundImage: isDarkMode ? [
+            'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.20) 0%, transparent 60%)',
+            'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+            'linear-gradient(135deg, #0f1f3d 0%, #0d2540 35%, #0a3040 65%, #083c3c 100%)',
+          ].join(', ') : [
+            'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.12) 0%, transparent 60%)',
+            'radial-gradient(circle, rgba(37,99,235,0.06) 1px, transparent 1px)',
+            'linear-gradient(135deg, #1e3a8a 0%, #1e40af 35%, #0e7490 65%, #0f766e 100%)',
+          ].join(', '),
+          backgroundSize: '100%, 24px 24px, 100%',
+          padding: 'clamp(20px, 4vw, 28px) clamp(20px, 4vw, 28px) clamp(16px, 3.5vw, 24px)',
+        }}
+      >
+        {/* Decorative glow — teal, top-right */}
+        <div className="absolute pointer-events-none" style={{ top: '-80px', right: '-80px', width: '260px', height: '260px', background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.25) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.35) 0%, transparent 70%)' }} />
+        {/* Bright bottom border line */}
+        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.4), rgba(96,165,250,0.3), transparent)' }} />
+
+        {/* Avatar + Greeting row */}
+        <div className="relative z-10 flex items-center gap-4 sm:gap-5">
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+            <Avatar src={user?.photoURL} name={user?.displayName || user?.email} size={56} ring />
+          </motion.div>
+
+          <div className="flex-1 min-w-0">
+            <motion.h1
+              className="font-display tracking-tight leading-tight truncate"
+              style={{
+                fontSize: 'clamp(20px, 4vw, 26px)',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                color: '#FFFFFF',
+                WebkitTextFillColor: '#FFFFFF',
+              }}
+              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+            >
+              {greeting.text}, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'} 👋
+            </motion.h1>
+
+            <motion.p
+              className="italic mt-1 line-clamp-2"
+              style={{ fontSize: '13px', color: isDarkMode ? 'rgba(199,210,254,0.7)' : 'rgba(219,234,254,0.9)' }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+            >
+              &ldquo;{motivational}&rdquo;
+            </motion.p>
+
+            {/* Streak badge */}
+            <motion.div className="mt-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+              <span className="inline-flex items-center gap-1.5 rounded-full font-bold" style={{ background: 'rgba(251,146,60,0.18)', border: '1px solid rgba(251,146,60,0.35)', color: '#FB923C', padding: '4px 10px', fontSize: '12px' }}>
+                <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>🔥</motion.span>
+                <span className="font-mono tabular-nums">{isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}</span>
+                <span style={{ color: 'rgba(251,146,60,0.7)', fontSize: '11px' }}>
+                  {(dashboardData?.offensiveStreak || 0) === 0 ? 'Comece hoje!' : 'dias consecutivos'}
+                </span>
+              </span>
+            </motion.div>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-8 pt-8 sm:pt-10 pb-12 sm:pb-16">
-          <div className="flex items-center gap-5">
-            {/* Avatar */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <UserAvatar user={user} size="lg" showStatus />
-            </motion.div>
-
-            {/* Greeting + offensive pill */}
-            <div className="flex-1 min-w-0">
-              <motion.p
-                className="text-slate-400 text-sm font-medium mb-1 flex items-center gap-1.5"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                {greeting.text} {greeting.emoji}
-              </motion.p>
-              <motion.h1
-                className="text-2xl sm:text-3xl font-bold text-white tracking-tight truncate"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.25 }}
-              >
-                {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}
-              </motion.h1>
-
-              {/* Offensive streak pill — inline under name */}
-              <motion.div
-                className="flex items-center gap-3 mt-2.5 flex-wrap"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-              >
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-sm font-semibold">
-                  <AnimatedFlame size={14} />
-                  <span className="text-orange-300 tabular-nums">
-                    {isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}
-                  </span>
-                  <span className="text-orange-400/70 text-xs font-medium">
-                    {(dashboardData?.offensiveStreak || 0) === 0 ? 'Comece hoje!' : 'dias'}
-                  </span>
-                </span>
-
-                {/* Motivational phrase — desktop */}
-                <span className="hidden sm:flex items-center gap-1.5 text-slate-400/70 text-sm">
-                  <Sparkles size={13} className="text-cyan-400/50 shrink-0" />
-                  <span className="truncate max-w-xs">{motivational}</span>
-                </span>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Motivational phrase — mobile only */}
-          <motion.div
-            className="mt-4 sm:hidden"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-          >
-            <div className="bg-white/4 backdrop-blur-md rounded-xl px-4 py-2.5 border border-white/6 flex items-center gap-2">
-              <Sparkles size={14} className="text-cyan-400/60 shrink-0" />
-              <p className="text-xs text-slate-300/80 line-clamp-2">{motivational}</p>
-            </div>
-          </motion.div>
+        {/* KPI Cards */}
+        <div className="relative z-10 grid grid-cols-3 gap-2 sm:gap-2.5 mt-5" role="list">
+          <KpiCard variant="materias"  value={dashboardData?.totalMaterias   || 0} loading={isLoading} navigate={navigate} delay={0.58} isDarkMode={isDarkMode} />
+          <KpiCard variant="flashcard" value={dashboardData?.totalFlashcards || 0} loading={isLoading} navigate={navigate} delay={0.64} isDarkMode={isDarkMode} />
+          <KpiCard variant="resumos"   value={dashboardData?.totalResumos    || 0} loading={isLoading} navigate={navigate} delay={0.70} isDarkMode={isDarkMode} />
         </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════
-          MAIN CONTENT
+          MAIN GRID (max-w-1280, responsive)
           ═══════════════════════════════════════════ */}
-      <div className="max-w-5xl mx-auto px-5 sm:px-8 -mt-6 relative z-20">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 mt-4 sm:mt-5">
         <motion.div variants={staggerContainer} initial="hidden" animate="show">
 
-          {/* ═══════════════════════════════════════════
-              2. BENTO GRID — 4 balanced columns
-              Progress (2-col) | Flashcards | Resumos
-              All cards same height
-              ═══════════════════════════════════════════ */}
-          {isLoading ? (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-10">
-              <SkeletonPulse className="h-40 col-span-2" />
-              <SkeletonPulse className="h-40" />
-              <SkeletonPulse className="h-40" />
-            </div>
-          ) : (
-            <motion.div
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-10"
-              variants={staggerContainer}
-              initial="hidden"
-              animate="show"
-            >
-              {/* ── Progress card (2 cols, same height as others) ── */}
-              <GlassCard className="col-span-2 p-6" onClick={() => navigate('/materias')}>
-                <div className="flex items-center gap-5 h-full">
-                  <CircularProgress
-                    percentage={progressPercent}
-                    size={88}
-                    strokeWidth={7}
-                  />
+          {/* ═══════════════════════════════
+              ① REVISÃO DE HOJE (SM-2)
+              ═══════════════════════════════ */}
+          {pendingReviews > 0 && (
+            <motion.div variants={fadeUp} className="mb-4">
+              <motion.div
+                className="relative overflow-hidden cursor-pointer"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(251,146,60,0.10) 0%, rgba(234,88,12,0.06) 100%)',
+                  border: '1px solid rgba(251,146,60,0.25)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                }}
+                onClick={() => navigate('/flashcards', { state: { reviewMode: true } })}
+                whileHover={{ y: -2, borderColor: 'rgba(251,146,60,0.45)' }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
+                    <span className="text-2xl">🧠</span>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                      Progresso Geral
+                    <h3 className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>
+                      Revisão de Hoje
+                    </h3>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                      <span className="font-bold font-mono" style={{ color: '#EA580C' }}>{pendingReviews}</span> flashcard{pendingReviews !== 1 ? 's' : ''} pendente{pendingReviews !== 1 ? 's' : ''} de revisão
                     </p>
-                    <p className="text-lg font-bold text-white mb-3">
-                      <AnimatedNumber value={dashboardData?.concluidas || 0} />
-                      <span className="text-slate-500 font-normal text-sm"> / {dashboardData?.totalMaterias || 0} matérias</span>
-                    </p>
-                    <div className="space-y-2">
-                      {dashboardData?.materiasRecentes?.slice(0, 3).map((m, i) => (
-                        <div key={m.id || i} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.cor || '#06B6D4' }} />
-                          <span className="text-xs text-slate-300 truncate flex-1">{m.nome}</span>
-                          <div className="w-12 h-1.5 bg-white/6 rounded-full overflow-hidden shrink-0">
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: m.cor || '#06B6D4' }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${30 + (i * 20) % 70}%` }}
-                              transition={{ duration: 1, delay: 0.5 + i * 0.15, ease: 'easeOut' }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                  <ChevronRight size={16} className="text-slate-600 shrink-0 hidden sm:block" />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="bg-orange-500 hover:bg-orange-600 shrink-0"
+                    onClick={(e) => { e.stopPropagation(); navigate('/flashcards', { state: { reviewMode: true } }); }}
+                  >
+                    Revisar agora
+                  </Button>
                 </div>
-              </GlassCard>
-
-              {/* ── Flashcards card ── */}
-              <GlassCard className="p-6 flex flex-col" onClick={() => navigate('/flashcards')}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                    <CreditCard size={16} className="text-blue-400" />
-                  </div>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Flashcards</p>
-                </div>
-                <p className="text-3xl font-bold text-white mb-1 tabular-nums">
-                  <AnimatedNumber value={dashboardData?.totalFlashcards || 0} />
-                </p>
-                <p className="text-xs text-slate-500 mb-auto">cards para revisão</p>
-                <div className="mt-4 flex gap-1.5">
-                  {[0, 1, 2].map(i => (
-                    <motion.div
-                      key={i}
-                      className="flex-1 h-5 bg-blue-500/10 rounded-md border border-blue-500/10"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 + i * 0.1 }}
-                    />
-                  ))}
-                </div>
-              </GlassCard>
-
-              {/* ── Resumos card ── */}
-              <GlassCard className="p-6 flex flex-col" onClick={() => navigate('/resumos')}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
-                    <FileText size={16} className="text-violet-400" />
-                  </div>
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Resumos</p>
-                </div>
-                <p className="text-3xl font-bold text-white mb-1 tabular-nums">
-                  <AnimatedNumber value={dashboardData?.totalResumos || 0} />
-                </p>
-                <p className="text-xs text-slate-500 mb-auto">documentos salvos</p>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-white/6 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-linear-to-r from-violet-500 to-violet-400 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: '65%' }}
-                      transition={{ duration: 1.2, delay: 0.5, ease: 'easeOut' }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-slate-500">ativos</span>
-                </div>
-              </GlassCard>
+              </motion.div>
             </motion.div>
           )}
 
-          {/* ═══════════════════════════════════════════
-              3. DOCK — Quick access, horizontal scroll on mobile
-              ═══════════════════════════════════════════ */}
-          <motion.div className="mb-10" variants={fadeUp}>
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3.5 flex items-center gap-2">
-              <Zap size={13} className="text-cyan-400/60" />
-              Acesso Rápido
-            </h2>
-            <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-5 px-5 sm:mx-0 sm:px-0">
-              {quickActions.map((action, idx) => (
-                <motion.button
-                  key={action.label}
-                  onClick={action.onClick}
-                  className={`
-                    group relative shrink-0 flex items-center gap-2.5
-                    px-4 py-2.5 rounded-xl
-                    bg-linear-to-br ${action.color}
-                    border border-white/6
-                    backdrop-blur-md
-                    hover:border-white/15 hover:scale-[1.03]
-                    active:scale-[0.98]
-                    transition-all duration-200
-                  `}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + idx * 0.06, duration: 0.35 }}
-                  whileHover={{ y: -2 }}
-                >
-                  <action.icon size={16} strokeWidth={1.8} />
-                  <span className="text-sm font-medium text-white/90 whitespace-nowrap">{action.label}</span>
-                  {action.badge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/20">
-                      {action.badge}
-                    </span>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
+          {/* ═══════════════════════════════
+              ② ACESSO RÁPIDO + AGENDA
+              ═══════════════════════════════ */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
 
-          {/* ═══════════════════════════════════════════
-              4. BOTTOM GRID — 2 columns on desktop
-              Left (col-span-2): Matérias + Atividade stacked
-              Right (col-span-1): Agenda compact
-              ═══════════════════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-
-            {/* ──────── LEFT: Matérias + Atividade ──────── */}
-            <div className="lg:col-span-2 space-y-6">
-
-              {/* Matérias em Foco */}
-              <motion.div variants={fadeUp}>
-                <GlassCard className="p-6" hover={false}>
-                  <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-base font-bold text-white flex items-center gap-2.5 tracking-tight">
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        <TrendingUp size={16} className="text-cyan-400" />
-                      </div>
-                      Matérias em Foco
-                    </h2>
-                    <button
-                      onClick={() => navigate('/materias')}
-                      className="text-xs font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors group"
+            {/* ── Quick Access ── */}
+            <motion.div className="lg:col-span-2" variants={fadeUp}>
+              <SectionCard className="p-5" hover={false}>
+                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
+                  <Zap size={15} style={{ color: 'var(--primary)' }} />
+                  Acesso Rápido
+                </h2>
+                <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
+                  {quickActions.map((action, idx) => (
+                    <motion.button
+                      key={action.label}
+                      onClick={action.onClick}
+                      className="group relative flex flex-col items-center gap-2.5 rounded-2xl overflow-hidden"
+                      style={{
+                        padding: '18px 10px 14px',
+                        border: `1px solid rgba(${action.rgb}, 0.25)`,
+                        backgroundColor: `rgba(${action.rgb}, 0.10)`,
+                        transition: 'all 220ms ease',
+                        cursor: 'pointer',
+                      }}
+                      whileHover={{
+                        y: -3,
+                        backgroundColor: `rgba(${action.rgb}, 0.18)`,
+                        borderColor: `rgba(${action.rgb}, 0.45)`,
+                        boxShadow: `0 8px 24px rgba(${action.rgb}, 0.20)`,
+                      }}
+                      whileTap={{ scale: 0.97, y: 0 }}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + idx * 0.06, duration: 0.35 }}
                     >
-                      Ver todas
-                      <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                  </div>
-
-                  {!isLoading && (!dashboardData?.materiasRecentes || dashboardData.materiasRecentes.length === 0) ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10">
-                      <div className="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Bookmark size={28} className="text-cyan-400/40" />
+                      <div
+                        className="flex items-center justify-center rounded-2xl shrink-0"
+                        style={{
+                          width: '52px',
+                          height: '52px',
+                          backgroundColor: action.color,
+                          boxShadow: `0 6px 16px rgba(${action.rgb}, 0.40), 0 2px 6px rgba(${action.rgb}, 0.25)`,
+                          fontSize: '24px',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {action.icon}
                       </div>
-                      <h3 className="text-base font-bold text-white mb-1.5">Nenhuma matéria criada</h3>
-                      <p className="text-slate-400 text-sm mb-5 max-w-xs mx-auto">
-                        Crie sua primeira matéria para organizar seus estudos
-                      </p>
-                      <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => navigate('/materias')}>
-                        Criar Matéria
-                      </Button>
-                    </motion.div>
-                  ) : isLoading ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map(i => <SkeletonPulse key={i} className="h-16" />)}
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {dashboardData.materiasRecentes.slice(0, 5).map((materia, idx) => (
-                        <motion.div
-                          key={materia.id}
-                          initial={{ opacity: 0, x: -15 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.3 + idx * 0.07 }}
-                          onClick={() => navigate('/materias')}
-                          className="group flex items-center gap-3.5 p-3 rounded-xl hover:bg-white/4 transition-all cursor-pointer border border-transparent hover:border-white/6"
+                      <span
+                        className="font-bold text-center leading-tight"
+                        style={{ fontSize: '11px', color: 'var(--text-1)', letterSpacing: '0.01em' }}
+                      >
+                        {action.label}
+                      </span>
+                      {action.badge && (
+                        <span
+                          className="absolute font-extrabold uppercase"
+                          style={{
+                            top: '8px',
+                            right: '8px',
+                            fontSize: '8px',
+                            padding: '2px 5px',
+                            borderRadius: '4px',
+                            backgroundColor: '#7C3AED',
+                            color: 'white',
+                            letterSpacing: '0.05em',
+                            lineHeight: 1.4,
+                          }}
                         >
-                          {/* Color icon with letter */}
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm"
-                            style={{ backgroundColor: materia.cor || '#06B6D4' }}
-                          >
-                            {materia.nome?.charAt(0).toUpperCase()}
-                          </div>
-
-                          {/* Name + description — more space */}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-white font-semibold text-sm leading-snug">{materia.nome}</h3>
-                            {materia.descricao && (
-                              <p className="text-slate-500 text-xs truncate mt-0.5">{materia.descricao}</p>
-                            )}
-                          </div>
-
-                          {/* Shorter progress bar so name doesn't truncate */}
-                          <div className="hidden sm:flex items-center gap-2 shrink-0">
-                            <div className="w-14 h-1.5 bg-white/6 rounded-full overflow-hidden">
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ backgroundColor: materia.cor || '#06B6D4' }}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${20 + (idx * 15) % 80}%` }}
-                                transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }}
-                              />
-                            </div>
-                          </div>
-
-                          <ChevronRight
-                            size={16}
-                            className="text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all shrink-0"
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </GlassCard>
-              </motion.div>
-
-              {/* Atividade Recente */}
-              <motion.div variants={fadeUp}>
-                <GlassCard className="p-6" hover={false}>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2.5 tracking-tight mb-5">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <Activity size={16} className="text-emerald-400" />
-                    </div>
-                    Atividade Recente
-                  </h2>
-
-                  {recentActivity.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-slate-500">Nenhuma atividade recente</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      {recentActivity.map((activity, idx) => (
-                        <motion.div
-                          key={idx}
-                          className="flex items-start gap-3 py-2.5 relative"
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.4 + idx * 0.08 }}
-                        >
-                          {idx < recentActivity.length - 1 && (
-                            <div className="absolute left-3.75 top-9.5 bottom-0 w-px bg-white/6" />
-                          )}
-                          <div className={`w-7.5 h-7.5 rounded-lg ${activity.bg} flex items-center justify-center shrink-0 relative z-10`}>
-                            <activity.icon size={14} className={activity.color} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-slate-300">{activity.text}</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">{timeAgo(activity.time)}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Monthly goal */}
-                  {dashboardData?.metaMensal && (
-                    <motion.div
-                      className="mt-5 pt-4 border-t border-white/6"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.7 }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                          <Target size={12} className="text-cyan-400/60" />
-                          Meta {dashboardData.metaMensal.mesNome}
+                          {action.badge}
                         </span>
-                        <span className="text-xs text-cyan-400 font-bold tabular-nums">
-                          {dashboardData.metaMensal.atual}/{dashboardData.metaMensal.meta}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-white/6 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-linear-to-r from-cyan-500 to-blue-500 rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${dashboardData.metaMensal.porcentagem}%` }}
-                          transition={{ duration: 1.2, delay: 0.8, ease: 'easeOut' }}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </GlassCard>
-              </motion.div>
-            </div>
+                      )}
+                    </motion.button>
+                  ))}
+                </div>
+              </SectionCard>
+            </motion.div>
 
-            {/* ──────── RIGHT: Agenda Compact (no full calendar) ──────── */}
+            {/* ── Agenda Compacta ── */}
             <motion.div className="lg:col-span-1" variants={fadeUp}>
-              <GlassCard className="p-6 lg:sticky lg:top-6" hover={false}>
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-base font-bold text-white flex items-center gap-2.5 tracking-tight">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Calendar size={16} className="text-blue-400" />
-                    </div>
+              <SectionCard className="p-5 h-full" hover={false}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                    <Calendar size={15} style={{ color: 'var(--primary)' }} />
                     Agenda
                   </h2>
                   <button
                     onClick={() => handleOpenEventModal()}
-                    className="w-8 h-8 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-lg flex items-center justify-center transition-all hover:scale-105"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105"
+                    style={{ backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-strong)', color: 'var(--primary)' }}
                     title="Adicionar Evento"
                   >
                     <Plus size={15} />
                   </button>
                 </div>
 
-                {/* Compact inline event list (no react-calendar) */}
                 {proximosEventos.length > 0 ? (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {proximosEventos.map((evento, index) => (
                       <motion.div
                         key={evento.id || index}
-                        className="group flex items-center gap-3 p-3 bg-white/3 rounded-xl hover:bg-white/6 transition-colors border border-white/5 hover:border-white/10"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 + index * 0.08 }}
+                        className="group flex items-center gap-3 p-2.5 rounded-xl transition-colors"
+                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + index * 0.08 }}
                       >
-                        {/* Date badge */}
-                        <div className="shrink-0 w-11 h-11 bg-blue-500/10 rounded-xl flex flex-col items-center justify-center border border-blue-500/15">
-                          <span className="text-xs font-bold text-blue-300 leading-none">
-                            {evento.dataObj.getDate()}
-                          </span>
-                          <span className="text-[9px] text-blue-400/70 uppercase leading-none mt-0.5">
+                        <div className="shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-strong)' }}>
+                          <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>{evento.dataObj.getDate()}</span>
+                          <span className="uppercase" style={{ fontSize: '8px', color: 'var(--text-3)' }}>
                             {evento.dataObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
                           </span>
                         </div>
-
-                        {/* Event info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-200 truncate">
-                            {evento.titulo || evento.title}
-                          </p>
-                          {evento.tipo && (
-                            <p className="text-[11px] text-slate-500 mt-0.5">{evento.tipo}</p>
-                          )}
+                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-1)' }}>{evento.titulo || evento.title}</p>
+                          {evento.tipo && <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>{evento.tipo}</p>}
                         </div>
-
-                        {/* Delete on hover */}
                         {evento.id && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-red-400/60 hover:text-red-400 transition-all shrink-0"
-                            title="Excluir evento"
-                          >
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0" style={{ color: 'var(--accent)' }} title="Excluir evento">
                             <Trash2 size={13} />
                           </button>
                         )}
@@ -900,59 +721,294 @@ const Home = () => {
                     ))}
                   </div>
                 ) : (
-                  <motion.div
-                    className="text-center py-8"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div className="w-12 h-12 bg-blue-500/8 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <CalendarDays size={22} className="text-blue-400/40" />
+                  <motion.div className="text-center py-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                      <CalendarDays size={22} style={{ color: 'var(--text-4)' }} />
                     </div>
-                    <p className="text-sm text-slate-400 mb-1">Nenhum evento próximo</p>
-                    <p className="text-xs text-slate-500">Clique em + para adicionar</p>
+                    <p className="text-sm" style={{ color: 'var(--text-3)' }}>Nenhum evento próximo</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-4)' }}>Clique em + para adicionar</p>
                   </motion.div>
                 )}
 
-                {/* Today's date footer */}
-                <div className="mt-5 pt-4 border-t border-white/6">
-                  <p className="text-[11px] text-slate-500 text-center">
+                <div className="mt-4 pt-3 text-center" style={{ borderTop: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>
                     {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </p>
                 </div>
-              </GlassCard>
+              </SectionCard>
             </motion.div>
           </div>
+
+          {/* ═══════════════════════════════
+              ③ PROGRESSO GERAL (full width)
+              ═══════════════════════════════ */}
+          <motion.div variants={fadeUp} className="mb-4">
+            {isLoading ? (
+              <SkeletonPulse className="h-48" />
+            ) : (
+              <SectionCard className="overflow-hidden" hover={false}>
+                {/* Header with divider */}
+                <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <h2 className="font-display text-[13px] font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                    <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
+                    Progresso Geral
+                  </h2>
+                  <button onClick={() => navigate('/materias')} className="group flex items-center gap-1 text-xs font-medium transition-colors" style={{ color: 'var(--primary)' }}>
+                    Ver todas
+                    <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
+
+                {/* Total bar with shimmer */}
+                <div className="mx-5 mt-3">
+                  <p className="text-sm" style={{ color: 'var(--text-2)' }}>
+                    <span className="font-bold font-mono" style={{ color: 'var(--text-1)' }}>{dashboardData?.concluidas || 0}</span>
+                    <span style={{ color: 'var(--text-3)' }}> / {dashboardData?.totalMaterias || 0} matérias concluídas</span>
+                  </p>
+                  <div className="relative mt-2 mb-4 overflow-hidden" style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}>
+                    <motion.div
+                      className="h-full relative overflow-hidden"
+                      style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} />
+                    </motion.div>
+                    <span className="absolute right-1 top-1/2 -translate-y-1/2 font-mono font-bold" style={{ fontSize: '10px', color: 'var(--text-3)' }}>{progressPercent}%</span>
+                  </div>
+                </div>
+
+                {/* Subject rows with left color bar */}
+                {dashboardData?.materiasRecentes?.length > 0 ? (
+                  <div>
+                    {dashboardData.materiasRecentes.slice(0, 5).map((materia, idx) => (
+                      <motion.div
+                        key={materia.id || idx}
+                        className="flex items-center gap-3 px-5 py-2.5 transition-colors cursor-pointer"
+                        style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}
+                        onClick={() => navigate('/materias')}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-bg)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + idx * 0.07 }}
+                      >
+                        {/* Subject icon */}
+                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center font-bold text-sm shrink-0"
+                          style={{ backgroundColor: `${materia.cor || '#2563EB'}18`, color: materia.cor || 'var(--primary)', borderLeft: `3px solid ${materia.cor || 'var(--primary)'}` }}>
+                          {materia.nome?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>{materia.nome}</h3>
+                          {materia.descricao && <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-3)' }}>{materia.descricao}</p>}
+                        </div>
+                        {/* Progress pill — only show if real data exists */}
+                        {materia.progresso != null && (
+                          <div className="hidden sm:block shrink-0" style={{ width: '48px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--bg-elevated)', overflow: 'hidden' }}>
+                            <motion.div className="h-full" style={{ backgroundColor: materia.cor || 'var(--primary)', borderRadius: '2px' }} initial={{ width: 0 }} animate={{ width: `${Math.min(materia.progresso, 100)}%` }} transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }} />
+                          </div>
+                        )}
+                        <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-4)' }} />
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 px-5">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                      <Bookmark size={28} style={{ color: 'var(--text-4)' }} />
+                    </div>
+                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--text-1)' }}>Nenhuma matéria criada</h3>
+                    <p className="text-sm mb-5 max-w-xs mx-auto" style={{ color: 'var(--text-3)' }}>Crie sua primeira matéria para organizar seus estudos</p>
+                    <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => navigate('/materias')}>
+                      Criar Matéria
+                    </Button>
+                  </motion.div>
+                )}
+              </SectionCard>
+            )}
+          </motion.div>
+
+          {/* ═══════════════════════════════
+              ④ ESTE MÊS + META MENSAL
+              ═══════════════════════════════ */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            {/* ── Este Mês — dados reais ── */}
+            <motion.div className="lg:col-span-2" variants={fadeUp}>
+              <SectionCard className="p-5" hover={false}>
+                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
+                  <TrendingUp size={15} style={{ color: 'var(--teal)' }} />
+                  Este Mês
+                  <span className="text-xs font-normal ml-auto" style={{ color: 'var(--text-4)' }}>
+                    {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                  </span>
+                </h2>
+
+                {/* Stat cards row */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  {/* Resumos */}
+                  <motion.div
+                    className="rounded-2xl p-4"
+                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                        <FileText size={14} style={{ color: 'var(--primary)' }} />
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Resumos</span>
+                    </div>
+                    <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
+                      {isLoading ? '—' : <AnimatedNumber value={dashboardData?.metaMensal?.resumosDoMes || 0} />}
+                    </p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
+                      criados este mês · {dashboardData?.totalResumos || 0} no total
+                    </p>
+                  </motion.div>
+
+                  {/* Flashcards */}
+                  <motion.div
+                    className="rounded-2xl p-4"
+                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--teal-bg)' }}>
+                        <CreditCard size={14} style={{ color: 'var(--teal)' }} />
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Flashcards</span>
+                    </div>
+                    <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
+                      {isLoading ? '—' : <AnimatedNumber value={dashboardData?.metaMensal?.flashcardsDoMes || 0} />}
+                    </p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
+                      criados este mês · {dashboardData?.totalFlashcards || 0} no total
+                    </p>
+                  </motion.div>
+                </div>
+
+                {/* Streak — últimos 7 dias */}
+                <motion.div
+                  className="rounded-2xl p-4"
+                  style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontSize: '14px' }}>🔥</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Sequência de acesso</span>
+                    </div>
+                    <span className="font-mono font-bold text-sm" style={{ color: 'var(--accent)' }}>
+                      {isLoading ? '—' : `${dashboardData?.offensiveStreak || 0} dias`}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: 7 }).map((_, i) => {
+                      const today = new Date();
+                      const dayDate = new Date(today);
+                      dayDate.setDate(today.getDate() - (6 - i));
+                      const dateStr = dayDate.toISOString().split('T')[0];
+                      const history = dashboardData?.streakHistory || [];
+                      // streakHistory items are { date: Timestamp, streak, event }
+                      const active = history.some(d => {
+                        try {
+                          const raw = d?.date ?? d; // support both object format and raw date
+                          const parsed = raw?.toDate?.() || (raw ? new Date(raw) : null);
+                          if (!parsed || isNaN(parsed.getTime())) return false;
+                          return parsed.toISOString().split('T')[0] === dateStr;
+                        } catch { return false; }
+                      });
+                      const isToday = i === 6;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <div
+                            className="w-full rounded-lg"
+                            style={{
+                              height: '28px',
+                              backgroundColor: active ? 'var(--primary)' : 'var(--border)',
+                              border: isToday && !active ? '1.5px solid var(--border-strong)' : 'none',
+                              opacity: active ? 1 : isToday ? 0.7 : 0.35,
+                            }}
+                          />
+                          <span style={{ fontSize: '9px', color: 'var(--text-4)', userSelect: 'none' }}>
+                            {dayDate.toLocaleDateString('pt-BR', { weekday: 'narrow' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </SectionCard>
+            </motion.div>
+
+            {/* ── Meta Mensal — gradient card + circular SVG ── */}
+            <motion.div className="lg:col-span-1" variants={fadeUp}>
+              <div className="relative overflow-hidden" style={{
+                background: 'linear-gradient(135deg, var(--primary-bg) 0%, var(--teal-bg) 100%)',
+                border: '1px solid var(--border-strong)', borderRadius: '16px', padding: '20px',
+              }}>
+                {/* Decorative */}
+                <div className="absolute pointer-events-none" style={{ right: '16px', top: '16px', fontSize: '40px', opacity: 0.12 }}>🎯</div>
+
+                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
+                  <Target size={15} style={{ color: 'var(--primary)' }} />
+                  Meta de {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                </h2>
+
+                <div className="flex justify-center mb-4">
+                  <CircularProgress current={dashboardData?.metaMensal?.atual || 0} total={dashboardData?.metaMensal?.meta || 50} size={90} />
+                </div>
+
+                <p className="text-center text-xs mb-1" style={{ color: 'var(--text-3)' }}>resumos + flashcards criados</p>
+
+                {/* Tip card */}
+                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                    {(dashboardData?.offensiveStreak || 0) > 0
+                      ? <>💡 Você está em uma sequência de <span style={{ color: 'var(--accent)' }}>🔥 {dashboardData.offensiveStreak} dias</span>! Continue estudando hoje.</>
+                      : <>💡 Crie um hábito diário. Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> para começar sua sequência!</>}
+                  </p>
+                </div>
+
+                {/* Bottom progress bar */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
+                      {dashboardData?.metaMensal?.atual || 0}/{dashboardData?.metaMensal?.meta || 50}
+                    </span>
+                    <span className="font-mono" style={{ fontSize: '10px', color: 'var(--text-4)' }}>
+                      {dashboardData?.metaMensal?.porcentagem || 0}% do mês
+                    </span>
+                  </div>
+                  <div className="overflow-hidden" style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}>
+                    <motion.div
+                      className="h-full relative overflow-hidden"
+                      style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${dashboardData?.metaMensal?.porcentagem || 0}%` }}
+                      transition={{ duration: 1.2, delay: 0.8, ease: 'easeOut' }}
+                    >
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} />
+                    </motion.div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
         </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════
           MODALS
           ═══════════════════════════════════════════ */}
-      <AddEventModal
-        isOpen={isEventModalOpen}
-        onClose={() => setIsEventModalOpen(false)}
-        onSave={handleSaveEvent}
-        selectedDate={selectedDateForEvent}
-      />
-
+      <AddEventModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} selectedDate={selectedDateForEvent} />
       <ConfirmModal
         isOpen={confirmDeleteEvento.isOpen}
         onClose={() => setConfirmDeleteEvento({ isOpen: false, evento: null })}
         onConfirm={confirmarExclusaoEvento}
         title="Excluir Evento"
-        message={
-          <>
-            Tem certeza que deseja excluir o evento{' '}
-            <span className="font-semibold text-white">
-              "{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"
-            </span>?
-            <br />
-            <span className="text-red-400 font-medium">
-              Essa ação não pode ser desfeita.
-            </span>
-          </>
-        }
+        message={<>Tem certeza que deseja excluir o evento{' '}<span className="font-semibold" style={{ color: 'var(--text-1)' }}>"{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"</span>?<br /><span className="font-medium" style={{ color: 'var(--accent)' }}>Essa ação não pode ser desfeita.</span></>}
         confirmText="Excluir Evento"
         type="danger"
         isLoading={isDeletingEvento}

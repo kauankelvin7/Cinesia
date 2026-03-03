@@ -194,3 +194,150 @@ export const escalasDorData = {
     'Questionário McGill: Avaliação multidimensional da dor'
   ]
 };
+
+// ==================== TESTES ORTOPÉDICOS ====================
+export const testesOrtopedicosData = [
+  {
+    regiao: 'Ombro',
+    testes: [
+      { nome: 'Neer', objetivo: 'Impacto subacromial', tecnica: 'Elevação passiva do membro com rotação interna', positivo: 'Dor no arco de elevação (60-120°)' },
+      { nome: 'Hawkins-Kennedy', objetivo: 'Impacto subacromial', tecnica: 'Flexão 90° + rotação interna passiva', positivo: 'Dor na região subacromial' },
+      { nome: 'Jobe (Empty Can)', objetivo: 'Supraespinhal', tecnica: 'Abdução 90°, 30° flexão horizontal, rotação interna, resistência', positivo: 'Dor ou fraqueza' },
+      { nome: 'Speed', objetivo: 'Bíceps (cabeça longa)', tecnica: 'Flexão resistida com cotovelo estendido e supinado', positivo: 'Dor no sulco bicipital' },
+      { nome: 'Apprehension', objetivo: 'Instabilidade anterior', tecnica: 'Abdução 90° + rotação externa passiva', positivo: 'Apreensão ou dor' },
+      { nome: 'Drop Arm', objetivo: 'Manguito rotador (ruptura completa)', tecnica: 'Abaixar lentamente o braço da abdução completa', positivo: 'Incapacidade de controlar a descida' },
+    ]
+  },
+  {
+    regiao: 'Joelho',
+    testes: [
+      { nome: 'Lachman', objetivo: 'LCA (Ligamento Cruzado Anterior)', tecnica: 'Flexão 20-30°, translação anterior da tíbia', positivo: 'Translação excessiva sem endpoint firme' },
+      { nome: 'Gaveta Anterior', objetivo: 'LCA', tecnica: 'Flexão 90°, puxar tíbia anteriormente', positivo: 'Translação anterior excessiva' },
+      { nome: 'Gaveta Posterior', objetivo: 'LCP', tecnica: 'Flexão 90°, empurrar tíbia posteriormente', positivo: 'Translação posterior excessiva' },
+      { nome: 'McMurray', objetivo: 'Meniscos', tecnica: 'Flexão máxima → extensão com rotação e varo/valgo', positivo: 'Estalido ou dor na interlinha articular' },
+      { nome: 'Apley', objetivo: 'Meniscos', tecnica: 'Decúbito ventral, flexão 90°, compressão + rotação', positivo: 'Dor com compressão (menisco), alívio com distração (ligamento)' },
+      { nome: 'Varo/Valgo Stress', objetivo: 'Ligamentos colaterais', tecnica: 'Estresse em valgo (LCM) ou varo (LCL) em 0° e 30°', positivo: 'Abertura articular excessiva' },
+    ]
+  },
+  {
+    regiao: 'Coluna Lombar',
+    testes: [
+      { nome: 'Lasègue (SLR)', objetivo: 'Compressão radicular (ciática)', tecnica: 'Elevação da perna estendida em decúbito dorsal', positivo: 'Dor irradiada entre 30-70° de elevação' },
+      { nome: 'Slump Test', objetivo: 'Tensão neural', tecnica: 'Sentado: flexão cervical → extensão do joelho → dorsiflexão', positivo: 'Reprodução dos sintomas, alívio com extensão cervical' },
+      { nome: 'Valsalva', objetivo: 'Hérnia discal / massa ocupando espaço', tecnica: 'Paciente faz força como "expulsar"', positivo: 'Dor radicular' },
+    ]
+  },
+  {
+    regiao: 'Quadril',
+    testes: [
+      { nome: 'Patrick (FABER)', objetivo: 'Articulação sacroilíaca / quadril', tecnica: 'Flexão, Abdução, Rotação Externa + pressão no joelho e EIAS contralateral', positivo: 'Dor inguinal (quadril) ou sacral (SI)' },
+      { nome: 'Thomas', objetivo: 'Contratura do iliopsoas', tecnica: 'Uma perna fletida ao peito, observar a outra', positivo: 'Coxa contralateral se eleva da maca' },
+      { nome: 'Trendelenburg', objetivo: 'Fraqueza dos abdutores (glúteo médio)', tecnica: 'Apoio unipodal', positivo: 'Pelve cai para o lado não apoiado' },
+    ]
+  },
+  {
+    regiao: 'Tornozelo',
+    testes: [
+      { nome: 'Gaveta Anterior', objetivo: 'LTFA (Ligamento Talofibular Anterior)', tecnica: 'Pé em plantiflexão, translação anterior do tálus', positivo: 'Translação anterior excessiva' },
+      { nome: 'Thompson', objetivo: 'Ruptura do tendão de Aquiles', tecnica: 'Compressão da panturrilha com paciente em decúbito ventral', positivo: 'Ausência de plantiflexão passiva' },
+    ]
+  }
+];
+
+// ==================== ESCALA DE GLASGOW ====================
+export const glasgowData = {
+  componentes: [
+    {
+      componente: 'Abertura Ocular (AO)',
+      respostas: [
+        { pontuacao: 4, resposta: 'Espontânea' },
+        { pontuacao: 3, resposta: 'Ao estímulo verbal' },
+        { pontuacao: 2, resposta: 'Ao estímulo doloroso' },
+        { pontuacao: 1, resposta: 'Nenhuma' },
+      ]
+    },
+    {
+      componente: 'Resposta Verbal (RV)',
+      respostas: [
+        { pontuacao: 5, resposta: 'Orientada' },
+        { pontuacao: 4, resposta: 'Confusa' },
+        { pontuacao: 3, resposta: 'Palavras inapropriadas' },
+        { pontuacao: 2, resposta: 'Sons incompreensíveis' },
+        { pontuacao: 1, resposta: 'Nenhuma' },
+      ]
+    },
+    {
+      componente: 'Resposta Motora (RM)',
+      respostas: [
+        { pontuacao: 6, resposta: 'Obedece comandos' },
+        { pontuacao: 5, resposta: 'Localiza dor' },
+        { pontuacao: 4, resposta: 'Flexão normal (retirada)' },
+        { pontuacao: 3, resposta: 'Flexão anormal (decorticação)' },
+        { pontuacao: 2, resposta: 'Extensão (descerebração)' },
+        { pontuacao: 1, resposta: 'Nenhuma' },
+      ]
+    }
+  ],
+  classificacao: [
+    { faixa: '15', descricao: 'Normal' },
+    { faixa: '13-14', descricao: 'TCE Leve' },
+    { faixa: '9-12', descricao: 'TCE Moderado' },
+    { faixa: '3-8', descricao: 'TCE Grave' },
+    { faixa: '3', descricao: 'Coma profundo' },
+  ]
+};
+
+// ==================== ESCALA DE BARTHEL (AVDs) ====================
+export const barthelData = [
+  { atividade: 'Alimentação', pontuacao: '0/5/10', descricao: '0=Dependente, 5=Necessita ajuda, 10=Independente' },
+  { atividade: 'Banho', pontuacao: '0/5', descricao: '0=Dependente, 5=Independente' },
+  { atividade: 'Higiene Pessoal', pontuacao: '0/5', descricao: '0=Necessita ajuda, 5=Independente' },
+  { atividade: 'Vestuário', pontuacao: '0/5/10', descricao: '0=Dependente, 5=Necessita ajuda, 10=Independente' },
+  { atividade: 'Controle Intestinal', pontuacao: '0/5/10', descricao: '0=Incontinente, 5=Acidente ocasional, 10=Continente' },
+  { atividade: 'Controle Vesical', pontuacao: '0/5/10', descricao: '0=Incontinente, 5=Acidente ocasional, 10=Continente' },
+  { atividade: 'Uso do Banheiro', pontuacao: '0/5/10', descricao: '0=Dependente, 5=Necessita ajuda, 10=Independente' },
+  { atividade: 'Transferências', pontuacao: '0/5/10/15', descricao: '0=Incapaz, 5=Grande ajuda, 10=Pequena ajuda, 15=Independente' },
+  { atividade: 'Mobilidade', pontuacao: '0/5/10/15', descricao: '0=Imóvel, 5=Cadeira de rodas, 10=Anda com ajuda, 15=Independente' },
+  { atividade: 'Escadas', pontuacao: '0/5/10', descricao: '0=Incapaz, 5=Necessita ajuda, 10=Independente' },
+];
+
+// ==================== ESCALA DE BORG ====================
+export const borgData = [
+  { valor: '6', descricao: 'Nenhum esforço', zona: 'Repouso' },
+  { valor: '7-8', descricao: 'Extremamente leve', zona: 'Muito leve' },
+  { valor: '9-10', descricao: 'Muito leve', zona: 'Leve' },
+  { valor: '11-12', descricao: 'Leve', zona: 'Moderado' },
+  { valor: '13-14', descricao: 'Um pouco difícil', zona: 'Moderado-intenso' },
+  { valor: '15-16', descricao: 'Difícil', zona: 'Intenso' },
+  { valor: '17-18', descricao: 'Muito difícil', zona: 'Muito intenso' },
+  { valor: '19-20', descricao: 'Extremamente difícil / Máximo', zona: 'Exaustivo' },
+];
+
+// ==================== PROTOCOLOS DE REABILITAÇÃO ====================
+export const protocolosReabData = [
+  {
+    protocolo: 'Pós-operatório LCA (Ligamento Cruzado Anterior)',
+    fases: [
+      { fase: 'Fase 1 (0-2 sem)', objetivos: 'Controle da dor e edema, ADM 0-90°, ativação do quadríceps', exercicios: 'Crioterapia, isométricos de quadríceps, elevação do membro, flexão passiva' },
+      { fase: 'Fase 2 (2-6 sem)', objetivos: 'ADM completa, propriocepção, marcha sem muletas', exercicios: 'Bicicleta, agachamento parcial, propriocepção bipodal, fortalecimento progressivo' },
+      { fase: 'Fase 3 (6-12 sem)', objetivos: 'Fortalecimento avançado, atividades funcionais', exercicios: 'Leg press, agachamento completo, propriocepção unipodal, exercícios em cadeia fechada' },
+      { fase: 'Fase 4 (3-6 meses)', objetivos: 'Retorno ao esporte, treino pliométrico', exercicios: 'Corrida progressiva, saltos, agilidade, treino esporte-específico' },
+    ]
+  },
+  {
+    protocolo: 'Reabilitação Pós-AVC',
+    fases: [
+      { fase: 'Fase Aguda (UTI/Enfermaria)', objetivos: 'Posicionamento, prevenção de complicações', exercicios: 'Mudanças de decúbito, mobilização precoce, exercícios respiratórios' },
+      { fase: 'Fase Subaguda', objetivos: 'Mobilidade, transferências, treino de equilíbrio', exercicios: 'Treino de sedestação, transferências, ortostase, treino de marcha com apoio' },
+      { fase: 'Fase Crônica', objetivos: 'Independência funcional, reintegração social', exercicios: 'Treino de marcha comunitária, AVDs, fortalecimento, atividades bimanuais' },
+    ]
+  },
+  {
+    protocolo: 'Pós-operatório Manguito Rotador',
+    fases: [
+      { fase: 'Fase 1 (0-6 sem)', objetivos: 'Proteção do reparo, controle de dor', exercicios: 'Pendulares de Codman, tipoia, mobilização passiva assistida do terapeuta' },
+      { fase: 'Fase 2 (6-12 sem)', objetivos: 'ADM ativa, início do fortalecimento leve', exercicios: 'Exercícios ativo-assistidos, isométricos em cadeia fechada, fortalecimento de escápula' },
+      { fase: 'Fase 3 (12-24 sem)', objetivos: 'Fortalecimento progressivo, retorno funcional', exercicios: 'Fortalecimento com elásticos, exercícios excêntricos, cadeia cinética completa' },
+    ]
+  }
+];

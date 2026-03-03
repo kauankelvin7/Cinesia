@@ -657,6 +657,123 @@ function _buildGeo(type) {
       [0.065, 0.078, 0.072, 0.055]
     );
 
+    /* ──────────── GRANDE DORSAL ──────────── */
+    case 'latissimus-L': return mergeGeos([
+      createLimbGeo([[-0.18,2.2,-0.22],[-0.42,1.2,-0.16],[-0.55,0.2,-0.08],[-0.38,-0.55,0.04]], [0.1,0.13,0.14,0.09]),
+      createLimbGeo([[-0.08,1.2,-0.25],[-0.38,0.5,-0.16],[-0.5,-0.1,-0.08],[-0.35,-0.55,0.04]], [0.08,0.11,0.12,0.08]),
+    ]);
+    case 'latissimus-R': return mergeGeos([
+      createLimbGeo([[0.18,2.2,-0.22],[0.42,1.2,-0.16],[0.55,0.2,-0.08],[0.38,-0.55,0.04]], [0.1,0.13,0.14,0.09]),
+      createLimbGeo([[0.08,1.2,-0.25],[0.38,0.5,-0.16],[0.5,-0.1,-0.08],[0.35,-0.55,0.04]], [0.08,0.11,0.12,0.08]),
+    ]);
+
+    /* ──────────── SERRÁTIL ANTERIOR ──────────── */
+    case 'serratus-ant-L': {
+      const gs = [];
+      for (let i = 0; i < 6; i++) {
+        gs.push(createLimbGeo(
+          [[-0.72+i*0.01,1.1-i*0.22,0.22],[-0.6+i*0.01,1.02-i*0.22,0.34],[-0.45,0.95-i*0.22,0.46]],
+          [0.045, 0.038, 0.028]
+        ));
+      }
+      return mergeGeos(gs);
+    }
+    case 'serratus-ant-R': {
+      const gs = [];
+      for (let i = 0; i < 6; i++) {
+        gs.push(createLimbGeo(
+          [[0.72-i*0.01,1.1-i*0.22,0.22],[0.6-i*0.01,1.02-i*0.22,0.34],[0.45,0.95-i*0.22,0.46]],
+          [0.045, 0.038, 0.028]
+        ));
+      }
+      return mergeGeos(gs);
+    }
+
+    /* ──────────── ROMBOIDES ──────────── */
+    case 'rhomboids': {
+      const g = new THREE.SphereGeometry(0.5, 24, 18);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        pos.setX(i, pos.getX(i) * 0.88);
+        pos.setY(i, pos.getY(i) * 0.58 + 0.4);
+        pos.setZ(i, pos.getZ(i) * 0.11 - 0.18);
+      }
+      g.computeVertexNormals();
+      return g;
+    }
+
+    /* ──────────── ILIOPSOAS ──────────── */
+    case 'iliopsoas-L': return createLimbGeo(
+      [[-0.24, 1.1, -0.12], [-0.2, 0.5, 0.04], [-0.18, 0, 0.12], [-0.14, -0.52, 0.16]],
+      [0.1, 0.12, 0.11, 0.082]
+    );
+    case 'iliopsoas-R': return createLimbGeo(
+      [[0.24, 1.1, -0.12], [0.2, 0.5, 0.04], [0.18, 0, 0.12], [0.14, -0.52, 0.16]],
+      [0.1, 0.12, 0.11, 0.082]
+    );
+
+    /* ──────────── SARTÓRIO ──────────── */
+    case 'sartorius-L': return createLimbGeo(
+      [[-0.35, 0.95, 0.18], [-0.25, 0.42, 0.22], [-0.14,-0.08, 0.2], [-0.02,-0.58, 0.1], [0.07,-0.92,-0.04]],
+      [0.042, 0.04, 0.036, 0.034, 0.03]
+    );
+    case 'sartorius-R': return createLimbGeo(
+      [[0.35, 0.95, 0.18], [0.25, 0.42, 0.22], [0.14,-0.08, 0.2], [0.02,-0.58, 0.1], [-0.07,-0.92,-0.04]],
+      [0.042, 0.04, 0.036, 0.034, 0.03]
+    );
+
+    /* ──────────── ADUTORES DO QUADRIL ──────────── */
+    case 'adductors-L': return mergeGeos([
+      createLimbGeo([[-0.1,0.65,0.06],[-0.12,0.2,0.1],[-0.12,-0.28,0.08],[-0.06,-0.7,0.02]], [0.09,0.11,0.105,0.08]),
+      createLimbGeo([[-0.18,0.45,0.02],[-0.2,0.02,0.05],[-0.17,-0.38,0.02]], [0.068,0.082,0.076]),
+      createLimbGeo([[-0.24,0.28,-0.04],[-0.22,-0.1,0.02],[-0.18,-0.42,0.0]], [0.055,0.065,0.06]),
+    ]);
+    case 'adductors-R': return mergeGeos([
+      createLimbGeo([[0.1,0.65,0.06],[0.12,0.2,0.1],[0.12,-0.28,0.08],[0.06,-0.7,0.02]], [0.09,0.11,0.105,0.08]),
+      createLimbGeo([[0.18,0.45,0.02],[0.2,0.02,0.05],[0.17,-0.38,0.02]], [0.068,0.082,0.076]),
+      createLimbGeo([[0.24,0.28,-0.04],[0.22,-0.1,0.02],[0.18,-0.42,0.0]], [0.055,0.065,0.06]),
+    ]);
+
+    /* ──────────── GRÁCIL ──────────── */
+    case 'gracilis-L': return createLimbGeo(
+      [[-0.04, 0.62, 0.03], [-0.05, 0.12, 0.03], [-0.06,-0.28, 0.01], [-0.04,-0.7,-0.02]],
+      [0.036, 0.034, 0.031, 0.027]
+    );
+    case 'gracilis-R': return createLimbGeo(
+      [[0.04, 0.62, 0.03], [0.05, 0.12, 0.03], [0.06,-0.28, 0.01], [0.04,-0.7,-0.02]],
+      [0.036, 0.034, 0.031, 0.027]
+    );
+
+    /* ──────────── BRAQUIAL ANTERIOR ──────────── */
+    case 'brachialis-L': return createLimbGeo(
+      [[0, 0.72, 0.1], [0, 0.38, 0.15], [0,-0.02, 0.12], [0,-0.42, 0.08]],
+      [0.072, 0.092, 0.088, 0.062]
+    );
+    case 'brachialis-R': return createLimbGeo(
+      [[0, 0.72, 0.1], [0, 0.38, 0.15], [0,-0.02, 0.12], [0,-0.42, 0.08]],
+      [0.072, 0.092, 0.088, 0.062]
+    );
+
+    /* ──────────── FIBULAR LONGO ──────────── */
+    case 'fibularis-L': return createLimbGeo(
+      [[-0.14, 0.88,-0.01],[-0.14, 0.40, 0.06],[-0.12,-0.12, 0.09],[-0.08,-0.62, 0.05]],
+      [0.052, 0.063, 0.058, 0.044]
+    );
+    case 'fibularis-R': return createLimbGeo(
+      [[0.14, 0.88,-0.01],[0.14, 0.40, 0.06],[0.12,-0.12, 0.09],[0.08,-0.62, 0.05]],
+      [0.052, 0.063, 0.058, 0.044]
+    );
+
+    /* ──────────── POPLÍTEO ──────────── */
+    case 'popliteus-L': return createLimbGeo(
+      [[-0.1, 0.3,-0.16],[-0.04, 0.14,-0.18],[0.04,-0.02,-0.15]],
+      [0.055, 0.062, 0.05]
+    );
+    case 'popliteus-R': return createLimbGeo(
+      [[0.1, 0.3,-0.16],[0.04, 0.14,-0.18],[-0.04,-0.02,-0.15]],
+      [0.055, 0.062, 0.05]
+    );
+
     /* ──────────── MANGUITO ROTADOR ──────────── */
     case 'rotator-L': case 'rotator-R': {
       const d = type === 'rotator-L' ? -1 : 1;
@@ -707,6 +824,132 @@ function _buildGeo(type) {
       g.rotateX(Math.PI / 2);
       return g;
     }
+
+    /* ──────────── ARTICULAÇÃO GLENOUMERAL ──────────── */
+    case 'gleno-joint-L': case 'gleno-joint-R': {
+      const ball = new THREE.SphereGeometry(0.22, 20, 16);
+      ball.scale(0.95, 1.0, 0.88);
+      const rim = new THREE.TorusGeometry(0.20, 0.04, 8, 22);
+      rim.rotateX(Math.PI / 2);
+      rim.translate(0, 0, -0.04);
+      return mergeGeos([ball, rim]);
+    }
+
+    /* ──────────── ARTICULAÇÃO COXOFEMORAL ──────────── */
+    case 'coxa-joint-L': case 'coxa-joint-R': {
+      const ball = new THREE.SphereGeometry(0.26, 22, 18);
+      ball.scale(1, 1, 0.92);
+      const cup = new THREE.TorusGeometry(0.24, 0.048, 10, 26, Math.PI * 1.85);
+      cup.rotateX(Math.PI / 2);
+      return mergeGeos([ball, cup]);
+    }
+
+    /* ──────────── ARTICULAÇÃO DO COTOVELO ──────────── */
+    case 'elbow-joint-L': case 'elbow-joint-R': {
+      const hinge = new THREE.TorusGeometry(0.17, 0.042, 8, 20, Math.PI * 1.62);
+      hinge.rotateZ(Math.PI / 2);
+      const cap = new THREE.SphereGeometry(0.15, 16, 12);
+      cap.scale(0.9, 0.65, 0.8);
+      cap.translate(0, -0.1, 0);
+      return mergeGeos([hinge, cap]);
+    }
+
+    /* ──────────── ARTICULAÇÃO TALOCRURAL (TORNOZELO) ──────────── */
+    case 'ankle-joint-L': case 'ankle-joint-R': {
+      const g = new THREE.SphereGeometry(0.17, 16, 12);
+      g.scale(1.12, 0.72, 0.88);
+      const mortise = new THREE.TorusGeometry(0.15, 0.035, 7, 18, Math.PI * 1.5);
+      mortise.rotateZ(Math.PI / 2);
+      mortise.translate(0, -0.04, 0);
+      return mergeGeos([g, mortise]);
+    }
+
+    /* ──────────── ARTICULAÇÃO SACROILÍACA ──────────── */
+    case 'si-joint-L': case 'si-joint-R': {
+      const d = type === 'si-joint-L' ? -1 : 1;
+      const s = new THREE.Shape();
+      s.moveTo(0,0); s.lineTo(d*0.1, 0.25); s.lineTo(d*0.06, 0.55);
+      s.lineTo(d*(-0.04), 0.65); s.lineTo(d*(-0.12), 0.38); s.lineTo(d*(-0.08), 0.06);
+      s.closePath();
+      return new THREE.ExtrudeGeometry(s, { depth: 0.055, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 3 });
+    }
+
+    /* ──────────── ARTICULAÇÃO DO PUNHO ──────────── */
+    case 'wrist-joint-L': case 'wrist-joint-R': {
+      const g = new THREE.SphereGeometry(0.14, 14, 10);
+      g.scale(1.2, 0.65, 0.9);
+      return g;
+    }
+
+    /* ──────────── ARTICULAÇÃO ACROMIOCLAVICULAR ──────────── */
+    case 'ac-joint-L': case 'ac-joint-R': {
+      const g = new THREE.SphereGeometry(0.088, 12, 10);
+      g.scale(0.85, 0.7, 1.0);
+      return g;
+    }
+
+    /* ──────────── ESTERNOCLEIDOMASTOIDEO (SCM) ──────────── */
+    case 'scm-L': return mergeGeos([
+      // Cabeça esternal
+      createLimbGeo([[-0.06,-0.72,0.18],[-0.1,-0.28,0.12],[-0.12,0.22,0.04],[-0.1,0.7,-0.06]], [0.038,0.042,0.044,0.036]),
+      // Cabeça clavicular
+      createLimbGeo([[-0.18,-0.68,0.14],[-0.14,-0.25,0.1],[-0.12,0.24,0.04]], [0.028,0.033,0.036]),
+    ]);
+    case 'scm-R': return mergeGeos([
+      createLimbGeo([[0.06,-0.72,0.18],[0.1,-0.28,0.12],[0.12,0.22,0.04],[0.1,0.7,-0.06]], [0.038,0.042,0.044,0.036]),
+      createLimbGeo([[0.18,-0.68,0.14],[0.14,-0.25,0.1],[0.12,0.24,0.04]], [0.028,0.033,0.036]),
+    ]);
+
+    /* ──────────── ERETOR DA ESPINHA ──────────── */
+    case 'erector-L': return mergeGeos([
+      createLimbGeo([[-0.12,2.8,-0.18],[-0.12,1.8,-0.22],[-0.11,0.6,-0.2],[-0.1,-0.25,-0.15]], [0.065,0.072,0.078,0.06]),
+      createLimbGeo([[-0.2,2.6,-0.15],[-0.2,1.6,-0.19],[-0.18,0.5,-0.17],[-0.16,-0.28,-0.12]], [0.052,0.058,0.062,0.048]),
+    ]);
+    case 'erector-R': return mergeGeos([
+      createLimbGeo([[0.12,2.8,-0.18],[0.12,1.8,-0.22],[0.11,0.6,-0.2],[0.1,-0.25,-0.15]], [0.065,0.072,0.078,0.06]),
+      createLimbGeo([[0.2,2.6,-0.15],[0.2,1.6,-0.19],[0.18,0.5,-0.17],[0.16,-0.28,-0.12]], [0.052,0.058,0.062,0.048]),
+    ]);
+
+    /* ──────────── ELEVADOR DA ESCÁPULA ──────────── */
+    case 'levator-scap-L': return createLimbGeo(
+      [[-0.12,1.35,-0.12],[-0.22,0.88,-0.22],[-0.36,0.35,-0.3],[-0.48,-0.02,-0.32]],
+      [0.04, 0.044, 0.046, 0.038]
+    );
+    case 'levator-scap-R': return createLimbGeo(
+      [[0.12,1.35,-0.12],[0.22,0.88,-0.22],[0.36,0.35,-0.3],[0.48,-0.02,-0.32]],
+      [0.04, 0.044, 0.046, 0.038]
+    );
+
+    /* ──────────── PIRIFORME ──────────── */
+    case 'piriformis-L': return createLimbGeo(
+      [[-0.08,0.15,-0.14],[-0.28,0.08,-0.1],[-0.48,0.0,-0.0],[-0.58,-0.05,0.08]],
+      [0.05, 0.058, 0.062, 0.045]
+    );
+    case 'piriformis-R': return createLimbGeo(
+      [[0.08,0.15,-0.14],[0.28,0.08,-0.1],[0.48,0.0,-0.0],[0.58,-0.05,0.08]],
+      [0.05, 0.058, 0.062, 0.045]
+    );
+
+    /* ──────────── TENSOR DA FÁSCIA LATA (TFL) ──────────── */
+    case 'tfl-L': return createLimbGeo(
+      [[-0.55,0.72,0.18],[-0.62,0.28,0.22],[-0.65,-0.2,0.2],[-0.62,-0.65,0.16]],
+      [0.05, 0.058, 0.056, 0.046]
+    );
+    case 'tfl-R': return createLimbGeo(
+      [[0.55,0.72,0.18],[0.62,0.28,0.22],[0.65,-0.2,0.2],[0.62,-0.65,0.16]],
+      [0.05, 0.058, 0.056, 0.046]
+    );
+
+    /* ──────────── SÓLEO ──────────── */
+    case 'soleus-L': return mergeGeos([
+      createLimbGeo([[-0.06,0.72,-0.1],[-0.06,0.35,-0.14],[-0.04,-0.08,-0.12],[-0.02,-0.5,-0.06]], [0.09,0.11,0.105,0.08]),
+      createLimbGeo([[0.04,0.7,-0.09],[0.04,0.33,-0.13],[0.03,-0.1,-0.11],[0.01,-0.5,-0.06]], [0.085,0.105,0.1,0.075]),
+    ]);
+    case 'soleus-R': return mergeGeos([
+      createLimbGeo([[0.06,0.72,-0.1],[0.06,0.35,-0.14],[0.04,-0.08,-0.12],[0.02,-0.5,-0.06]], [0.09,0.11,0.105,0.08]),
+      createLimbGeo([[-0.04,0.7,-0.09],[-0.04,0.33,-0.13],[-0.03,-0.1,-0.11],[-0.01,-0.5,-0.06]], [0.085,0.105,0.1,0.075]),
+    ]);
+
     case 'discs': {
       const gs = [];
       for (let i = 0; i < 5; i++) {
@@ -1212,6 +1455,132 @@ const STRUCTURES = [
     description: 'Espelho.',
     details: { 'Foot drop': 'Lesão n. fibular profundo → perda dorsiflexão' }
   },
+  { id: 'latL', name: 'Grande Dorsal Esq.', category: 'Músculos', position: [-0.42, 1.55, -0.22], geometry: 'latissimus-L', material: 'muscleDeep',
+    description: 'Maior músculo do dorso. Adução + RM + Extensão do úmero. "Músculo do nadador".',
+    details: { 'Origem': 'Processos espinhosos T7-L5 + Crista ilíaca + Costelas inf', 'Inserção': 'Sulco intertubercular do úmero', 'Inervação': 'N. toracodorsal (C6-C8)', 'Função': 'Adução + Rotação medial + Extensão do ombro' }
+  },
+  { id: 'latR', name: 'Grande Dorsal Dir.', category: 'Músculos', position: [0.42, 1.55, -0.22], geometry: 'latissimus-R', material: 'muscleDeep',
+    description: 'Espelho. Essencial para transferências e propulsão de cadeira de rodas.',
+    details: { 'Inervação': 'N. toracodorsal (C6-C8)', 'Clínica': 'Fraqueza → comprometimento ADV e transferências' }
+  },
+  { id: 'serL', name: 'Serrátil Anterior Esq.', category: 'Músculos', position: [-0.92, 2.6, 0.38], geometry: 'serratus-ant-L', material: 'muscle',
+    description: '8-9 digitações laterais. Protração e rotação superior da escápula. "Músculo do boxeador".',
+    details: { 'Origem': '8ª-9ª costelas (face lateral)', 'Inserção': 'Borda medial escápula (face anterior)', 'Inervação': 'N. torácico longo (C5-C7)', 'Patologia': 'Paralisia → escápula alada + dor' }
+  },
+  { id: 'serR', name: 'Serrátil Anterior Dir.', category: 'Músculos', position: [0.92, 2.6, 0.38], geometry: 'serratus-ant-R', material: 'muscle',
+    description: 'Espelho. N. torácico longo (C5-C7).',
+    details: { 'Escápula alada': 'Paralisia serrátil → borda medial prominente', 'Teste': 'Flexão com resistência → escápula alada' }
+  },
+  { id: 'rhom', name: 'Romboides (Maior e Menor)', category: 'Músculos', position: [0, 4.15, -0.42], geometry: 'rhomboids', material: 'muscleDeep',
+    description: 'Retração + Rotação inferior da escápula. Estabiliza borda medial.',
+    details: { 'Origem': 'Processos espinhosos C7-T4', 'Inserção': 'Borda medial da escápula', 'Inervação': 'N. escapular dorsal (C4-C5)', 'Função': 'Retração + Rotação inferior escapular' }
+  },
+  { id: 'iliopL', name: 'Iliopsoas Esquerdo', category: 'Músculos', position: [-0.28, -0.15, 0.12], geometry: 'iliopsoas-L', material: 'muscleMid',
+    description: 'Ilíaco + Psoas maior. Principal flexor do quadril. Postural.',
+    details: { 'Iliaco': 'Fossa ilíaca → Trocânter menor', 'Psoas': 'Corpos T12-L5 → Trocânter menor', 'Inervação': 'N. femoral + ramos diretos L1-L3', 'Testes': 'Thomas (encurtamento), Iliopsoas resistido' }
+  },
+  { id: 'iliopR', name: 'Iliopsoas Direito', category: 'Músculos', position: [0.28, -0.15, 0.12], geometry: 'iliopsoas-R', material: 'muscleMid',
+    description: 'Espelho. Encurtamento → anteversão pélvica e hiperlordose.',
+    details: { 'Inervação': 'N. femoral + L1-L3', 'Thomas test': 'DL → flexão quadril contralateral → encurtamento' }
+  },
+  { id: 'sarL', name: 'Sartório Esquerdo', category: 'Músculos', position: [-0.28, -1.75, 0.2], geometry: 'sartorius-L', material: 'muscle',
+    description: 'Músculo mais longo do corpo. FADIR (flexão, abdução, RE). "Músculo do alfaiate".',
+    details: { 'Origem': 'EIAS', 'Inserção': 'Pata de ganso (face medial tíbia)', 'Inervação': 'N. femoral (L2-L3)', 'Pata de ganso': 'Sartório + Grácil + Semitendíneo → bursite' }
+  },
+  { id: 'sarR', name: 'Sartório Direito', category: 'Músculos', position: [0.28, -1.75, 0.2], geometry: 'sartorius-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. femoral (L2-L3)' }
+  },
+  { id: 'addL', name: 'Adutores Esquerdo', category: 'Músculos', position: [-0.2, -2.2, 0.08], geometry: 'adductors-L', material: 'muscleMid',
+    description: 'Grupo: Longo, Curto, Magno + Pectíneo. Adução + Flexão do quadril.',
+    details: { 'Inervação': 'N. obturador (L2-L4); Magno distal: N. ciático', 'Testes': 'Adução resistida (Groin squeeze), FABER', 'Patologias': 'Pubalgia, Lesão groin, Tendinopatia adutor magno' }
+  },
+  { id: 'addR', name: 'Adutores Direito', category: 'Músculos', position: [0.2, -2.2, 0.08], geometry: 'adductors-R', material: 'muscleMid',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. obturador (L2-L4)' }
+  },
+  { id: 'gracL', name: 'Grácil Esquerdo', category: 'Músculos', position: [-0.08, -2.2, 0.04], geometry: 'gracilis-L', material: 'muscle',
+    description: 'Adução quadril + Flexão joelho. Participa da pata de ganso.',
+    details: { 'Origem': 'Ramo inferior do púbis', 'Inserção': 'Pata de ganso (face medial tíbia proximal)', 'Inervação': 'N. obturador (L2-L3)' }
+  },
+  { id: 'gracR', name: 'Grácil Direito', category: 'Músculos', position: [0.08, -2.2, 0.04], geometry: 'gracilis-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Enxerto': 'Usado como enxerto em reconstrução LCA (ST-G)' }
+  },
+  { id: 'brachiL', name: 'Braquial Ant. Esquerdo', category: 'Músculos', position: [-2.05, 2.78, 0.1], geometry: 'brachialis-L', material: 'muscle',
+    description: '"Cavalo de trabalho" do cotovelo — flexor mais potente (bifenocal).',
+    details: { 'Origem': 'Face anterior úmero (2/3 distal)', 'Inserção': 'Processo coronoide da ulna', 'Inervação': 'N. musculocutâneo (C5-C6) + ramo n. radial (C7)', 'Função': 'Flexão cotovelo (independe da pronossupinação)' }
+  },
+  { id: 'brachiR', name: 'Braquial Ant. Direito', category: 'Músculos', position: [2.05, 2.78, 0.1], geometry: 'brachialis-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. musculocutâneo (C5-C6)' }
+  },
+  { id: 'fibL', name: 'Fibular Longo Esq.', category: 'Músculos', position: [-0.72, -4.72, 0.06], geometry: 'fibularis-L', material: 'muscle',
+    description: 'Eversão do pé + Flexão plantar. Sustenta o arco transverso.',
+    details: { 'Origem': 'Cabeça e 2/3 sup fíbula (face lat)', 'Inserção': 'Cuneiforme medial + 1º metatarso (via sulco plantar)', 'Inervação': 'N. fibular superficial (L4-S1)', 'Patologia': 'Lesão → pé varo + diminuição eversão' }
+  },
+  { id: 'fibR', name: 'Fibular Longo Dir.', category: 'Músculos', position: [0.72, -4.72, 0.06], geometry: 'fibularis-R', material: 'muscle',
+    description: 'Espelho.',
+    details: { 'N. fibular superficial': 'L4-S1 — sensitivo dorso pé (exceto 1º espaço)' }
+  },
+  { id: 'poplL', name: 'Poplíteo Esquerdo', category: 'Músculos', position: [-0.6, -3.5, -0.14], geometry: 'popliteus-L', material: 'muscleDeep',
+    description: '"Chave" do joelho — destranca extensão terminal. Rotação medial tíbia.',
+    details: { 'Origem': 'Côndilo lateral fêmur + Menisco lateral', 'Inserção': 'Face posterior tíbia (triângulo)', 'Inervação': 'N. tibial (L4-S1)', 'Função': 'RI tíbia 5° para destravar joelho em extensão' }
+  },
+  { id: 'poplR', name: 'Poplíteo Direito', category: 'Músculos', position: [0.6, -3.5, -0.14], geometry: 'popliteus-R', material: 'muscleDeep',
+    description: 'Espelho.',
+    details: { 'Inervação': 'N. tibial (L4-S1)' }
+  },
+
+  /* ─── NOVOS MÚSCULOS ─── */
+  { id: 'scmL', name: 'Esternocleidomastoideo Esq.', category: 'Músculos', position: [-0.22, 5.62, 0.1], geometry: 'scm-L', material: 'muscle',
+    description: 'Músculo bilateral do pescoço responsável pela flexão, rotação e inclinação lateral da cabeça. Avaliado em disfunções cervicais e síndrome do desfiladeiro torácico.',
+    details: { 'Origem': 'Manúbrio esternal + terço medial da clavícula', 'Inserção': 'Processo mastoideo e linha nucal superior', 'Inervação': 'N. Acessório (XI) + C2-C3 sensitivo', 'Função': 'Flexão cervical bilateral; rotação e inclinação contralateral', 'Teste': 'Resistência à rotação da cabeça; palpação em decúbito dorsal', 'Patologia': 'Torcicolo muscular, TOS (síndrome do desfiladeiro torácico)' }
+  },
+  { id: 'scmR', name: 'Esternocleidomastoideo Dir.', category: 'Músculos', position: [0.22, 5.62, 0.1], geometry: 'scm-R', material: 'muscle',
+    description: 'Espelho do lado esquerdo. Assimetria SCM é marcador frequente de escoliose cervical funcional.',
+    details: { 'Inervação': 'N. Acessório (XI) + C2-C3', 'Patologia': 'Torcicolo, TOS, cefaleia tensional' }
+  },
+  { id: 'erctL', name: 'Eretor da Espinha Esq.', category: 'Músculos', position: [-0.15, 1.75, -0.38], geometry: 'erector-L', material: 'muscleDeep',
+    description: 'Grupo muscular fundamental para a extensão do tronco: iliocostal, longuíssimo e espinhal. Principal estabilizador da coluna vertebral. Essencial em qualquer avaliação de lombalgia.',
+    details: { 'Origem': 'Crista ilíaca, sacro e processos espinhosos lombares', 'Inserção': 'Costelas, processos transversos/espinhosos, occipital', 'Inervação': 'Ramos dorsais dos nn. espinhais C1-L5', 'Função': 'Extensão, inclinação lateral e rotação do tronco; estabilização vertebral', 'Teste': 'Sorensen test (endurance em extensão de tronco) — < 176s = risco de lombalgia', 'Patologia': 'Lombalgia mecânica, espasmo paravertebral, síndrome da faceta' }
+  },
+  { id: 'erctR', name: 'Eretor da Espinha Dir.', category: 'Músculos', position: [0.15, 1.75, -0.38], geometry: 'erector-R', material: 'muscleDeep',
+    description: 'Espelho do lado esquerdo. Assimetria paravertebral visível na inspeção posterior indica desequilíbrio funcional.',
+    details: { 'Teste': 'Sorensen bilateral; assimetria de proeminência = desequilíbrio', 'Patologia': 'Lombalgia, espasmo, escoliose funcional' }
+  },
+  { id: 'levscapL', name: 'Elevador da Escápula Esq.', category: 'Músculos', position: [-0.28, 5.45, -0.2], geometry: 'levator-scap-L', material: 'muscle',
+    description: 'Músculo cervical posterior que eleva a escápula e inclina lateralmente a cervical. Frequentemente sobrecarregado em postura anteriorizada de cabeça (forward head posture).',
+    details: { 'Origem': 'Processos transversos C1-C4', 'Inserção': 'Ângulo superior da escápula', 'Inervação': 'N. dorsal da escápula (C3-C5) + ramos ventrais C3-C4', 'Função': 'Elevação e rotação inferior da escápula; inclinação lateral cervical', 'Teste': 'Palpação no ângulo superior da escápula com pescoço em rotação contralateral', 'Patologia': 'Cervicalgia, tensão crônica por postura compulsória, trigger points' }
+  },
+  { id: 'levscapR', name: 'Elevador da Escápula Dir.', category: 'Músculos', position: [0.28, 5.45, -0.2], geometry: 'levator-scap-R', material: 'muscle',
+    description: 'Espelho do lado esquerdo. O elevador da escápula é um dos músculos mais frequentemente com trigger points na população que trabalha ao computador.',
+    details: { 'Patologia': 'Tensão cervical alta, trigger point frequente, cefaleia cervicogênica' }
+  },
+  { id: 'pirL', name: 'Piriforme Esquerdo', category: 'Músculos', position: [-0.35, -0.32, -0.16], geometry: 'piriformis-L', material: 'muscleDeep',
+    description: 'Rotador lateral profundo do quadril. Relação direta com o nervo ciático — em 15% da população o ciático perfura o músculo, predispondo à síndrome do piriforme.',
+    details: { 'Origem': 'Face anterior do sacro (S2-S4) + lig. sacroilíaco', 'Inserção': 'Extremidade superior do grande trocânter', 'Inervação': 'Nervo para o piriforme (L5-S2)', 'Função': 'Rotação lateral do quadril (estendido); abdução (flexão > 60°)', 'Teste': 'FAIR test (Flexão, Adução, RI) — reproduz sciatica-like pain', 'Patologia': 'Síndrome do piriforme (pseudo-ciática), bursite isquioglútea' }
+  },
+  { id: 'pirR', name: 'Piriforme Direito', category: 'Músculos', position: [0.35, -0.32, -0.16], geometry: 'piriformis-R', material: 'muscleDeep',
+    description: 'Espelho do lado esquerdo. Rigidez isolada do piriforme é uma causa subestimada de lombalgia baixa e dor glútea.',
+    details: { 'Teste': 'FAIR + palpação profunda glútea superoexterna', 'Patologia': 'Síndrome do piriforme, compressão do n. ciático' }
+  },
+  { id: 'tflL', name: 'Tensor da Fáscia Lata Esq.', category: 'Músculos', position: [-0.88, -0.5, 0.18], geometry: 'tfl-L', material: 'muscleMid',
+    description: 'Tensiona a fáscia lata e o trato iliotibial. Desequilíbrio causa síndrome da banda iliotibial — dor lateral característica em corredores de longa distância.',
+    details: { 'Origem': 'EIAS e lábio externo da crista ilíaca', 'Inserção': 'Trato iliotibial → tubérculo de Gerdy (tíbia)', 'Inervação': 'N. glúteo superior (L4-S1)', 'Função': 'Abdução + rotação medial quadril; tensão do TIT; estabilização pélvica lateral', 'Teste': 'Teste de Ober (DL, quadril estendido, verifica encurtamento)', 'Patologia': 'Síndrome do TIT, conflito lateral joelho, disfunção femoropatelar' }
+  },
+  { id: 'tflR', name: 'Tensor da Fáscia Lata Dir.', category: 'Músculos', position: [0.88, -0.5, 0.18], geometry: 'tfl-R', material: 'muscleMid',
+    description: 'Espelho do lado esquerdo. TFL tight + fraqueza glúteo médio = principal causa de síndrome do TIT em corredores.',
+    details: { 'Teste': 'Ober (DL) + Noble compression test (joelho 30° de flexão)', 'Patologia': 'Síndrome da banda iliotibial, dor lateral joelho' }
+  },
+  { id: 'solL', name: 'Sóleo Esquerdo', category: 'Músculos', position: [-0.6, -4.72, -0.08], geometry: 'soleus-L', material: 'muscle',
+    description: 'Músculo profundo da panturrilha formador do tendão de Aquiles. Domina a flexão plantar com joelho fletido. Essencial no controle da progressão tibial durante a marcha.',
+    details: { 'Origem': 'Linha oblíqua da tíbia + cabeça e corpo superior da fíbula', 'Inserção': 'Tendão de Aquiles → calcâneo', 'Inervação': 'N. tibial (S1-S2)', 'Função': 'Flexão plantar (joelho fletido); controle de equilíbrio; bomba venosa', 'Teste': 'Calf raise em joelho 90°; Thompson test avalia integridade do Aquiles', 'Patologia': 'Tendinopatia de Aquiles, sínd. do compartimento posterior, limitação de dorsiflexão' }
+  },
+  { id: 'solR', name: 'Sóleo Direito', category: 'Músculos', position: [0.6, -4.72, -0.08], geometry: 'soleus-R', material: 'muscle',
+    description: 'Espelho do lado esquerdo. Stiffness do sóleo reduz a dorsiflexão e é fator de risco para fascite plantar e tendinopatia.',
+    details: { 'Teste': 'Dorsiflexão com joelho fletido; Silfverskiöld test (diferencia gastro de sóleo)', 'Patologia': 'Tendinopatia de Aquiles, fascite plantar (indireta), stiffness de tornozelo' }
+  },
 
   /* ARTICULAÇÕES / TENDÕES / LIGAMENTOS */
   { id: 'lcaL', name: 'Lig. Cruzados Joelho Esq.', category: 'Articulações', position: [-0.6, -3.45, 0], geometry: 'cruciate-L', material: 'ligament',
@@ -1269,6 +1638,62 @@ const STRUCTURES = [
   { id: 'menR', name: 'Meniscos Joelho Dir.', category: 'Articulações', position: [0.6, -3.32, 0.06], geometry: 'meniscus-R', material: 'cartilage',
     description: 'Espelho.',
     details: { 'Reparo': 'Zona vermelha → sutura | Zona branca → meniscectomia' }
+  },
+  { id: 'glenoL', name: 'Art. Glenoumeral Esq.', category: 'Articulações', position: [-1.52, 4.88, -0.02], geometry: 'gleno-joint-L', material: 'cartilage',
+    description: 'Articulação mais móvel do corpo (3 GL). Esferoide — alta mobilidade com menor congruência.',
+    details: { 'ADM': 'Flexão 180°, Extensão 45°, ABD 180°, RM 90°, RL 90°', 'Estabiliz. estática': 'Labrum, LGUH inf (mais resistente)', 'Estabiliz. dinâmica': 'SITS — manguito rotador, Deltóide', 'Testes': 'Apprehension, Jobe, Neer, Hawkins, O\'Brien' }
+  },
+  { id: 'glenoR', name: 'Art. Glenoumeral Dir.', category: 'Articulações', position: [1.52, 4.88, -0.02], geometry: 'gleno-joint-R', material: 'cartilage',
+    description: 'Espelho. Glenoide cobre apenas 25% da cabeça umeral.',
+    details: { 'Luxação': 'Anterior (95%) — Bankart + Hill-Sachs', 'Ritmo': 'Escapuloumeral 2:1 (GU:ET)' }
+  },
+  { id: 'coxaL', name: 'Art. Coxofemoral Esq.', category: 'Articulações', position: [-0.52, -0.65, 0], geometry: 'coxa-joint-L', material: 'cartilage',
+    description: 'Esferoide (3 GL). Alta estabilidade ≠ glenoumeral. Acetábulo recobre 2/3 da cabeça.',
+    details: { 'ADM': 'Flexão 120°, Extensão 30°, ABD 45°, ADD 30°, RM/RL 45°', 'Ligamentos': 'Iliofemoral (Y de Bigelow — mais resistente), Pubofemoral, Isquiofemoral', 'Testes': 'FABER (Patrick), FADIR, Thomas, Trendelenburg', 'Patologias': 'Osteoartrose, FAI (Cam/Pincer), Necrose avascular' }
+  },
+  { id: 'coxaR', name: 'Art. Coxofemoral Dir.', category: 'Articulações', position: [0.52, -0.65, 0], geometry: 'coxa-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Ângulo de cobertura': '≥25° para acetábulo normal (CE de Wiberg)', 'Trocânter maior': 'Palpável — bursite trocantérica' }
+  },
+  { id: 'elbowL', name: 'Art. do Cotovelo Esq.', category: 'Articulações', position: [-2.05, 1.52, 0], geometry: 'elbow-joint-L', material: 'cartilage',
+    description: 'Composta: úmero-ulnar + úmero-radial + radio-ulnar prox. Flexo-extensão + pronossupinação.',
+    details: { 'ADM': 'Flexão 145°, Extensão 0° (varo/valgo fisiológico)', 'Ângulo de carregamento': '5-10° (homem) / 10-15° (mulher)', 'Testes': 'Valgus stress (LCM), Varus stress (LCL), Moving valgus', 'Patologias': 'Epicondilite medial/lateral, Síndrome do túnel cubital' }
+  },
+  { id: 'elbowR', name: 'Art. do Cotovelo Dir.', category: 'Articulações', position: [2.05, 1.52, 0], geometry: 'elbow-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Epicondilite lat': 'Extensor carpi radialis brevis — "cotovelo do tenista"', 'Epicondilite med': 'Flexor carpi radialis — "cotovelo do golfista"' }
+  },
+  { id: 'ankleL', name: 'Art. Talocrural Esq.', category: 'Articulações', position: [-0.6, -6.45, 0.1], geometry: 'ankle-joint-L', material: 'cartilage',
+    description: 'Mortise tibiotalar (1 GL). Dorsiflexão + Flexão plantar.',
+    details: { 'ADM': 'Dorsiflexão 20°, Flexão plantar 50° (funcional: ≥10° DF)', 'Ligamentos lat': 'TALP (mais lesado), TFLP, Calcaneofibular', 'Ligamento med': 'Deltoide (4 fascículos)', 'Testes': 'Anterior Drawer, Talar Tilt, Thompson' }
+  },
+  { id: 'ankleR', name: 'Art. Talocrural Dir.', category: 'Articulações', position: [0.6, -6.45, 0.1], geometry: 'ankle-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Entorse grau III': 'Ruptura TALP + CF + TALP → instab. crônica', 'Ottawa Rules': 'Rx se dor osso + incapaz deambular' }
+  },
+  { id: 'siL', name: 'Art. Sacroilíaca Esq.', category: 'Articulações', position: [-0.38, 0.22, -0.16], geometry: 'si-joint-L', material: 'cartilage',
+    description: 'Diartrósica (plana). Mínimo movimento — nutação/contranutação.',
+    details: { 'Nutação': 'Sacro roda anterior + Base posterior (expande outlet)', 'Testes': 'FABER, Gaenslen, ASLR, Distração/Compressão, Thigh thrust', 'Patologias': 'Disfunção AS, Sacroileíte (Espondiloartrite)', 'Eixo': 'Oblíquo — movimento tri-planar acoplado' }
+  },
+  { id: 'siR', name: 'Art. Sacroilíaca Dir.', category: 'Articulações', position: [0.38, 0.22, -0.16], geometry: 'si-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'ASLR': 'Active Straight Leg Raise — estabilidade pélvica' }
+  },
+  { id: 'acL', name: 'Art. Acromioclavicular Esq.', category: 'Articulações', position: [-1.72, 5.28, 0.12], geometry: 'ac-joint-L', material: 'cartilage',
+    description: 'Plana. Liga clavícula ao acrômio — absorve forças de compressão.',
+    details: { 'Ligamentos': 'AC (horizontal) + Coracoclaviculares: Conoide + Trapezoide (vertical)', 'Testes': 'Cross-body (adução horizontal), Paxinos, O\'Brien', 'Classificação': 'Rockwood I-VI (força direta no ombro)' }
+  },
+  { id: 'acR', name: 'Art. Acromioclavicular Dir.', category: 'Articulações', position: [1.72, 5.28, 0.12], geometry: 'ac-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Grau III-VI': 'Clavícula supradeslocada visível — "step-off sign"' }
+  },
+  { id: 'wristL', name: 'Art. do Punho Esq.', category: 'Articulações', position: [-2.5, 0.45, 0.1], geometry: 'wrist-joint-L', material: 'cartilage',
+    description: 'Radiocarpal + Mediocárpica. Flexo-extensão + Desvios ulnar/radial.',
+    details: { 'ADM': 'Flexão 80°, Extensão 70°, Des. Ulnar 30°, Des. Radial 20°', 'TFCC': 'Complexo triangular fibrocartilaginoso — absorvedor de carga', 'Testes': 'Finkelstein (De Quervain), Tinel, Allen, TFCC load test', 'Patologias': 'Síndrome do túnel do carpo, De Quervain, Cisto ganglionar' }
+  },
+  { id: 'wristR', name: 'Art. do Punho Dir.', category: 'Articulações', position: [2.5, 0.45, 0.1], geometry: 'wrist-joint-R', material: 'cartilage',
+    description: 'Espelho.',
+    details: { 'Escafoide': 'Mais fraturado osso do carpo → risco NAV' }
   },
   { id: 'discos', name: 'Discos Intervertebrais', category: 'Articulações', position: [0, 2.8, -0.25], geometry: 'discs', material: 'cartilage',
     description: 'Núcleo pulposo + Anel fibroso. Herniação posterolateral.',
@@ -1539,8 +1964,6 @@ const STRUCTURE_IMAGES = {
   intGrosso:     WP_IMG('Large_intestine.svg'),
   traqueia:      WP_IMG('Illu_bronchi_lungs.jpg'),
   /* Estruturas Especiais */
-  rotL:          WP_IMG('Rotator_cuff.jpg'),
-  rotR:          WP_IMG('Rotator_cuff.jpg'),
   bursaSubacL:   WP_IMG('Shoulder_joint.svg'),
   bursaSubacR:   WP_IMG('Shoulder_joint.svg'),
   labrumGlenoL:  WP_IMG('Shoulder_joint.svg'),
@@ -1548,6 +1971,54 @@ const STRUCTURE_IMAGES = {
   titL:          WP_IMG('Iliotibial_band.png'),
   titR:          WP_IMG('Iliotibial_band.png'),
   fasciaToracoL: WP_IMG('Thoracolumbar_fascia.png'),
+  /* Novos músculos */
+  latL:          WP_IMG('Latissimus_dorsi.png'),
+  latR:          WP_IMG('Latissimus_dorsi.png'),
+  serL:          WP_IMG('Serratus_anterior.png'),
+  serR:          WP_IMG('Serratus_anterior.png'),
+  rhom:          WP_IMG('Rhomboid_major.png'),
+  iliopL:        WP_IMG('Psoas_major.png'),
+  iliopR:        WP_IMG('Psoas_major.png'),
+  sarL:          WP_IMG('Sartorius.png'),
+  sarR:          WP_IMG('Sartorius.png'),
+  addL:          WP_IMG('Adductor_longus.png'),
+  addR:          WP_IMG('Adductor_longus.png'),
+  gracL:         WP_IMG('Gracilis.png'),
+  gracR:         WP_IMG('Gracilis.png'),
+  brachiL:       WP_IMG('Brachialis.png'),
+  brachiR:       WP_IMG('Brachialis.png'),
+  fibL:          WP_IMG('Fibularis_longus.png'),
+  fibR:          WP_IMG('Fibularis_longus.png'),
+  poplL:         WP_IMG('Popliteus_muscle.png'),
+  poplR:         WP_IMG('Popliteus_muscle.png'),
+  /* Novos músculos — sessão 3 */
+  scmL:          WP_IMG('Sternocleidomastoid_2.png'),
+  scmR:          WP_IMG('Sternocleidomastoid_2.png'),
+  erctL:         WP_IMG('Erector_spinae.png'),
+  erctR:         WP_IMG('Erector_spinae.png'),
+  levscapL:      WP_IMG('Levator_scapulae.png'),
+  levscapR:      WP_IMG('Levator_scapulae.png'),
+  pirL:          WP_IMG('Piriformis.png'),
+  pirR:          WP_IMG('Piriformis.png'),
+  tflL:          WP_IMG('TensorFasciaeLatae.png'),
+  tflR:          WP_IMG('TensorFasciaeLatae.png'),
+  solL:          WP_IMG('Soleus.png'),
+  solR:          WP_IMG('Soleus.png'),
+  /* Novas articulações */
+  glenoL:        WP_IMG('Shoulder_joint.svg'),
+  glenoR:        WP_IMG('Shoulder_joint.svg'),
+  coxaL:         WP_IMG('Hip_joint.svg'),
+  coxaR:         WP_IMG('Hip_joint.svg'),
+  elbowL:        WP_IMG('Gray331.png'),
+  elbowR:        WP_IMG('Gray331.png'),
+  ankleL:        WP_IMG('Ankle_joint.svg'),
+  ankleR:        WP_IMG('Ankle_joint.svg'),
+  siL:           WP_IMG('Sacroiliac_joint.png'),
+  siR:           WP_IMG('Sacroiliac_joint.png'),
+  acL:           WP_IMG('Acromioclavicular_joint.png'),
+  acR:           WP_IMG('Acromioclavicular_joint.png'),
+  wristL:        WP_IMG('Gray334.png'),
+  wristR:        WP_IMG('Gray334.png'),
 };
 
 /* ─── Card de imagem educativa (overlay 2D) ─── */
@@ -1572,20 +2043,15 @@ function HoverImageCard({ hoveredId, isDarkMode }) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.96 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
-        className={`absolute bottom-4 left-3 z-20 w-52 rounded-2xl overflow-hidden shadow-2xl border pointer-events-none select-none ${
-          isDarkMode
-            ? 'bg-slate-900/92 border-slate-700/70'
-            : 'bg-white/92 border-slate-200'
-        } backdrop-blur-xl`}
+        className="absolute bottom-4 left-3 z-20 w-52 rounded-2xl overflow-hidden shadow-2xl pointer-events-none select-none backdrop-blur-xl"
+        style={{ backgroundColor: isDarkMode ? 'rgba(12,21,38,0.92)' : 'rgba(255,255,255,0.92)', border: '1px solid var(--border)' }}
       >
         {/* Barra de cor da categoria */}
         <div className="h-0.5 w-full" style={{ background: cfg?.color || '#0EA5E9' }} />
 
         {/* Imagem anatômica */}
         {imgOk && (
-          <div className={`relative w-full h-32 overflow-hidden ${
-            isDarkMode ? 'bg-slate-800' : 'bg-slate-50'
-          }`}>
+          <div className="relative w-full h-32 overflow-hidden" style={{ backgroundColor: 'var(--bg-elevated)' }}>
             <img
               src={imgUrl}
               alt={structure.name}
@@ -1642,6 +2108,11 @@ function AnatomyMesh({ structure, isSelected, isHovered, onSelect, onHover }) {
   const meshRef = useRef();
   const mat = MAT[structure.material] || MAT.bone;
   const geo = useMemo(() => buildGeo(structure.geometry), [structure.geometry]);
+
+  // BUG-003: dispose geometry when AnatomyMesh unmounts to avoid GPU memory leak
+  useEffect(() => {
+    return () => { geo?.dispose(); };
+  }, [geo]);
 
   // Derive color directly from selection state — no per-frame lerp on 100+ idle meshes
   const activeColor = useMemo(() => {
@@ -1810,24 +2281,66 @@ function Scene({ selectedId, hoveredId, onSelect, onHover, visCats }) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL
+   COMPONENTE PRINCIPAL — Layout com painel colapsável
 ═══════════════════════════════════════════════════════ */
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e) => setMatches(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
+}
 
 export default function Atlas3D() {
   const [selectedId, setSelectedId] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [visCats, setVisCats] = useState([...CATEGORIES]);
-  const [showPanel, setShowPanel] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const { isDarkMode } = useTheme?.() ?? { isDarkMode: true };
+
+  // Panel collapse state — persisted in localStorage
+  const [painelAberto, setPainelAberto] = useState(() => {
+    try { return localStorage.getItem('atlas-panel') !== 'closed'; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('atlas-panel', painelAberto ? 'open' : 'closed'); } catch {}
+  }, [painelAberto]);
+
+  // Mobile-specific state
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const [mobileListOpen, setMobileListOpen] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+
+  // Refs for canvas resize
+  const canvasWrapperRef = useRef(null);
+  // FIX-006: store ResizeObserver ref so we can disconnect on unmount
+  const roRef = useRef(null);
+  useEffect(() => {
+    return () => {
+      if (roRef.current) {
+        roRef.current.disconnect();
+        roRef.current = null;
+      }
+    };
+  }, []);
 
   const selected = STRUCTURES.find(s => s.id === selectedId);
 
   const handleSelect = useCallback(id => {
-    setSelectedId(p => p === id ? null : id);
-    setShowPanel(true);
-  }, []);
+    setSelectedId(p => {
+      const next = p === id ? null : id;
+      if (next && isMobile) setMobileDetailOpen(true);
+      return next;
+    });
+  }, [isMobile]);
+
   const handleHover = useCallback(id => setHoveredId(id), []);
   const toggleCat = useCallback(c =>
     setVisCats(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]),
@@ -1844,48 +2357,54 @@ export default function Atlas3D() {
       );
     }), [searchTerm, visCats]);
 
+  // Close mobile sheets
+  const closeMobileList = useCallback(() => setMobileListOpen(false), []);
+  const closeMobileDetail = useCallback(() => setMobileDetailOpen(false), []);
+
   return (
-    <div className={`h-[calc(100dvh-80px)] flex flex-col lg:flex-row overflow-hidden ${isDarkMode ? 'bg-slate-950' : 'bg-slate-100'}`}>
+    <div className="atlas-layout">
 
-      {/* ── SIDEBAR ── */}
-      <div className={`w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r flex flex-col overflow-hidden max-h-[38vh] lg:max-h-full transition-colors ${
-        isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-      }`}>
-
-        {/* Header da sidebar */}
-        <div className={`px-3 pt-3 pb-2 border-b shrink-0 ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+      {/* ── PAINEL ESQUERDO ── */}
+      <div className={`atlas-panel ${!painelAberto && !isMobile ? 'collapsed' : ''} ${isMobile && mobileListOpen ? 'mobile-open' : ''}`}>
+        {/* Header */}
+        <div className="px-3 pt-3 pb-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2.5 mb-2.5">
-            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-sky-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-sky-500/25">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #0EA5E9, #06B6D4)', boxShadow: '0 4px 12px rgba(14,165,233,0.25)' }}>
               <Bone size={17} className="text-white" />
             </div>
-            <div>
-              <h1 className={`text-sm font-bold leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Atlas 3D</h1>
-              <p className="text-[10px] text-slate-500">{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-sm font-bold leading-tight" style={{ color: 'var(--text-1)' }}>Atlas 3D</h1>
+              <p className="text-[10px]" style={{ color: 'var(--text-4)' }}>{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
             </div>
+            {isMobile && (
+              <button onClick={closeMobileList} className="p-1.5 rounded-lg" style={{ color: 'var(--text-3)' }}>
+                <X size={16} />
+              </button>
+            )}
           </div>
 
-          {/* Busca */}
+          {/* Search */}
           <div className="relative mb-2">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-4)' }} />
             <input
               type="text"
               placeholder="Buscar estrutura, músculo, teste..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className={`w-full pl-7 pr-3 py-1.5 text-xs rounded-lg outline-none transition-all border focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500 ${
-                isDarkMode
-                  ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500'
-                  : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
-              }`}
+              className="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg outline-none transition-all"
+              style={{
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-1)',
+              }}
             />
           </div>
 
-          {/* Filtro de camadas */}
+          {/* Layer filters */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 text-[11px] font-medium transition-colors mb-0.5 ${
-              isDarkMode ? 'text-slate-400 hover:text-sky-400' : 'text-slate-500 hover:text-sky-600'
-            }`}
+            className="flex items-center gap-1.5 text-[11px] font-medium transition-colors mb-0.5"
+            style={{ color: 'var(--text-3)' }}
           >
             <Filter size={10} />
             Camadas
@@ -1909,12 +2428,15 @@ export default function Atlas3D() {
                         key={cat}
                         onClick={() => toggleCat(cat)}
                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-medium transition-all ${
-                          active
-                            ? isDarkMode ? 'bg-slate-700 text-slate-200 ring-1 ring-slate-600' : 'bg-slate-100 text-slate-700 ring-1 ring-slate-300'
-                            : 'opacity-40 line-through text-slate-500'
+                          active ? 'ring-1' : 'opacity-40 line-through'
                         }`}
+                        style={{
+                          backgroundColor: active ? 'var(--bg-elevated)' : 'transparent',
+                          color: active ? 'var(--text-2)' : 'var(--text-4)',
+                          ...(active ? { ringColor: 'var(--border-strong)' } : {}),
+                        }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? cfg?.color : '#64748b' }} />
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? cfg?.color : 'var(--text-4)' }} />
                         {cat}
                       </button>
                     );
@@ -1925,10 +2447,10 @@ export default function Atlas3D() {
           </AnimatePresence>
         </div>
 
-        {/* Lista de estruturas */}
+        {/* Structure list */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-24 text-slate-400">
+            <div className="flex flex-col items-center justify-center h-24" style={{ color: 'var(--text-4)' }}>
               <Search size={18} className="mb-1.5 opacity-40" />
               <p className="text-xs">Nenhuma estrutura encontrada</p>
             </div>
@@ -1939,34 +2461,34 @@ export default function Atlas3D() {
               return (
                 <button
                   key={s.id}
-                  onClick={() => handleSelect(s.id)}
-                  className={`w-full px-3 py-2 flex items-center gap-2.5 text-left transition-all border-l-2 ${
-                    isActive
-                      ? isDarkMode ? 'bg-sky-950/50 border-sky-500' : 'bg-sky-50 border-sky-500'
-                      : isDarkMode ? 'hover:bg-slate-800/60 border-transparent' : 'hover:bg-slate-50 border-transparent'
-                  }`}
+                  onClick={() => {
+                    handleSelect(s.id);
+                    if (isMobile) setMobileListOpen(false);
+                  }}
+                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left transition-all border-l-2"
+                  style={{
+                    backgroundColor: isActive ? 'var(--primary-bg)' : 'transparent',
+                    borderLeftColor: isActive ? 'var(--primary)' : 'transparent',
+                  }}
                 >
                   <div
                     className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-[10px]"
                     style={{
                       background: `${cfg?.color || '#64748b'}${isActive ? '30' : '15'}`,
-                      border: `1.5px solid ${isActive ? '#38BDF8' : cfg?.color || '#64748b'}55`,
+                      border: `1.5px solid ${isActive ? 'var(--primary)' : (cfg?.color || '#64748b') + '55'}`,
                     }}
                   >
                     {cfg?.icon || '●'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[11px] font-semibold truncate leading-tight ${
-                      isActive ? 'text-sky-400' : isDarkMode ? 'text-slate-200' : 'text-slate-800'
-                    }`}>
+                    <p className="text-[11px] font-semibold truncate leading-tight" style={{
+                      color: isActive ? 'var(--primary)' : 'var(--text-1)',
+                    }}>
                       {s.name}
                     </p>
-                    <p className="text-[9px] text-slate-500 truncate">{s.category}</p>
+                    <p className="text-[9px] truncate" style={{ color: 'var(--text-4)' }}>{s.category}</p>
                   </div>
-                  <ChevronRight
-                    size={10}
-                    className={isActive ? 'text-sky-400' : 'text-slate-600'}
-                  />
+                  <ChevronRight size={10} style={{ color: isActive ? 'var(--primary)' : 'var(--text-4)' }} />
                 </button>
               );
             })
@@ -1974,13 +2496,56 @@ export default function Atlas3D() {
         </div>
       </div>
 
+      {/* ── TOGGLE BUTTON ── */}
+      <button
+        className="atlas-toggle-btn"
+        onClick={() => {
+          if (isMobile) {
+            setMobileListOpen(p => !p);
+          } else {
+            setPainelAberto(p => !p);
+          }
+        }}
+        title={painelAberto ? 'Ocultar painel' : 'Mostrar painel'}
+        aria-label={painelAberto ? 'Ocultar painel' : 'Mostrar painel'}
+        style={!painelAberto && !isMobile ? { left: 0 } : undefined}
+      >
+        {isMobile ? (
+          <>☰ Ver estruturas</>
+        ) : (
+          painelAberto ? '◀' : '▶'
+        )}
+      </button>
+
       {/* ── CANVAS 3D ── */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="atlas-canvas-wrapper" ref={canvasWrapperRef}>
         <Canvas
           shadows
           camera={{ position: [5.5, 3.5, 11], fov: 44, near: 0.1, far: 100 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
           dpr={[1, 1.5]}
+          resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
+          onCreated={({ gl, camera }) => {
+            // ResizeObserver for correct canvas sizing after panel collapse
+            if (canvasWrapperRef.current) {
+              let rafId;
+              const ro = new ResizeObserver(entries => {
+                if (rafId) cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(() => {
+                  for (const entry of entries) {
+                    const { width: w, height: h } = entry.contentRect;
+                    if (w === 0 || h === 0) return;
+                    gl.setSize(w, h, false);
+                    gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                  }
+                });
+              });
+              ro.observe(canvasWrapperRef.current);
+              roRef.current = ro;
+            }
+          }}
         >
           <Suspense fallback={null}>
             <Scene
@@ -1993,17 +2558,19 @@ export default function Atlas3D() {
           </Suspense>
         </Canvas>
 
-        {/* Imagem educativa ao passar o mouse */}
+        {/* Imagem educativa ao hover */}
         <HoverImageCard hoveredId={hoveredId} isDarkMode={isDarkMode} />
 
-        {/* Legenda de camadas (canto sup. esq.) */}
+        {/* Legenda de camadas (desktop only) */}
         <div className="absolute top-3 left-3 hidden sm:flex flex-col gap-0.5 pointer-events-none">
           {CATEGORIES.filter(c => visCats.includes(c)).map(cat => (
             <div
               key={cat}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9.5px] font-medium backdrop-blur-sm ${
-                isDarkMode ? 'bg-slate-900/70 text-slate-300' : 'bg-white/70 text-slate-600'
-              }`}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[9.5px] font-medium backdrop-blur-sm"
+              style={{
+                backgroundColor: isDarkMode ? 'rgba(13,21,38,0.7)' : 'rgba(255,255,255,0.7)',
+                color: 'var(--text-2)',
+              }}
             >
               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_CONFIG[cat]?.color }} />
               {cat}
@@ -2011,148 +2578,203 @@ export default function Atlas3D() {
           ))}
         </div>
 
-        {/* Botões de controle (canto sup. dir.) */}
+        {/* Botões de controle */}
         <div className="absolute top-3 right-3 flex flex-col gap-1.5">
           <button
-            onClick={() => { setSelectedId(null); setShowPanel(false); }}
-            className={`p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors ${
-              isDarkMode
-                ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
-                : 'bg-white/90 border-slate-200 text-slate-500 hover:text-sky-600'
-            }`}
+            onClick={() => { setSelectedId(null); setMobileDetailOpen(false); }}
+            className="p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.9)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-3)',
+            }}
             title="Limpar seleção"
           >
             <RotateCcw size={14} />
           </button>
           <button
             onClick={() => setVisCats([...CATEGORIES])}
-            className={`p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors ${
-              isDarkMode
-                ? 'bg-slate-900/80 border-slate-700 text-slate-400 hover:text-sky-400 hover:border-sky-500/50'
-                : 'bg-white/90 border-slate-200 text-slate-500 hover:text-sky-600'
-            }`}
+            className="p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.9)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-3)',
+            }}
             title="Mostrar tudo"
           >
             <Layers size={14} />
           </button>
         </div>
 
-        {/* Dica de interação */}
-        {!selectedId && !hoveredId && (
-          <div className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full text-xs backdrop-blur-sm shadow-xl pointer-events-none border ${
-            isDarkMode
-              ? 'bg-slate-900/80 border-slate-700/60 text-slate-400'
-              : 'bg-white/80 border-slate-200 text-slate-500'
-          }`}>
-            <Eye size={13} className="text-sky-400" />
+        {/* Hint de interação (desktop) */}
+        {!selectedId && !hoveredId && !isMobile && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full text-xs backdrop-blur-sm shadow-xl pointer-events-none border"
+            style={{
+              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.8)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-3)',
+            }}
+          >
+            <Eye size={13} style={{ color: 'var(--primary)' }} />
             Clique em uma estrutura para detalhes
           </div>
         )}
 
-        {/* ── PAINEL DE DETALHES ── */}
+        {/* ── PAINEL DE DETALHES — Desktop: overlay, Mobile: bottom sheet ── */}
         <AnimatePresence>
-          {selected && showPanel && (
+          {selected && (
             <>
-              {/* Overlay mobile */}
-              <motion.div
-                className="lg:hidden fixed inset-0 bg-black/40 z-40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowPanel(false)}
-              />
-
-              <motion.div
-                className="fixed lg:absolute bottom-0 lg:bottom-4 lg:right-4 left-0 lg:left-auto w-full lg:w-100 z-50 lg:z-10"
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '100%', opacity: 0 }}
-                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              >
-                <div className={`rounded-t-2xl lg:rounded-2xl shadow-2xl border overflow-hidden flex flex-col max-h-[72vh] lg:max-h-[78vh] ${
-                  isDarkMode
-                    ? 'bg-slate-900 border-slate-700/60'
-                    : 'bg-white border-slate-200'
-                }`}>
-
-                  {/* Handle mobile */}
-                  <div className="lg:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-                    <div className={`w-10 h-1 rounded-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
-                  </div>
-
-                  {/* Header do painel */}
-                  <div className={`px-4 py-3 border-b flex items-center justify-between shrink-0 ${
-                    isDarkMode ? 'border-slate-700/60' : 'border-slate-100'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
-                        style={{
-                          background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
-                          border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
-                        }}
-                      >
-                        {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
-                      </div>
-                      <div>
-                        <h3 className={`font-bold text-sm leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {selected.name}
-                        </h3>
-                        <span
-                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                          style={{
-                            background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
-                            color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
-                          }}
-                        >
-                          {selected.category}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setShowPanel(false)}
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        isDarkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'
-                      }`}
+              {/* Desktop detail panel */}
+              {!isMobile && (
+                <>
+                  <motion.div
+                    className="absolute bottom-4 right-4 w-96 z-10"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 20, opacity: 0 }}
+                    transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                  >
+                    <div className="rounded-2xl shadow-2xl border overflow-hidden flex flex-col max-h-[78vh]"
+                      style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderColor: 'var(--border)',
+                      }}
                     >
-                      <X size={15} />
-                    </button>
-                  </div>
-
-                  {/* Conteúdo scrollável */}
-                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                    <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {selected.description}
-                    </p>
-
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Info size={10} className="text-sky-400" />
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                          Informações Clínicas
-                        </h4>
-                      </div>
-                      <div className="space-y-1.5">
-                        {Object.entries(selected.details).map(([k, v]) => (
+                      {/* Header */}
+                      <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+                        <div className="flex items-center gap-3">
                           <div
-                            key={k}
-                            className={`rounded-lg px-3 py-2 ${
-                              isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'
-                            }`}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
+                            style={{
+                              background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
+                              border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
+                            }}
                           >
-                            <p className="text-[10px] font-semibold text-sky-500 mb-0.5">{k}</p>
-                            <p className={`text-[11px] leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{v}</p>
+                            {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
                           </div>
-                        ))}
+                          <div>
+                            <h3 className="font-bold text-sm leading-tight" style={{ color: 'var(--text-1)' }}>{selected.name}</h3>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                              style={{
+                                background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
+                                color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
+                              }}
+                            >{selected.category}</span>
+                          </div>
+                        </div>
+                        <button onClick={() => setSelectedId(null)} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-3)' }}>
+                          <X size={15} />
+                        </button>
+                      </div>
+
+                      {/* Image */}
+                      {STRUCTURE_IMAGES[selected.id] && (
+                        <div style={{ background: 'var(--bg-elevated)' }}>
+                          <img
+                            src={STRUCTURE_IMAGES[selected.id]}
+                            alt={selected.name}
+                            className="w-full h-32 object-contain p-2"
+                            onError={e => { e.target.style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Content */}
+                      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>{selected.description}</p>
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Info size={10} style={{ color: 'var(--primary)' }} />
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-4)' }}>
+                              Informações Clínicas
+                            </h4>
+                          </div>
+                          <div className="space-y-1.5">
+                            {Object.entries(selected.details).map(([k, v]) => (
+                              <div key={k} className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+                                <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--primary)' }}>{k}</p>
+                                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-2)' }}>{v}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
+                  </motion.div>
+                </>
+              )}
             </>
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── MOBILE: Overlay for bottom sheets ── */}
+      <div
+        className={`atlas-overlay ${(mobileListOpen || (mobileDetailOpen && selected)) ? 'visible' : ''}`}
+        onClick={() => { closeMobileList(); closeMobileDetail(); }}
+      />
+
+      {/* ── MOBILE: Detail bottom sheet ── */}
+      {isMobile && selected && (
+        <div className={`atlas-bottom-sheet ${mobileDetailOpen ? 'open' : ''}`}>
+          <div className="atlas-bottom-sheet-handle" />
+          <button
+            onClick={closeMobileDetail}
+            className="absolute top-3 right-3 p-1.5 rounded-lg"
+            style={{ color: 'var(--text-3)', zIndex: 5 }}
+          >
+            <X size={16} />
+          </button>
+
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-3 pr-8">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm shrink-0"
+              style={{
+                background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
+                border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
+              }}
+            >
+              {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
+            </div>
+            <div>
+              <h3 className="font-bold text-sm leading-tight" style={{ color: 'var(--text-1)' }}>{selected.name}</h3>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                style={{
+                  background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
+                  color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
+                }}
+              >{selected.category}</span>
+            </div>
+          </div>
+
+          {/* Image */}
+          {STRUCTURE_IMAGES[selected.id] && (
+            <div className="atlas-estrutura-img-wrap">
+              <img src={STRUCTURE_IMAGES[selected.id]} alt={selected.name} loading="lazy" />
+            </div>
+          )}
+
+          {/* Description */}
+          <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--text-2)' }}>{selected.description}</p>
+
+          {/* Clinical details */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <Info size={10} style={{ color: 'var(--primary)' }} />
+            <h4 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-4)' }}>
+              Informações Clínicas
+            </h4>
+          </div>
+          <div className="space-y-1.5 pb-4">
+            {Object.entries(selected.details).map(([k, v]) => (
+              <div key={k} className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+                <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--primary)' }}>{k}</p>
+                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-2)' }}>{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

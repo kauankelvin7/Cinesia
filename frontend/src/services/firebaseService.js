@@ -22,11 +22,16 @@ import {
   query, 
   where,
   orderBy,
+  limit,
   Timestamp,
   serverTimestamp
 } from 'firebase/firestore';
 import { uploadImage } from './cloudinaryService';
 import { db } from '../config/firebase-config';
+
+// ⚠️ getDashboardStats CANÔNICA está em dashboardService.js (inclui streak + metaMensal)
+// Esta re-exportação existe para compatibilidade com imports legados
+export { getDashboardStats } from './dashboardService';
 
 // ==================== MATÉRIAS ====================
 
@@ -70,22 +75,25 @@ export const criarMateria = async (materia, userId) => {
  */
 export const listarMaterias = async (userId) => {
   try {
-    // Buscar matérias
+    // Buscar matérias (limite para evitar reads ilimitados)
     const materiasQuery = query(
       collection(db, 'materias'),
       where('uid', '==', userId),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(500)
     );
     
     // Buscar resumos e flashcards em paralelo para contar por matéria
     const resumosQuery = query(
       collection(db, 'resumos'),
-      where('uid', '==', userId)
+      where('uid', '==', userId),
+      limit(500)
     );
     
     const flashcardsQuery = query(
       collection(db, 'flashcards'),
-      where('uid', '==', userId)
+      where('uid', '==', userId),
+      limit(500)
     );
     
     const [materiasSnapshot, resumosSnapshot, flashcardsSnapshot] = await Promise.all([
@@ -126,96 +134,24 @@ export const listarMaterias = async (userId) => {
 };
 
 /**
- * Busca estatísticas do dashboard do usuário.
- *
- * @param {string} userId - UID do usuário autenticado
- * @returns {Promise<Object>} - Totais (ativas/concluídas), matérias recentes e eventos
- *
- * Retorna:
- *   {
- *     ativas: número de matérias ativas,
- *     concluidas: número de matérias concluídas,
- *     totalResumos: total de resumos,
- *     totalFlashcards: total de flashcards,
- *     materiasRecentes: array das últimas matérias criadas,
- *     eventos: array de eventos do usuário
- *   }
+ * Lista apenas as matérias do usuário sem carregar resumos/flashcards (BUG-022).
+ * Use este em Flashcards.jsx, Resumos.jsx — consome apenas 1 query Firestore.
+ * @param {string} userId - UID do usuário
+ * @returns {Promise<Array>} - Lista de matérias (sem contadores)
  */
-export const getDashboardStats = async (userId) => {
+export const listarMateriasSimples = async (userId) => {
   try {
-    const materiasQuery = query(
+    const q = query(
       collection(db, 'materias'),
-      where('uid', '==', userId)
-    );
-
-    const resumosQuery = query(
-      collection(db, 'resumos'),
-      where('uid', '==', userId)
-    );
-
-    const flashcardsQuery = query(
-      collection(db, 'flashcards'),
-      where('uid', '==', userId)
-    );
-
-    const eventosQuery = query(
-      collection(db, 'eventos'),
       where('uid', '==', userId),
-      orderBy('data', 'asc')
+      orderBy('createdAt', 'desc'),
+      limit(500)
     );
-
-    const [snapshotMaterias, snapshotResumos, snapshotFlashcards, snapshotEventos] = await Promise.all([
-      getDocs(materiasQuery),
-      getDocs(resumosQuery),
-      getDocs(flashcardsQuery),
-      getDocs(eventosQuery)
-    ]);
-
-    // Mapear matérias
-    const materiasList = snapshotMaterias.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    // Filtrar ativas e concluídas (JAVASCRIPT FILTER)
-    const ativas = materiasList.filter(m => !m.concluida).length;
-    const concluidas = materiasList.filter(m => m.concluida === true).length;
-
-    // Matérias recentes (ordenar por createdAt)
-    const materiasRecentes = materiasList
-      .sort((a, b) => {
-        const aTime = a.createdAt?.toMillis?.() ?? 0;
-        const bTime = b.createdAt?.toMillis?.() ?? 0;
-        return bTime - aTime;
-      })
-      .slice(0, 6);
-
-    // Mapear eventos
-    const eventos = snapshotEventos.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    const resultado = {
-      ativas,
-      concluidas,
-      totalResumos: snapshotResumos.size,
-      totalFlashcards: snapshotFlashcards.size,
-      materiasRecentes,
-      eventos
-    };
-
-    return resultado;
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (error) {
-    console.error('❌ Erro ao buscar estatísticas do dashboard:', error);
-    return {
-      ativas: 0,
-      concluidas: 0,
-      totalResumos: 0,
-      totalFlashcards: 0,
-      materiasRecentes: [],
-      eventos: []
-    };
+    console.error('Erro ao listar matérias simples:', error);
+    throw new Error('Não foi possível carregar as matérias.');
   }
 };
 
@@ -295,6 +231,11 @@ export const criarFlashcard = async (flashcard, imageFile, userId) => {
       materiaNome: flashcard.materiaNome || null,  // CORREÇÃO: Salvar nome da matéria
       materiaCor: flashcard.materiaCor || null,    // CORREÇÃO: Salvar cor da matéria
       imagemUrl: null,  // Será preenchido com URL do Cloudinary se houver imagem
+      // SM-2 fields (BUG-008)
+      nextReviewDate: serverTimestamp(), // revisar imediatamente
+      interval: 0,       // dias até próxima revisão
+      easeFactor: 2.5,   // fator de facilidade (SM-2 default)
+      repetitions: 0,    // número de repetições bem-sucedidas
       uid: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -426,7 +367,7 @@ export const criarResumo = async (resumo, userId) => {
     };
     
     const docRef = await addDoc(collection(db, 'resumos'), resumoData);
-    
+    window.dispatchEvent(new CustomEvent('cinesia:resumo:alterado'));
     return {
       id: docRef.id,
       ...resumoData
@@ -487,6 +428,7 @@ export const atualizarResumo = async (resumoId, updates) => {
       ...updates,
       updatedAt: serverTimestamp()
     });
+    window.dispatchEvent(new CustomEvent('cinesia:resumo:alterado'));
   } catch (error) {
     console.error('Erro ao atualizar resumo:', error);
     throw new Error('Não foi possível atualizar o resumo.');
@@ -502,6 +444,7 @@ export const deletarResumo = async (resumoId) => {
   try {
     const docRef = doc(db, 'resumos', resumoId);
     await deleteDoc(docRef);
+    window.dispatchEvent(new CustomEvent('cinesia:resumo:alterado'));
   } catch (error) {
     console.error('Erro ao deletar resumo:', error);
     throw new Error('Não foi possível deletar o resumo.');
@@ -542,6 +485,57 @@ export const getDataURI = (pureBase64) => {
   // Verificar se já tem prefixo
   if (pureBase64.startsWith('data:')) return pureBase64;
   return `data:image/jpeg;base64,${pureBase64}`;
+};
+
+// ==================== SIMULADOS (Histórico) ====================
+
+/**
+ * Salva resultado de um simulado no Firestore.
+ * @param {Object} simulado - Dados do simulado completado
+ * @param {string} userId - UID do usuário
+ * @returns {Promise<Object>} - Simulado salvo com ID
+ */
+export const salvarSimulado = async (simulado, userId) => {
+  try {
+    const simuladoData = {
+      tema: simulado.tema,
+      score: simulado.score,
+      acertos: simulado.acertos,
+      total: simulado.total,
+      tempoSegundos: simulado.tempoSegundos || 0,
+      data: new Date().toISOString(),
+      questoes: simulado.questoes || [],
+      uid: userId,
+      createdAt: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(db, 'simulados'), simuladoData);
+    return { id: docRef.id, ...simuladoData };
+  } catch (error) {
+    console.error('Erro ao salvar simulado:', error);
+    throw new Error('Não foi possível salvar o resultado do simulado.');
+  }
+};
+
+/**
+ * Lista histórico de simulados do usuário, ordenados por data.
+ * @param {string} userId - UID do usuário
+ * @param {number} maxResults - Máximo de resultados (padrão 50)
+ * @returns {Promise<Array>}
+ */
+export const listarSimulados = async (userId, maxResults = 50) => {
+  try {
+    const q = query(
+      collection(db, 'simulados'),
+      where('uid', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(maxResults)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error('Erro ao listar simulados:', error);
+    throw new Error('Não foi possível carregar o histórico de simulados.');
+  }
 };
 
 // ==================== EVENTOS/AGENDA ====================
@@ -621,6 +615,7 @@ export default {
   // Matérias
   criarMateria,
   listarMaterias,
+  listarMateriasSimples,
   buscarMateria,
   atualizarMateria,
   deletarMateria,
@@ -636,9 +631,6 @@ export default {
   listarResumos,
   atualizarResumo,
   deletarResumo,
-  
-  // Dashboard
-  getDashboardStats,
   
   // Eventos/Agenda
   salvarEvento,

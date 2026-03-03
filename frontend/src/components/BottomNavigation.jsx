@@ -3,7 +3,27 @@ import { useAuth } from '../contexts/AuthContext-firebase';
 import ProfileModal from './ProfileModal';
 import { NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Home, BookOpen, Layers, CreditCard, PenLine, ClipboardList, Cpu, Bone, MoreHorizontal, X, User } from 'lucide-react';
+import { Home, BookOpen, Layers, CreditCard, PenLine, ClipboardList, Cpu, Bone, MoreHorizontal, X, User, Trophy, BarChart3, History } from 'lucide-react';
+
+const NavAvatar = ({ user }) => {
+  const [imgError, setImgError] = useState(false);
+  const initial = user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?';
+  if (user?.photoURL && !imgError) {
+    return (
+      <img
+        src={user.photoURL}
+        alt="avatar"
+        onError={() => setImgError(true)}
+        className="w-6 h-6 rounded-full object-cover ring-1 ring-primary-400"
+      />
+    );
+  }
+  return (
+    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-white font-semibold text-[11px]">
+      {initial}
+    </span>
+  );
+};
 
 const BottomNavigation = memo(() => {
   const [showMore, setShowMore] = useState(false);
@@ -23,6 +43,9 @@ const BottomNavigation = memo(() => {
     { path: '/consulta-rapida', icon: ClipboardList, label: 'Consultas' },
     { path: '/quadro-branco', icon: PenLine, label: 'Desenhar' },
     { path: '/atlas-3d', icon: Bone, label: 'Atlas 3D' },
+    { path: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { path: '/conquistas', icon: Trophy, label: 'Conquistas' },
+    { path: '/historico-simulados', icon: History, label: 'Histórico' },
   ];
 
   const isExtraActive = extraNavItems.some(item => location.pathname === item.path);
@@ -44,7 +67,8 @@ const BottomNavigation = memo(() => {
       <AnimatePresence>
         {showMore && (
           <motion.div
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-float p-2 z-50 min-w-[240px]"
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-xl shadow-float p-2 z-50 min-w-[240px]"
+            style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             initial={{ y: 12, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0, scale: 0.95 }}
@@ -109,9 +133,7 @@ const BottomNavigation = memo(() => {
           aria-label="Abrir perfil"
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] text-slate-400 dark:text-slate-500"
         >
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-white font-semibold text-[11px]">
-            {user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || <User size={14} />}
-          </span>
+          <NavAvatar user={user} />
           <span className="text-[10px] font-medium whitespace-nowrap">Perfil</span>
         </button>
 

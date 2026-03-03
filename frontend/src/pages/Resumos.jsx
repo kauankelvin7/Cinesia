@@ -1,13 +1,13 @@
 /**
  *  RESUMOS - Biblioteca de Estudos Premium
  * 
- * Editor rico com React Quill para cria��o de resumos formatados
+ * Editor rico com React Quill para criação de resumos formatados
  * Features:
  * - Editor de texto rico (bold, listas, cores)
  * - Busca em tempo real
- * - Filtro por mat�ria
+ * - Filtro por matéria
  * - Grid responsivo com preview
- * - Modal full-screen para edi��o
+ * - Modal full-screen para edição
  */
 
 import React, { useState, useEffect, Suspense, lazy, memo } from 'react';
@@ -41,21 +41,23 @@ import {
   PenTool,
   Sparkles,
   ArrowRight,
+  Download,
 } from 'lucide-react';
 import { 
   listarResumos, 
   criarResumo, 
   atualizarResumo, 
   deletarResumo, 
-  listarMaterias 
+  listarMateriasSimples
 } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
+import { useDashboardData } from '../contexts/DashboardDataContext';
 import Button from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
-// Configura��o do Editor Quill
+// Configuração do Editor Quill
 const quillModules = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
@@ -68,46 +70,46 @@ const quillModules = {
 
 const quillFormats = ['header', 'bold', 'italic', 'list', 'bullet', 'color'];
 
-// Template de Caso Cl�nico para Fisioterapia
-const TEMPLATE_CASO_CLINICO = `<h2>? Caso Cl�nico</h2>
+// Template de Caso Clínico para Fisioterapia
+const TEMPLATE_CASO_CLINICO = `<h2>🩺 Caso Clínico</h2>
 
 <h3>Queixa Principal</h3>
 <p>Descreva a queixa principal do paciente...</p>
 
-<h3>Hist�rico da Mol�stia Atual (HMA)</h3>
-<p>Evolu��o dos sintomas, in�cio, fatores de melhora/piora...</p>
+<h3>Histórico da Moléstia Atual (HMA)</h3>
+<p>Evolução dos sintomas, início, fatores de melhora/piora...</p>
 
-<h3>Avalia��o F�sica</h3>
+<h3>Avaliação Física</h3>
 <ul>
-<li><strong>Inspe��o:</strong> </li>
-<li><strong>Palpa��o:</strong> </li>
+<li><strong>Inspeção:</strong> </li>
+<li><strong>Palpação:</strong> </li>
 <li><strong>Amplitude de Movimento:</strong> </li>
-<li><strong>For�a Muscular:</strong> </li>
+<li><strong>Força Muscular:</strong> </li>
 <li><strong>Testes Especiais:</strong> </li>
 </ul>
 
-<h3>Diagn�stico Cin�tico-Funcional</h3>
-<p>Conclus�o baseada na avalia��o...</p>
+<h3>Diagnóstico Cinético-Funcional</h3>
+<p>Conclusão baseada na avaliação...</p>
 
 <h3>Objetivos de Tratamento</h3>
 <ul>
 <li><strong>Curto Prazo:</strong> </li>
-<li><strong>M�dio Prazo:</strong> </li>
+<li><strong>Médio Prazo:</strong> </li>
 <li><strong>Longo Prazo:</strong> </li>
 </ul>
 
 <h3>Plano de Tratamento</h3>
-<p>Condutas e interven��es planejadas...</p>
+<p>Condutas e intervenções planejadas...</p>
 `;
 
-// Fun��o auxiliar para remover HTML tags
+// Função auxiliar para remover HTML tags
 const stripHtml = (html) => {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || '';
 };
 
-// Fun��o para formatar data
+// Função para formatar data
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -116,6 +118,7 @@ const formatDate = (timestamp) => {
 
 function Resumos() {
   const { user } = useAuth();
+  const { refreshData } = useDashboardData();
   const location = useLocation();
   const [resumos, setResumos] = useState([]);
   const [resumosFiltrados, setResumosFiltrados] = useState([]);
@@ -123,15 +126,15 @@ function Resumos() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [viewingResumo, setViewingResumo] = useState(null); // Novo estado para visualiza��o
+  const [viewingResumo, setViewingResumo] = useState(null); // Novo estado para visualização
   const [modalMode, setModalMode] = useState('edit'); // 'edit' ou 'view'
-  const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualiza��o
+  const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualização
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMateria, setSelectedMateria] = useState('all');
   const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
   const [error, setError] = useState(null);
 
-  // Estado do Modal de Confirma��o
+  // Estado do Modal de Confirmação
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -168,14 +171,14 @@ function Resumos() {
       const userId = user?.id || user?.uid;
       const [resumosData, materiasData] = await Promise.all([
         listarResumos(userId),
-        listarMaterias(userId)
+        listarMateriasSimples(userId)
       ]);
       setResumos(resumosData);
       setResumosFiltrados(resumosData);
       setMaterias(materiasData);
       setError(null);
     } catch (err) {
-      setError('N�o conseguimos carregar seus dados. Tente novamente em instantes.');
+      setError('Não conseguimos carregar seus dados. Tente novamente em instantes.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao carregar dados:', err);
       }
@@ -187,7 +190,7 @@ function Resumos() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.titulo.trim() || !formData.conteudo.trim()) {
-      setError('T�tulo e conte�do s�o obrigat�rios');
+      setError('Título e conteúdo são obrigatórios');
       return;
     }
     try {
@@ -198,12 +201,13 @@ function Resumos() {
         await criarResumo(formData, userId);
       }
       await carregarDados();
+      refreshData(userId).catch(() => {});
       resetForm();
       setError(null);
       toast.success(editingId ? 'Resumo atualizado com sucesso!' : 'Resumo criado com sucesso!');
     } catch (err) {
-      setError('N�o foi poss�vel salvar o resumo. Tente novamente.');
-      toast.error('N�o foi poss�vel salvar o resumo.');
+      setError('Não foi possível salvar o resumo. Tente novamente.');
+      toast.error('Não foi possível salvar o resumo.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao salvar resumo:', err);
       }
@@ -241,17 +245,83 @@ function Resumos() {
     try {
       await deletarResumo(confirmDelete.id);
       await carregarDados();
+      const userId = user?.id || user?.uid;
+      refreshData(userId).catch(() => {});
       setError(null);
-      toast.success('Resumo exclu�do com sucesso.');
+      toast.success('Resumo excluído com sucesso.');
     } catch (err) {
-      setError('N�o foi poss�vel excluir o resumo. Tente novamente.');
-      toast.error('N�o foi poss�vel excluir o resumo.');
+      setError('Não foi possível excluir o resumo. Tente novamente.');
+      toast.error('Não foi possível excluir o resumo.');
       if (process.env.NODE_ENV !== 'production') {
         console.error('[Resumos] Erro ao excluir resumo:', err);
       }
     } finally {
       setIsDeleting(false);
       setConfirmDelete({ isOpen: false, id: null, nome: '' });
+    }
+  };
+
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const exportarPdf = async () => {
+    if (!viewingResumo) return;
+    setExportingPdf(true);
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const { default: html2canvas } = await import('html2canvas');
+
+      const contentEl = document.getElementById('resumo-view-content');
+      if (!contentEl) {
+        toast.error('Conteúdo não encontrado para exportar.');
+        return;
+      }
+
+      const canvas = await html2canvas(contentEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+
+      // If content is taller than one page, split into multiple pages
+      const pageContentHeight = pdfHeight * (imgWidth / pdfWidth);
+      const totalPages = Math.ceil(imgHeight / pageContentHeight);
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+        const srcY = page * pageContentHeight;
+        const remainingHeight = Math.min(pageContentHeight, imgHeight - srcY);
+        
+        // Create a temporary canvas for this page slice
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = remainingHeight;
+        const ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, srcY, imgWidth, remainingHeight, 0, 0, imgWidth, remainingHeight);
+        
+        const pageImgData = pageCanvas.toDataURL('image/png');
+        const pageScaledHeight = (remainingHeight / imgWidth) * pdfWidth;
+        pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pageScaledHeight);
+      }
+
+      const fileName = (viewingResumo.titulo || 'resumo').replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g, '').replace(/\s+/g, '_');
+      pdf.save(`${fileName}.pdf`);
+      toast.success('PDF exportado com sucesso!');
+    } catch (err) {
+      console.error('Erro ao exportar PDF:', err);
+      toast.error('Erro ao exportar PDF. Tente novamente.');
+    } finally {
+      setExportingPdf(false);
     }
   };
 
@@ -265,7 +335,7 @@ function Resumos() {
 
   const getMateriaInfo = (materiaId) => {
     const materia = materias.find(m => m.id === materiaId);
-    return materia || { nome: 'Sem mat�ria', cor: '#94A3B8' };
+    return materia || { nome: 'Sem matéria', cor: '#94A3B8' };
   };
 
   if (loading) {
@@ -341,7 +411,7 @@ function Resumos() {
             </div>
             <div className="w-full sm:w-64">
               <Select value={selectedMateria} onChange={(e) => setSelectedMateria(e.target.value)}>
-                <option value="all">Todas as Mat�rias</option>
+                <option value="all">Todas as Matérias</option>
                 {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
               </Select>
             </div>
@@ -373,10 +443,10 @@ function Resumos() {
                   <FileText size={40} className="text-violet-600 dark:text-violet-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                  Sua biblioteca come�a aqui ?
+                  Sua biblioteca começa aqui ?
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
-                  Resumos s�o como mapas do conhecimento. Crie seu primeiro e organize seus estudos!
+                  Resumos são como mapas do conhecimento. Crie seu primeiro e organize seus estudos!
                 </p>
 
                 {/* Onboarding Steps */}
@@ -391,7 +461,7 @@ function Resumos() {
                       <span className="text-sm font-bold text-violet-600 dark:text-violet-400">1</span>
                     </div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Clique em "Novo Resumo"</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Use o bot�o acima para abrir o editor</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Use o botão acima para abrir o editor</p>
                   </motion.div>
 
                   <motion.div
@@ -416,8 +486,8 @@ function Resumos() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-3">
                       <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">3</span>
                     </div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Organize por mat�ria</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Vincule a uma mat�ria para f�cil acesso</p>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">Organize por matéria</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Vincule a uma matéria para fácil acesso</p>
                   </motion.div>
                 </div>
 
@@ -434,7 +504,7 @@ function Resumos() {
                 >
                   <Lightbulb size={14} className="text-amber-500 shrink-0" />
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Dica: Use o template de "Caso Cl�nico" para estruturar rapidamente!
+                    Dica: Use o template de "Caso Clínico" para estruturar rapidamente!
                   </p>
                 </motion.div>
               </>
@@ -502,36 +572,62 @@ function Resumos() {
 
         <AnimatePresence>
           {showModal && (
-            <motion.div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
-              <motion.div className="bg-white dark:bg-slate-900 rounded-2xl shadow-md w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none print:shadow-none" initial={{ scale: 0.97, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.97, opacity: 0 }} onClick={(e) => e.stopPropagation()}>
-                <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800 print:bg-white print:border-none">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center print:bg-white print:shadow-none">
+            <motion.div className="resumo-modal-overlay fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
+              <motion.div className="resumo-modal bg-white dark:bg-slate-900 rounded-2xl shadow-md w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none print:shadow-none" initial={{ scale: 0.97, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0, y: 8 }} onClick={(e) => e.stopPropagation()}>
+                {/* HEADER — mobile: seta voltar + título + botão Salvar; desktop: ícone + título + botões */}
+                <div className="resumo-modal-header px-4 md:px-6 py-4 md:py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800 print:bg-white print:border-none gap-2">
+                  {/* Esquerda: seta no mobile, ícone no desktop */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      onClick={resetForm}
+                      className="resumo-header-back flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors print:hidden"
+                      aria-label="Fechar"
+                    >
+                      {/* seta no mobile, X no desktop */}
+                      <svg className="back-mobile" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                      <svg className="back-desktop" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    {/* ícone — só no desktop */}
+                    <div className="hidden md:flex w-9 h-9 rounded-lg bg-violet-50 items-center justify-center print:bg-white print:shadow-none flex-shrink-0">
                       <FileText size={18} className="text-violet-600 print:text-violet-700" />
                     </div>
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualiza��o do Resumo'}</h2>
+                    <h2 className="text-base md:text-xl font-semibold text-slate-900 dark:text-white truncate">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualização do Resumo'}</h2>
                   </div>
-                  <div className="flex gap-2">
+
+                  {/* Direita: botões de ação */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {modalMode === 'edit' && (
-                      <button
-                        onClick={() => {
-                          setModalMode('view');
-                          setViewingResumo({
-                            titulo: formData.titulo,
-                            conteudo: formData.conteudo,
-                            materiaId: formData.materiaId,
-                            createdAt: viewingResumo?.createdAt // mant�m data se j� existia
-                          });
-                        }}
-                        className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors print:hidden"
-                        title="Visualizar"
-                      >
-                        <FileText size={20} />
-                      </button>
+                      <>
+                        {/* Botão Salvar — destacado no mobile, discreet no desktop */}
+                        <button
+                          form="resumo-form"
+                          type="submit"
+                          disabled={!formData.titulo.trim() || !formData.conteudo.trim()}
+                          className="resumo-header-save mr-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
+                            bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed print:hidden"
+                        >
+                          {editingId ? 'Atualizar' : 'Salvar'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setModalMode('view');
+                            setViewingResumo({
+                              titulo: formData.titulo,
+                              conteudo: formData.conteudo,
+                              materiaId: formData.materiaId,
+                              createdAt: viewingResumo?.createdAt
+                            });
+                          }}
+                          className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors print:hidden"
+                          title="Visualizar"
+                        >
+                          <FileText size={20} />
+                        </button>
+                      </>
                     )}
                     {modalMode === 'view' && (
                       <>
-                        <div className="flex items-center gap-1 mr-2">
+                        <div className="flex items-center gap-1 mr-1">
                           <button
                             onClick={() => setViewFontSize(f => Math.max(0.8, +(f - 0.1).toFixed(2)))}
                             className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
@@ -569,26 +665,38 @@ function Resumos() {
                         >
                           <Edit2 size={20} />
                         </button>
+                        <button
+                          onClick={exportarPdf}
+                          disabled={exportingPdf}
+                          className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 transition-colors print:hidden disabled:opacity-40"
+                          title="Exportar PDF"
+                        >
+                          {exportingPdf ? (
+                            <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" /></svg>
+                          ) : (
+                            <Download size={20} />
+                          )}
+                        </button>
                       </>
                     )}
-                    <button onClick={resetForm} className="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors print:hidden">
-                      <X size={24} />
+                    <button onClick={resetForm} className="ml-1 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors print:hidden back-desktop-only" aria-label="Fechar">
+                      <X size={20} />
                     </button>
                   </div>
                 </div>
                 {modalMode === 'edit' ? (
-                  <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                  <form id="resumo-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="T�tulo do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
-                        <Select label="Mat�ria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
-                          <option value="">Selecione uma mat�ria</option>
+                        <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
+                        <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
+                          <option value="">Selecione uma matéria</option>
                           {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
                         </Select>
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Conte�do do Resumo<span className="text-red-500 ml-1">*</span></label>
+                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
                           {!editingId && (
                             <motion.button
                               type="button"
@@ -598,7 +706,7 @@ function Resumos() {
                               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
                             >
                               <ClipboardList size={16} />
-                              Usar Template Caso Cl�nico
+                              Usar Template Caso Clínico
                             </motion.button>
                           )}
                         </div>
@@ -618,8 +726,8 @@ function Resumos() {
                   </form>
                 ) : (
                   <div className="flex-1 overflow-y-auto print:overflow-visible">
-                    <div className="p-8 print:p-0 max-w-3xl mx-auto" style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}>
-                      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem t�tulo'}</h1>
+                    <div id="resumo-view-content" className="p-8 print:p-0 max-w-3xl mx-auto" style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}>
+                      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem título'}</h1>
                       <div className="mb-4 flex gap-2 items-center print:mb-2">
                         <Badge color={getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).cor} size="sm">
                           <span>{getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).nome}</span>
@@ -629,7 +737,7 @@ function Resumos() {
                       <div 
                         className="prose prose-purple max-w-none print:prose print:prose-sm"
                         style={{ wordBreak: 'break-word', fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}
-                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conte�do</p>' }}
+                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conteúdo</p>' }}
                       />
                     </div>
                   </div>
@@ -640,7 +748,7 @@ function Resumos() {
         </AnimatePresence>
       </div>
 
-      {/* Modal de Confirma��o de Exclus�o */}
+      {/* Modal de Confirmação de Exclusão */}
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false, id: null, nome: '' })}

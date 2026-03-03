@@ -222,6 +222,8 @@ const PomodoroTimer = memo(() => {
             <motion.button
               key="minimized"
               onClick={() => setIsExpanded(true)}
+              aria-label="Abrir temporizador Pomodoro"
+              aria-pressed={false}
               className={`relative w-14 h-14 rounded-full shadow-md flex items-center justify-center transition-colors ${
                 isRunning
                   ? mode === 'focus'

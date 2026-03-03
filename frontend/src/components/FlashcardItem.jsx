@@ -89,6 +89,19 @@ const FlashcardItem = memo(({
             <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-2 line-clamp-3">
               {flashcard.pergunta}
             </h3>
+
+            {flashcard.tags && flashcard.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {flashcard.tags.slice(0, 3).map(tag => (
+                  <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                    #{tag}
+                  </span>
+                ))}
+                {flashcard.tags.length > 3 && (
+                  <span className="text-xs text-slate-400">+{flashcard.tags.length - 3}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="text-center">

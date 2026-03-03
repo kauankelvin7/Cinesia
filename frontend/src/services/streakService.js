@@ -18,6 +18,7 @@ import {
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase-config';
+import { checkStreakMilestones } from './notificationService';
 
 
 /**
@@ -130,6 +131,9 @@ export const updateStreak = async (userId) => {
 
       const streakRef = doc(db, 'users', userId, 'stats', 'streak');
       await updateDoc(streakRef, newData);
+
+      // Notificação de boas-vindas no primeiro login (não-bloqueante)
+      checkStreakMilestones(userId, 1, true).catch(() => {});
       
       return newData;
     }
@@ -167,6 +171,9 @@ export const updateStreak = async (userId) => {
       const streakRef = doc(db, 'users', userId, 'stats', 'streak');
       await updateDoc(streakRef, newData);
 
+      // Verifica marcos de streak (não-bloqueante)
+      checkStreakMilestones(userId, newStreak, false).catch(() => {});
+
       return newData;
     }
 
@@ -198,7 +205,8 @@ export const updateStreak = async (userId) => {
 
   } catch (error) {
     console.error('Erro ao atualizar streak:', error);
-    throw error;
+    // Não propagar: falhas de streak não devem bloquear o carregamento do dashboard
+    return null;
   }
 };
 

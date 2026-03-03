@@ -12,7 +12,8 @@
  * v4.1 - FIXED JSON PARSING (Fevereiro 2025)
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen,
@@ -31,11 +32,15 @@ import {
   Upload,
   X,
   File,
-  RefreshCw
+  RefreshCw,
+  History,
+  Clock
 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { salvarSimulado } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
@@ -120,8 +125,12 @@ const temasSugeridos = [
 ];
 
 function Simulado() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   // ==================== ESTADOS PRINCIPAIS ====================
   const [tema, setTema] = useState('');
+  const [historicoSalvo, setHistoricoSalvo] = useState(false);
   const [questoes, setQuestoes] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [respostas, setRespostas] = useState({});
@@ -138,6 +147,81 @@ function Simulado() {
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
+
+  // ==================== TIMER (BUG-009) ====================
+  const [timeLeft, setTimeLeft] = useState(null); // null = sem timer (prática livre)
+  const [timerDuration, setTimerDuration] = useState(10); // duração selecionada em minutos (0 = sem limite)
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
+  const timerRef = useRef(null);
+
+  const TIMER_OPTIONS = [
+    { value: 5,  label: '5 min',    desc: 'Rápido' },
+    { value: 10, label: '10 min',   desc: 'Padrão' },
+    { value: 15, label: '15 min',   desc: 'Tranquilo' },
+    { value: 30, label: '30 min',   desc: 'Extenso' },
+    { value: 0,  label: 'Sem limite', desc: 'Livre' },
+  ];
+
+  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  const encerrarSimulado = useCallback(() => {
+    setTimerActive(false);
+    setTimerPaused(false);
+    setFase('resultado');
+    setHistoricoSalvo(false);
+  }, []);
+
+  const togglePauseTimer = useCallback(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    setTimerPaused(p => !p);
+    setTimerActive(a => !a);
+  }, [timeLeft]);
+
+  useEffect(() => {
+    if (!timerActive || timeLeft === null) return;
+    if (timeLeft <= 0) { encerrarSimulado(); return; }
+    timerRef.current = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearTimeout(timerRef.current);
+  }, [timerActive, timeLeft, encerrarSimulado]);
+
+  // ==================== NAV BLOCKER (BUG-027) ====================
+  // BrowserRouter doesn't support useBlocker – use beforeunload instead
+  useEffect(() => {
+    if (fase !== 'quiz' || questoes.length === 0) return;
+    const handleBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [fase, questoes.length]);
+
+  // ==================== AUTO-SAVE RESULTADO ====================
+  useEffect(() => {
+    if (fase !== 'resultado' || historicoSalvo || questoes.length === 0) return;
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
+    const totalAcertos = questoes.reduce((acc, q, idx) => (respostas[idx] === q.correta ? acc + 1 : acc), 0);
+    const score = Math.round((totalAcertos / questoes.length) * 100);
+    const tempoTotal = timeLeft !== null && timerDuration > 0 ? (timerDuration * 60) - timeLeft : 0;
+    salvarSimulado({
+      tema,
+      score,
+      acertos: totalAcertos,
+      total: questoes.length,
+      tempoSegundos: tempoTotal,
+      questoes: questoes.map((q, idx) => ({
+        pergunta: q.pergunta,
+        opcoes: q.opcoes,
+        correta: q.correta,
+        explicacao: q.explicacao,
+        respostaUsuario: respostas[idx] ?? null,
+        acertou: respostas[idx] === q.correta,
+      })),
+    }, userId).then(() => {
+      setHistoricoSalvo(true);
+    }).catch(err => {
+      console.error('Erro ao salvar histórico do simulado:', err);
+    });
+  }, [fase, historicoSalvo, questoes, respostas, tema, timeLeft, timerDuration, user]);
 
   /**
    * 📄 Extrai texto de um arquivo PDF usando pdfjs-dist.
@@ -435,7 +519,7 @@ function Simulado() {
                          q.explicacao;
           
           if (!isValid) {
-            console.warn('⚠️ Questão inválida:', q);
+            if (import.meta.env.DEV) { console.warn('⚠️ Questão inválida:', q); }
           }
           return isValid;
         })
@@ -458,6 +542,15 @@ function Simulado() {
       setRespostas({});
       setSelectedOption(null);
       setHasAnswered(false);
+      // Iniciar timer com duração selecionada
+      if (timerDuration > 0) {
+        setTimeLeft(timerDuration * 60);
+        setTimerActive(true);
+      } else {
+        setTimeLeft(null); // sem limite
+        setTimerActive(false);
+      }
+      setTimerPaused(false);
       
     } catch (err) {
       setError(err.message || 'Erro ao gerar questões. Verifique sua conexão e tente novamente.');
@@ -488,7 +581,7 @@ function Simulado() {
       setSelectedOption(respostas[currentIndex + 1] ?? null);
       setHasAnswered(respostas[currentIndex + 1] !== undefined);
     } else {
-      setFase('resultado');
+      encerrarSimulado();
     }
   };
 
@@ -521,6 +614,11 @@ function Simulado() {
     setSelectedOption(null);
     setHasAnswered(false);
     setError(null);
+    setTimeLeft(null);
+    setTimerActive(false);
+    setTimerPaused(false);
+    setTimerDuration(10);
+    setHistoricoSalvo(false);
     // Limpar estados do PDF
     setPdfFile(null);
     setPdfText('');
@@ -739,6 +837,34 @@ function Simulado() {
                   </div>
                 )}
 
+                {/* === SELEÇÃO DE TEMPO === */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                    <Clock size={16} className="inline mr-1.5 -mt-0.5" />
+                    Tempo do Simulado
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {TIMER_OPTIONS.map((opt) => (
+                      <motion.button
+                        key={opt.value}
+                        onClick={() => setTimerDuration(opt.value)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                          timerDuration === opt.value
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-indigo-900/40'
+                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                        }`}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        <span className="block font-semibold">{opt.label}</span>
+                        <span className={`block text-xs mt-0.5 ${timerDuration === opt.value ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                          {opt.desc}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -887,9 +1013,31 @@ function Simulado() {
                   <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
                     Questão {currentIndex + 1} de {questoes.length}
                   </span>
-                  <span className="text-sm font-bold text-indigo-600">
-                    {tema}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {timeLeft !== null && (
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-sm font-bold font-mono tabular-nums px-2.5 py-1 rounded-lg ${
+                          timeLeft < 60 
+                            ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/40 animate-pulse' 
+                            : timeLeft < 180 
+                              ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40'
+                              : 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950/40'
+                        }`}>
+                          ⏱ {formatTime(timeLeft)}
+                        </span>
+                        <button
+                          onClick={togglePauseTimer}
+                          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400"
+                          title={timerPaused ? 'Retomar' : 'Pausar'}
+                        >
+                          {timerPaused ? <Play size={14} /> : <Clock size={14} />}
+                        </button>
+                      </div>
+                    )}
+                    <span className="text-sm font-bold text-indigo-600">
+                      {tema}
+                    </span>
+                  </div>
                 </div>
                 <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <motion.div
@@ -1118,6 +1266,14 @@ function Simulado() {
                 <Button
                   variant="secondary"
                   size="lg"
+                  onClick={() => navigate('/historico-simulados')}
+                  leftIcon={<History size={18} />}
+                >
+                  Histórico
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
                   onClick={reiniciar}
                   leftIcon={<RotateCcw size={18} />}
                 >
@@ -1137,6 +1293,8 @@ function Simulado() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Nav blocker: handled via beforeunload event (BUG-027) */}
     </div>
   );
 }

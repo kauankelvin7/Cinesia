@@ -20,6 +20,7 @@ import {
   Loader2,
   Trash2,
   Circle,
+  Trophy,
 } from 'lucide-react';
 import {
   collection,
@@ -54,6 +55,12 @@ const TYPE_CONFIG = {
     bg: 'bg-primary-100 dark:bg-primary-900/40',
     text: 'text-primary-600 dark:text-primary-400',
     border: 'border-primary-200 dark:border-primary-800',
+  },
+  conquista: {
+    icon: Trophy,
+    bg: 'bg-yellow-100 dark:bg-yellow-900/40',
+    text: 'text-yellow-600 dark:text-yellow-400',
+    border: 'border-yellow-200 dark:border-yellow-800',
   },
 };
 

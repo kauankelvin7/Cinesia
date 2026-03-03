@@ -26,15 +26,20 @@ export default function QuadroBranco() {
   }, []);
 
   // Limpa dados corrompidos do IndexedDB se houver erro de migração
+  const getDatabases = async () => {
+    if (typeof window.indexedDB?.databases === 'function') {
+      return window.indexedDB.databases();
+    }
+    return []; // Firefox fallback
+  };
+
   const handleStoreError = async () => {
     try {
-      const databases = await window.indexedDB.databases?.();
-      if (databases) {
-        for (const db of databases) {
+      const databases = await getDatabases();
+      for (const db of databases) {
           if (db.name && db.name.includes('TLDRAW')) {
             window.indexedDB.deleteDatabase(db.name);
           }
-        }
       }
       // Força remount com nova key
       setStoreKey(`${PERSISTENCE_KEY}-${Date.now()}`);
@@ -62,7 +67,7 @@ export default function QuadroBranco() {
     <div
       className="w-full flex flex-col transition-colors duration-200 bg-slate-50 dark:bg-slate-900 overflow-hidden"
       style={{
-        height: isMobile ? 'calc(100dvh - 64px)' : 'calc(100dvh - 64px)',
+        height: isMobile ? 'calc(100dvh - 64px)' : 'calc(100dvh - 56px)',
         minHeight: 0,
       }}
     >

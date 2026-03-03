@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🎴 FLASHCARDS - Gerenciamento e Modo Estudo Premium
  * 
  * Features:
@@ -9,7 +9,8 @@
  * - Animações fluidas com framer-motion
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -22,16 +23,20 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   listarFlashcards, 
   criarFlashcard, 
   atualizarFlashcard, 
   deletarFlashcard,
-  listarMaterias
+  listarMateriasSimples
 } from '../services/firebaseService';
 import { compressImage } from '../utils/imageCompressor';
+import TagInput from '../components/TagInput';
+import { calculateSM2, isDueForReview, getNextReviewLabel } from '../utils/sm2';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
@@ -39,6 +44,7 @@ import { Input, Textarea, Select } from '../components/ui/Input';
 import FlashcardItem from '../components/FlashcardItem';
 import Badge from '../components/ui/Badge';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import { isTypingInInput } from '../utils/keyboard';
 
 // Variantes de animação
 const containerVariants = {
@@ -86,6 +92,7 @@ const slideVariants = {
 
 function Flashcards() {
   const { user } = useAuth();
+  const location = useLocation();
   const [flashcards, setFlashcards] = useState([]);
   const [flashcardsFiltrados, setFlashcardsFiltrados] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -100,8 +107,10 @@ function Flashcards() {
     resposta: '',
     materiaId: '',
     materiaNome: '',
-    materiaCor: ''
+    materiaCor: '',
+    tags: []
   });
+  const [selectedTag, setSelectedTag] = useState('all');
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [error, setError] = useState(null);
 
@@ -111,9 +120,12 @@ function Flashcards() {
 
   // Estado do Modo Estudo
   const [modoEstudo, setModoEstudo] = useState(false);
+  const [modoRevisao, setModoRevisao] = useState(false); // SM-2 review mode
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isStudyFlipped, setIsStudyFlipped] = useState(false);
   const [slideDirection, setSlideDirection] = useState(0);
+  const [studyCards, setStudyCards] = useState([]); // cards being studied
+  const [reviewStats, setReviewStats] = useState({ easy: 0, medium: 0, hard: 0 }); // session stats
 
   useEffect(() => {
     if (user) {
@@ -123,14 +135,15 @@ function Flashcards() {
 
   // Filtrar flashcards quando mudar a matéria selecionada
   useEffect(() => {
-    if (selectedMateria === 'all') {
-      setFlashcardsFiltrados(flashcards);
-    } else {
-      setFlashcardsFiltrados(
-        flashcards.filter(fc => fc.materiaId === selectedMateria)
-      );
+    let filtered = flashcards;
+    if (selectedMateria !== 'all') {
+      filtered = filtered.filter(fc => fc.materiaId === selectedMateria);
     }
-  }, [selectedMateria, flashcards]);
+    if (selectedTag !== 'all') {
+      filtered = filtered.filter(fc => fc.tags && fc.tags.includes(selectedTag));
+    }
+    setFlashcardsFiltrados(filtered);
+  }, [selectedMateria, selectedTag, flashcards]);
 
   const carregarDados = async () => {
     try {
@@ -138,7 +151,7 @@ function Flashcards() {
       const userId = user?.id || user?.uid;
       const [flashcardsData, materiasData] = await Promise.all([
         listarFlashcards(userId),
-        listarMaterias(userId)
+        listarMateriasSimples(userId)
       ]);
       
       // Enriquecer flashcards com dados da matéria se não tiverem
@@ -163,6 +176,15 @@ function Flashcards() {
       setLoading(false);
     }
   };
+
+  // Auto-iniciar modo revisão se vindo do Home
+  useEffect(() => {
+    if (location.state?.reviewMode && flashcards.length > 0 && !modoEstudo) {
+      iniciarModoEstudo(true);
+      // Limpar o state para não re-ativar no re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, flashcards.length]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -227,7 +249,8 @@ function Flashcards() {
         resposta: formData.resposta,
         materiaId: formData.materiaId,
         materiaNome: formData.materiaNome,
-        materiaCor: formData.materiaCor
+        materiaCor: formData.materiaCor,
+        tags: formData.tags || []
       };
 
       if (editingId) {
@@ -253,7 +276,8 @@ function Flashcards() {
       resposta: flashcard.resposta,
       materiaId: flashcard.materiaId || '',
       materiaNome: flashcard.materiaNome || '',
-      materiaCor: flashcard.materiaCor || '#94A3B8'
+      materiaCor: flashcard.materiaCor || '#94A3B8',
+      tags: flashcard.tags || []
     });
     setEditingId(flashcard.id);
     setImagePreview(flashcard.imagemUrl || null);
@@ -288,35 +312,177 @@ function Flashcards() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({ pergunta: '', resposta: '', materiaId: '', materiaNome: '', materiaCor: '' });
+  const resetForm = useCallback(() => {
+    setFormData({ pergunta: '', resposta: '', materiaId: '', materiaNome: '', materiaCor: '', tags: [] });
     setEditingId(null);
     setImagePreview(null);
     setSelectedImageFile(null);
     setShowModal(false);
+  }, []);
+
+  // ==================== IMPORTAR CSV ====================
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvMateriaId, setCsvMateriaId] = useState('');
+  const csvInputRef = React.useRef(null);
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      // Detect separator: ; or , or \t
+      const sep = lines[0]?.includes(';') ? ';' : lines[0]?.includes('\t') ? '\t' : ',';
+      const parsed = lines
+        .map(line => {
+          const parts = line.split(sep).map(p => p.trim().replace(/^["']|["']$/g, ''));
+          if (parts.length >= 2) return { pergunta: parts[0], resposta: parts[1] };
+          return null;
+        })
+        .filter(Boolean);
+      // Skip header if it looks like a header
+      const first = parsed[0];
+      if (first && (first.pergunta.toLowerCase().includes('pergunta') || first.pergunta.toLowerCase().includes('front'))) {
+        parsed.shift();
+      }
+      setCsvPreview(parsed);
+      setShowCsvModal(true);
+    };
+    reader.readAsText(file);
+    if (csvInputRef.current) csvInputRef.current.value = '';
+  };
+
+  const importCsv = async () => {
+    if (csvPreview.length === 0 || !csvMateriaId) {
+      toast.error('Selecione uma matéria para importar.');
+      return;
+    }
+    setCsvImporting(true);
+    const materia = materias.find(m => m.id === csvMateriaId);
+    const userId = user?.id || user?.uid;
+    let success = 0;
+    try {
+      for (const row of csvPreview) {
+        await criarFlashcard({
+          pergunta: row.pergunta,
+          resposta: row.resposta,
+          materiaId: csvMateriaId,
+          materiaNome: materia?.nome || '',
+          materiaCor: materia?.cor || '#94A3B8',
+        }, null, userId);
+        success++;
+      }
+      await carregarDados();
+      toast.success(`${success} flashcards importados com sucesso!`);
+      setShowCsvModal(false);
+      setCsvPreview([]);
+      setCsvMateriaId('');
+    } catch (err) {
+      toast.error(`Erro ao importar. ${success} de ${csvPreview.length} importados.`);
+      console.error(err);
+    } finally {
+      setCsvImporting(false);
+    }
   };
 
   // ==================== MODO ESTUDO ====================
   
-  const iniciarModoEstudo = () => {
-    if (flashcardsFiltrados.length === 0) {
+  const iniciarModoEstudo = (reviewOnly = false) => {
+    let cards = flashcardsFiltrados;
+    if (reviewOnly) {
+      cards = flashcardsFiltrados.filter(fc => isDueForReview(fc));
+      if (cards.length === 0) {
+        toast.info('Nenhum card pendente para revisão hoje! 🎉');
+        return;
+      }
+    }
+    if (cards.length === 0) {
       setError('Nenhum flashcard disponível para estudar');
       return;
     }
+    setStudyCards(cards);
     setCurrentIndex(0);
     setIsStudyFlipped(false);
     setSlideDirection(0);
+    setModoRevisao(reviewOnly);
+    setReviewStats({ easy: 0, medium: 0, hard: 0 });
     setModoEstudo(true);
   };
 
   const fecharModoEstudo = () => {
     setModoEstudo(false);
+    setModoRevisao(false);
     setCurrentIndex(0);
     setIsStudyFlipped(false);
+    setStudyCards([]);
+    setReviewStats({ easy: 0, medium: 0, hard: 0 });
   };
 
+  // SM-2 rating handler
+  const handleSM2Rating = async (quality) => {
+    const card = studyCards[currentIndex];
+    if (!card) return;
+
+    const reps = card.repetitions || 0;
+    const interval = card.interval || 0;
+    const ef = card.easeFactor || 2.5;
+
+    const result = calculateSM2(quality, reps, interval, ef);
+
+    // Update stats
+    if (quality >= 5) setReviewStats(s => ({ ...s, easy: s.easy + 1 }));
+    else if (quality >= 3) setReviewStats(s => ({ ...s, medium: s.medium + 1 }));
+    else setReviewStats(s => ({ ...s, hard: s.hard + 1 }));
+
+    try {
+      // Update Firestore
+      await atualizarFlashcard(card.id, {
+        interval: result.interval,
+        repetitions: result.repetitions,
+        easeFactor: result.easeFactor,
+        nextReviewDate: result.nextReviewDate,
+      });
+
+      // Update local state
+      const updatedCards = [...studyCards];
+      updatedCards[currentIndex] = {
+        ...card,
+        ...result,
+      };
+      setStudyCards(updatedCards);
+
+      // Also update main flashcards list
+      setFlashcards(prev => prev.map(fc => 
+        fc.id === card.id ? { ...fc, ...result } : fc
+      ));
+    } catch (err) {
+      console.error('Erro ao salvar avaliação SM-2:', err);
+      toast.error('Erro ao salvar progresso do card.');
+    }
+
+    // Move to next card or finish
+    if (currentIndex < studyCards.length - 1) {
+      setSlideDirection(1);
+      setIsStudyFlipped(false);
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      // Session complete
+      const total = reviewStats.easy + reviewStats.medium + reviewStats.hard + 1;
+      toast.success(`Sessão concluída! ${total} cards revisados 🎉`);
+      fecharModoEstudo();
+      carregarDados(); // refresh to get updated nextReviewDate
+    }
+  };
+
+  const pendingReviewCount = useMemo(() => {
+    return flashcards.filter(fc => isDueForReview(fc)).length;
+  }, [flashcards]);
+
   const proximoCard = () => {
-    if (currentIndex < flashcardsFiltrados.length - 1) {
+    if (currentIndex < studyCards.length - 1) {
       setSlideDirection(1);
       setIsStudyFlipped(false);
       setCurrentIndex(prev => prev + 1);
@@ -339,10 +505,12 @@ function Flashcards() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!modoEstudo) return;
+      // 🛡️ Guard: não interceptar teclas mentre usuario digita em campo de texto
+      if (isTypingInInput()) return;
       
       switch (e.key) {
         case 'ArrowRight':
-          if (currentIndex < flashcardsFiltrados.length - 1) {
+          if (currentIndex < studyCards.length - 1) {
             setSlideDirection(1);
             setIsStudyFlipped(false);
             setCurrentIndex(prev => prev + 1);
@@ -360,6 +528,15 @@ function Flashcards() {
           e.preventDefault();
           setIsStudyFlipped(prev => !prev);
           break;
+        case '1':
+          if (isStudyFlipped) { e.preventDefault(); handleSM2Rating(1); }
+          break;
+        case '2':
+          if (isStudyFlipped) { e.preventDefault(); handleSM2Rating(3); }
+          break;
+        case '3':
+          if (isStudyFlipped) { e.preventDefault(); handleSM2Rating(5); }
+          break;
         case 'Escape':
           setModoEstudo(false);
           setCurrentIndex(0);
@@ -372,11 +549,11 @@ function Flashcards() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modoEstudo, currentIndex, flashcardsFiltrados.length]);
+  }, [modoEstudo, currentIndex, studyCards.length, isStudyFlipped]);
 
-  const currentFlashcard = flashcardsFiltrados[currentIndex];
-  const progressPercent = flashcardsFiltrados.length > 0 
-    ? ((currentIndex + 1) / flashcardsFiltrados.length) * 100 
+  const currentFlashcard = studyCards[currentIndex];
+  const progressPercent = studyCards.length > 0 
+    ? ((currentIndex + 1) / studyCards.length) * 100 
     : 0;
 
   if (loading) {
@@ -453,13 +630,23 @@ function Flashcards() {
                 Crie e estude com flashcards interativos
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              {pendingReviewCount > 0 && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  leftIcon={<RotateCcw size={20} />}
+                  onClick={() => iniciarModoEstudo(true)}
+                >
+                  Revisar ({pendingReviewCount})
+                </Button>
+              )}
               {flashcardsFiltrados.length > 0 && (
                 <Button
                   variant="primary"
                   size="lg"
                   leftIcon={<Play size={20} />}
-                  onClick={iniciarModoEstudo}
+                  onClick={() => iniciarModoEstudo(false)}
                 >
                   Modo Estudo
                 </Button>
@@ -472,6 +659,24 @@ function Flashcards() {
               >
                 Novo Flashcard
               </Button>
+              <div className="relative">
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv,.tsv,.txt"
+                  className="hidden"
+                  onChange={handleCsvFile}
+                />
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  leftIcon={<Upload size={18} />}
+                  onClick={() => csvInputRef.current?.click()}
+                  title="Importar CSV (pergunta;resposta)"
+                >
+                  <span className="hidden sm:inline">Importar CSV</span>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -498,6 +703,23 @@ function Flashcards() {
                 </option>
               ))}
             </Select>
+
+            {/* Tag filter */}
+            {(() => {
+              const allTags = [...new Set(flashcards.flatMap(fc => fc.tags || []))].sort();
+              return allTags.length > 0 ? (
+                <Select
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  className="w-full sm:w-48"
+                >
+                  <option value="all">Todas as Tags</option>
+                  {allTags.map(tag => (
+                    <option key={tag} value={tag}>#{tag}</option>
+                  ))}
+                </Select>
+              ) : null;
+            })()}
             
             <div className="ml-auto flex items-center gap-4">
               <div className="text-sm text-slate-600">
@@ -592,6 +814,7 @@ function Flashcards() {
               placeholder="Digite a pergunta..."
               value={formData.pergunta}
               onChange={(e) => setFormData({ ...formData, pergunta: e.target.value })}
+              onKeyDown={(e) => e.stopPropagation()}
               required
               rows={3}
             />
@@ -601,6 +824,7 @@ function Flashcards() {
               placeholder="Digite a resposta..."
               value={formData.resposta}
               onChange={(e) => setFormData({ ...formData, resposta: e.target.value })}
+              onKeyDown={(e) => e.stopPropagation()}
               required
               rows={4}
             />
@@ -661,6 +885,19 @@ function Flashcards() {
               </div>
             </div>
 
+            {/* Tags */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Tags (Opcional)
+              </label>
+              <TagInput
+                tags={formData.tags}
+                onChange={(tags) => setFormData({ ...formData, tags })}
+                placeholder="Ex: anatomia, prova, importante..."
+                suggestions={[...new Set(flashcards.flatMap(fc => fc.tags || []))]}
+              />
+            </div>
+
             {error && (
               <motion.div 
                 className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
@@ -716,9 +953,12 @@ function Flashcards() {
                     <BookOpen size={20} className="text-white" />
                   </motion.div>
                   <div>
-                    <h2 className="text-white font-bold text-lg">Modo Estudo</h2>
+                    <h2 className="text-white font-bold text-lg">
+                      {modoRevisao ? 'Revisão Programada' : 'Modo Estudo'}
+                    </h2>
                     <p className="text-white/60 text-sm">
-                      Card {currentIndex + 1} de {flashcardsFiltrados.length}
+                      Card {currentIndex + 1} de {studyCards.length}
+                      {modoRevisao && <span className="ml-2 text-amber-400">· SRS ativo</span>}
                     </p>
                   </div>
                 </div>
@@ -771,8 +1011,9 @@ function Flashcards() {
                       >
                         {/* FRENTE - Pergunta */}
                         <div
-                          className="absolute inset-0 backface-hidden bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col justify-between overflow-hidden"
+                          className="absolute inset-0 backface-hidden rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col justify-between overflow-hidden"
                           style={{ 
+                            backgroundColor: 'var(--bg-surface)',
                             backfaceVisibility: 'hidden',
                             minHeight: 'min(400px, 60vh)'
                           }}
@@ -782,10 +1023,10 @@ function Flashcards() {
                               {currentFlashcard.materiaNome || 'Sem matéria'}
                             </Badge>
                             <div className="mt-8">
-                              <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">
+                              <p className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: 'var(--text-3)' }}>
                                 Pergunta
                               </p>
-                              <h3 className="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-relaxed line-clamp-6 overflow-hidden">
+                              <h3 className="text-xl sm:text-3xl font-bold leading-relaxed line-clamp-6 overflow-hidden" style={{ color: 'var(--text-1)' }}>
                                 {currentFlashcard.pergunta}
                               </h3>
                             </div>
@@ -796,7 +1037,7 @@ function Flashcards() {
                             animate={{ y: [0, 5, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity }}
                           >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full text-slate-600 text-sm font-medium">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-2)' }}>
                               <RotateCcw size={16} />
                               Clique para virar
                             </div>
@@ -849,47 +1090,112 @@ function Flashcards() {
                 </AnimatePresence>
               </div>
 
-              {/* Controles de Navegação */}
+              {/* Controles de Navegação + SM-2 Rating */}
               <motion.div 
                 className="px-4 sm:px-8 py-6 border-t border-white/10"
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
-                  <motion.button
-                    onClick={cardAnterior}
-                    disabled={currentIndex === 0}
-                    className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
-                      currentIndex === 0
-                        ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                        : 'bg-white/10 hover:bg-white/20 text-white'
-                    }`}
-                    whileHover={currentIndex !== 0 ? { scale: 1.02 } : {}}
-                    whileTap={currentIndex !== 0 ? { scale: 0.98 } : {}}
-                  >
-                    <ChevronLeft size={20} />
-                    Anterior
-                  </motion.button>
+                {/* SM-2 Rating Buttons — show after flip */}
+                <AnimatePresence>
+                  {isStudyFlipped && (
+                    <motion.div
+                      className="mb-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                    >
+                      <p className="text-center text-white/50 text-xs mb-3 font-medium uppercase tracking-wider">
+                        Como foi? (atalhos: 1, 2, 3)
+                      </p>
+                      <div className="flex items-center justify-center gap-3 max-w-lg mx-auto">
+                        {/* Difícil */}
+                        <motion.button
+                          onClick={() => handleSM2Rating(1)}
+                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300"
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <span className="text-lg">😰</span>
+                          <span className="text-sm">Difícil</span>
+                          <span className="text-[10px] opacity-60">
+                            {getNextReviewLabel(1, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
+                          </span>
+                        </motion.button>
 
-                  <motion.button
-                    onClick={proximoCard}
-                    disabled={currentIndex === flashcardsFiltrados.length - 1}
-                    className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
-                      currentIndex === flashcardsFiltrados.length - 1
-                        ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                        : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'
-                    }`}
-                    whileHover={currentIndex !== flashcardsFiltrados.length - 1 ? { scale: 1.02 } : {}}
-                    whileTap={currentIndex !== flashcardsFiltrados.length - 1 ? { scale: 0.98 } : {}}
-                  >
-                    Próximo
-                    <ChevronRight size={20} />
-                  </motion.button>
-                </div>
+                        {/* Médio */}
+                        <motion.button
+                          onClick={() => handleSM2Rating(3)}
+                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300"
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <span className="text-lg">😐</span>
+                          <span className="text-sm">Médio</span>
+                          <span className="text-[10px] opacity-60">
+                            {getNextReviewLabel(3, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
+                          </span>
+                        </motion.button>
+
+                        {/* Fácil */}
+                        <motion.button
+                          onClick={() => handleSM2Rating(5)}
+                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300"
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          <span className="text-lg">😄</span>
+                          <span className="text-sm">Fácil</span>
+                          <span className="text-[10px] opacity-60">
+                            {getNextReviewLabel(5, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
+                          </span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Standard navigation (only show if card is NOT flipped) */}
+                {!isStudyFlipped && (
+                  <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
+                    <motion.button
+                      onClick={cardAnterior}
+                      disabled={currentIndex === 0}
+                      className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                        currentIndex === 0
+                          ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                          : 'bg-white/10 hover:bg-white/20 text-white'
+                      }`}
+                      whileHover={currentIndex !== 0 ? { scale: 1.02 } : {}}
+                      whileTap={currentIndex !== 0 ? { scale: 0.98 } : {}}
+                    >
+                      <ChevronLeft size={20} />
+                      Anterior
+                    </motion.button>
+
+                    <motion.button
+                      onClick={proximoCard}
+                      disabled={currentIndex === studyCards.length - 1}
+                      className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                        currentIndex === studyCards.length - 1
+                          ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                          : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'
+                      }`}
+                      whileHover={currentIndex !== studyCards.length - 1 ? { scale: 1.02 } : {}}
+                      whileTap={currentIndex !== studyCards.length - 1 ? { scale: 0.98 } : {}}
+                    >
+                      Próximo
+                      <ChevronRight size={20} />
+                    </motion.button>
+                  </div>
+                )}
 
                 <p className="text-center text-white/40 text-sm mt-4">
-                  Use as setas   ou barra de espaço para navegar
+                  {isStudyFlipped 
+                    ? 'Avalie sua resposta · Espaço para voltar à pergunta'
+                    : 'Use as setas ← → ou barra de espaço para navegar'
+                  }
                 </p>
               </motion.div>
             </motion.div>
@@ -928,6 +1234,100 @@ function Flashcards() {
         isLoading={isDeleting}
         type="danger"
       />
+
+      {/* Modal de Importação CSV */}
+      <AnimatePresence>
+        {showCsvModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCsvModal(false)}
+          >
+            <motion.div
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-xl max-h-[80vh] overflow-hidden flex flex-col"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Importar Flashcards
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {csvPreview.length} flashcard{csvPreview.length !== 1 ? 's' : ''} encontrado{csvPreview.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCsvModal(false)}
+                  className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
+                >
+                  <X size={18} className="text-slate-600 dark:text-slate-300" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 overflow-y-auto flex-1">
+                {/* Select matéria */}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                    Matéria para importar *
+                  </label>
+                  <Select value={csvMateriaId} onChange={(e) => setCsvMateriaId(e.target.value)}>
+                    <option value="">Selecione uma matéria...</option>
+                    {materias.map(m => (
+                      <option key={m.id} value={m.id}>{m.nome}</option>
+                    ))}
+                  </Select>
+                </div>
+
+                {/* Preview table */}
+                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-900/50">
+                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">#</th>
+                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Pergunta</th>
+                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Resposta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvPreview.slice(0, 20).map((row, i) => (
+                        <tr key={i} className="border-t border-slate-100 dark:border-slate-700/50">
+                          <td className="px-3 py-2 text-slate-400 font-mono text-xs">{i + 1}</td>
+                          <td className="px-3 py-2 text-slate-900 dark:text-white truncate max-w-[200px]">{row.pergunta}</td>
+                          <td className="px-3 py-2 text-slate-600 dark:text-slate-300 truncate max-w-[200px]">{row.resposta}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {csvPreview.length > 20 && (
+                    <div className="px-3 py-2 text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
+                      ... e mais {csvPreview.length - 20} flashcards
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
+                <Button variant="secondary" onClick={() => setShowCsvModal(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={importCsv}
+                  disabled={csvImporting || !csvMateriaId}
+                  leftIcon={csvImporting ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><RotateCcw size={16} /></motion.div> : <Upload size={16} />}
+                >
+                  {csvImporting ? 'Importando...' : `Importar ${csvPreview.length} cards`}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

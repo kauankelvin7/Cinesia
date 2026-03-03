@@ -28,7 +28,12 @@ import {
   dermatomosData,
   admData,
   forcaMuscularData,
-  escalasDorData
+  escalasDorData,
+  testesOrtopedicosData,
+  glasgowData,
+  barthelData,
+  borgData,
+  protocolosReabData
 } from '../data/consultaRapidaData';
 
 // ===================== SEÇÕES DE REFERÊNCIA =====================
@@ -68,38 +73,78 @@ const escalasDor = {
   dados: escalasDorData
 };
 
+const testesOrtopedicos = {
+  titulo: 'Testes Ortopédicos',
+  icon: Activity,
+  cor: 'bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400',
+  dados: testesOrtopedicosData
+};
+
+const glasgow = {
+  titulo: 'Escala de Glasgow',
+  icon: Activity,
+  cor: 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400',
+  dados: glasgowData
+};
+
+const barthel = {
+  titulo: 'Índice de Barthel (AVDs)',
+  icon: ClipboardList,
+  cor: 'bg-cyan-50 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-400',
+  dados: barthelData
+};
+
+const borg = {
+  titulo: 'Escala de Borg (Esforço Percebido)',
+  icon: Activity,
+  cor: 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400',
+  dados: borgData
+};
+
+const protocolosReab = {
+  titulo: 'Protocolos de Reabilitação',
+  icon: BookOpen,
+  cor: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400',
+  dados: protocolosReabData
+};
+
 // ===================== COMPONENTES =====================
 
 const AccordionItem = ({ item, isOpen, onToggle, children }) => {
   const IconComponent = item.icon;
+  const sectionId = `section-${item.titulo.replace(/\s+/g, '-').toLowerCase()}`;
   
   return (
     <motion.div
-      className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
+      className="rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200"
+      style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <button
         onClick={onToggle}
-        className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors active:scale-[0.995]"
+        aria-expanded={isOpen}
+        aria-controls={sectionId}
+        className="w-full px-6 py-5 flex items-center justify-between transition-colors active:scale-[0.995] hover:opacity-90"
       >
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-xl ${item.cor} flex items-center justify-center`}>
-            <IconComponent size={24} />
+            <IconComponent size={24} aria-hidden="true" />
           </div>
-          <span className="text-lg font-semibold text-slate-900 dark:text-white">{item.titulo}</span>
+          <span className="text-lg font-semibold" style={{ color: 'var(--text-1)' }}>{item.titulo}</span>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={24} className="text-slate-400 dark:text-slate-500" />
+          <ChevronDown size={24} aria-hidden="true" style={{ color: 'var(--text-3)' }} />
         </motion.div>
       </button>
       
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id={sectionId}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -117,18 +162,18 @@ const AccordionItem = ({ item, isOpen, onToggle, children }) => {
 
 // Tabela estilizada
 const Table = ({ headers, children }) => (
-  <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
-    <table className="w-full text-sm">
-      <thead className="bg-slate-50/80 dark:bg-slate-800/80">
+  <div className="overflow-x-auto -mx-4 px-4 rounded-xl shadow-sm" style={{ border: '1px solid var(--border)' }}>
+    <table className="w-full text-sm min-w-full">
+      <thead style={{ backgroundColor: 'var(--bg-elevated)' }}>
         <tr>
           {headers.map((header, idx) => (
-            <th key={idx} className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200/80 dark:border-slate-700/80">
+            <th key={idx} scope="col" className="px-4 py-3 text-left font-semibold" style={{ color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>
               {header}
             </th>
           ))}
         </tr>
       </thead>
-      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+      <tbody>
         {children}
       </tbody>
     </table>
@@ -216,13 +261,66 @@ function ConsultaRapida() {
     }
   };
 
+  // 🔍 Filtrar TESTES ORTOPÉDICOS
+  const filteredTestes = {
+    ...testesOrtopedicos,
+    dados: testesOrtopedicos.dados
+      .map(reg => ({
+        ...reg,
+        testes: reg.testes.filter(t =>
+          matchSearch(t.nome) || matchSearch(t.objetivo) || matchSearch(t.tecnica) || matchSearch(t.positivo) || matchSearch(reg.regiao)
+        )
+      }))
+      .filter(reg => reg.testes.length > 0)
+  };
+
+  // 🔍 Filtrar GLASGOW
+  const filteredGlasgow = {
+    ...glasgow,
+    dados: {
+      componentes: glasgow.dados.componentes.map(c => ({
+        ...c,
+        respostas: c.respostas.filter(r => matchSearch(r.resposta) || matchSearch(c.componente))
+      })).filter(c => c.respostas.length > 0),
+      classificacao: glasgow.dados.classificacao.filter(c => matchSearch(c.faixa) || matchSearch(c.descricao))
+    }
+  };
+
+  // 🔍 Filtrar BARTHEL
+  const filteredBarthel = {
+    ...barthel,
+    dados: barthel.dados.filter(b => matchSearch(b.atividade) || matchSearch(b.descricao))
+  };
+
+  // 🔍 Filtrar BORG
+  const filteredBorg = {
+    ...borg,
+    dados: borg.dados.filter(b => matchSearch(b.valor) || matchSearch(b.descricao) || matchSearch(b.zona))
+  };
+
+  // 🔍 Filtrar PROTOCOLOS
+  const filteredProtocolos = {
+    ...protocolosReab,
+    dados: protocolosReab.dados
+      .map(p => ({
+        ...p,
+        fases: p.fases.filter(f => matchSearch(f.fase) || matchSearch(f.objetivos) || matchSearch(f.exercicios) || matchSearch(p.protocolo))
+      }))
+      .filter(p => p.fases.length > 0)
+  };
+
   // 🔍 Verificar se seção tem resultados
   const hasResults = {
     sinais: filteredSinaisVitais.dados.some(p => p.valores.length > 0),
     dermatomos: filteredDermatomos.dados.length > 0,
     adm: filteredAdm.dados.some(a => a.movimentos.length > 0),
     forca: filteredForca.dados.length > 0,
-    dor: filteredDor.dados.evn.length > 0 || filteredDor.dados.observacoes.length > 0
+    dor: filteredDor.dados.evn.length > 0 || filteredDor.dados.observacoes.length > 0,
+    testes: filteredTestes.dados.length > 0,
+    glasgow: filteredGlasgow.dados.componentes.length > 0 || filteredGlasgow.dados.classificacao.length > 0,
+    barthel: filteredBarthel.dados.length > 0,
+    borg: filteredBorg.dados.length > 0,
+    protocolos: filteredProtocolos.dados.length > 0
   };
 
   // 🔍 Auto-abrir seções com resultados quando buscando
@@ -256,10 +354,10 @@ function ConsultaRapida() {
                 <ClipboardList size={32} className="text-primary-600 dark:text-primary-400" />
               </motion.div>
               <div>
-                <h1 className="text-2xl ipad:text-3xl font-semibold text-slate-900 dark:text-white">
+                <h1 className="text-2xl ipad:text-3xl font-semibold" style={{ color: 'var(--text-1)' }}>
                   Consulta Rápida
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <p className="flex items-center gap-2" style={{ color: 'var(--text-2)' }}>
                   <BookOpen size={16} className="text-emerald-500" />
                   Valores de referência para Fisioterapia
                 </p>
@@ -268,7 +366,7 @@ function ConsultaRapida() {
           </div>
 
           {/* Busca */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+            <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
               <Input
@@ -289,13 +387,13 @@ function ConsultaRapida() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700"
+              className="text-center py-12 rounded-2xl" style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             >
               <Search size={48} className="mx-auto text-slate-300 mb-4" />
-              <p className="text-lg font-medium text-slate-600">
+              <p className="text-lg font-medium" style={{ color: 'var(--text-2)' }}>
                 Nenhum resultado para "{searchTerm}"
               </p>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
                 Tente buscar por: FC, PA, C5, ombro, flexão...
               </p>
             </motion.div>
@@ -312,17 +410,17 @@ function ConsultaRapida() {
                 {filteredSinaisVitais.dados.map((param, idx) => (
                   param.valores.length > 0 && (
                     <div key={idx}>
-                      <h4 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                      <h4 className="text-base font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
                         <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                         {param.parametro}
-                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({param.unidade})</span>
+                        <span className="text-xs font-normal" style={{ color: 'var(--text-3)' }}>({param.unidade})</span>
                       </h4>
                       <Table headers={['Faixa Etária', 'Valor Normal', 'Observação']}>
                         {param.valores.map((v, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
-                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">{v.faixa}</td>
+                          <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
+                            <td className="px-4 py-3 font-medium" style={{ color: 'var(--text-2)' }}>{v.faixa}</td>
                             <td className="px-4 py-3 text-emerald-700 dark:text-emerald-400 font-semibold">{v.normal}</td>
-                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{v.observacao || '-'}</td>
+                            <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-3)' }}>{v.observacao || '-'}</td>
                           </tr>
                         ))}
                       </Table>
@@ -342,10 +440,10 @@ function ConsultaRapida() {
             >
               <Table headers={['Nível', 'Área Sensorial', 'Músculo-Chave']}>
                 {filteredDermatomos.dados.map((d, idx) => (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
                     <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400">{d.nivel}</td>
-                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{d.area}</td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{d.musculo}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{d.area}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{d.musculo}</td>
                   </tr>
                 ))}
               </Table>
@@ -362,15 +460,15 @@ function ConsultaRapida() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredAdm.dados.map((art, idx) => (
                   art.movimentos.length > 0 && (
-                    <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                      <h4 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+                    <div key={idx} className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+                      <h4 className="text-base font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
                         <ChevronRight size={18} className="text-emerald-500" />
                         {art.articulacao}
                       </h4>
                       <div className="space-y-2">
                         {art.movimentos.map((m, i) => (
-                            <div key={i} className="flex items-center justify-between py-1 border-b border-slate-200 dark:border-slate-700 last:border-0">
-                            <span className="text-slate-700 dark:text-slate-300 text-sm">{m.movimento}</span>
+                            <div key={i} className="flex items-center justify-between py-1 last:border-0" style={{ borderBottom: '1px solid var(--border)' }}>
+                            <span className="text-sm" style={{ color: 'var(--text-2)' }}>{m.movimento}</span>
                             <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-sm">{m.graus}</span>
                           </div>
                         ))}
@@ -391,10 +489,10 @@ function ConsultaRapida() {
             >
               <Table headers={['Grau', 'Descrição', 'Definição']}>
                 {filteredForca.dados.map((f, idx) => (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
                     <td className="px-4 py-3 font-bold text-amber-600 dark:text-amber-400 text-lg">{f.grau}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">{f.descricao}</td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{f.definicao}</td>
+                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text-1)' }}>{f.descricao}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{f.definicao}</td>
                   </tr>
                 ))}
               </Table>
@@ -409,15 +507,15 @@ function ConsultaRapida() {
               onToggle={() => toggleSection('dor')}
             >
               <div className="space-y-4">
-                <h4 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">
+                <h4 className="text-base font-semibold mb-3" style={{ color: 'var(--text-1)' }}>
                   Escala Verbal Numérica (EVN) / Escala Visual Analógica (EVA)
                 </h4>
                 {filteredDor.dados.evn.length > 0 && (
                   <Table headers={['Valor', 'Classificação']}>
                     {filteredDor.dados.evn.map((e, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}>
+                      <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
                         <td className="px-4 py-3 font-bold text-purple-600 dark:text-purple-400">{e.valor}</td>
-                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{e.descricao}</td>
+                        <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{e.descricao}</td>
                       </tr>
                     ))}
                   </Table>
@@ -436,6 +534,148 @@ function ConsultaRapida() {
                     </ul>
                   </div>
                 )}
+              </div>
+            </AccordionItem>
+          )}
+
+          {/* === TESTES ORTOPÉDICOS === */}
+          {shouldShow('testes') && (
+            <AccordionItem
+              item={testesOrtopedicos}
+              isOpen={openSections.includes('testes') || (searchTerm.trim() && hasResults.testes)}
+              onToggle={() => toggleSection('testes')}
+            >
+              <div className="space-y-6">
+                {filteredTestes.dados.map((reg, idx) => (
+                  <div key={idx}>
+                    <h4 className="text-base font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                      <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                      {reg.regiao}
+                    </h4>
+                    <Table headers={['Teste', 'Objetivo', 'Técnica', 'Positivo']}>
+                      {reg.testes.map((t, i) => (
+                        <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
+                          <td className="px-4 py-3 font-bold text-teal-600 dark:text-teal-400 whitespace-nowrap">{t.nome}</td>
+                          <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-2)' }}>{t.objetivo}</td>
+                          <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-2)' }}>{t.tecnica}</td>
+                          <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-3)' }}>{t.positivo}</td>
+                        </tr>
+                      ))}
+                    </Table>
+                  </div>
+                ))}
+              </div>
+            </AccordionItem>
+          )}
+
+          {/* === ESCALA DE GLASGOW === */}
+          {shouldShow('glasgow') && (
+            <AccordionItem
+              item={glasgow}
+              isOpen={openSections.includes('glasgow') || (searchTerm.trim() && hasResults.glasgow)}
+              onToggle={() => toggleSection('glasgow')}
+            >
+              <div className="space-y-6">
+                {filteredGlasgow.dados.componentes.map((comp, idx) => (
+                  <div key={idx}>
+                    <h4 className="text-base font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      {comp.componente}
+                    </h4>
+                    <Table headers={['Pontuação', 'Resposta']}>
+                      {comp.respostas.map((r, i) => (
+                        <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
+                          <td className="px-4 py-3 font-bold text-red-600 dark:text-red-400 text-lg">{r.pontuacao}</td>
+                          <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{r.resposta}</td>
+                        </tr>
+                      ))}
+                    </Table>
+                  </div>
+                ))}
+                {filteredGlasgow.dados.classificacao.length > 0 && (
+                  <div className="p-4 bg-red-50 dark:bg-red-950/50 rounded-xl">
+                    <h5 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2">Classificação (Total: 3-15)</h5>
+                    <div className="space-y-1">
+                      {filteredGlasgow.dados.classificacao.map((c, i) => (
+                        <div key={i} className="flex items-center gap-3 text-sm">
+                          <span className="font-mono font-bold text-red-600 dark:text-red-400 w-10">{c.faixa}</span>
+                          <span style={{ color: 'var(--text-2)' }}>{c.descricao}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AccordionItem>
+          )}
+
+          {/* === ÍNDICE DE BARTHEL === */}
+          {shouldShow('barthel') && (
+            <AccordionItem
+              item={barthel}
+              isOpen={openSections.includes('barthel') || (searchTerm.trim() && hasResults.barthel)}
+              onToggle={() => toggleSection('barthel')}
+            >
+              <Table headers={['Atividade', 'Pontuação', 'Descrição']}>
+                {filteredBarthel.dados.map((b, idx) => (
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
+                    <td className="px-4 py-3 font-semibold" style={{ color: 'var(--text-1)' }}>{b.atividade}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-cyan-600 dark:text-cyan-400">{b.pontuacao}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-2)' }}>{b.descricao}</td>
+                  </tr>
+                ))}
+              </Table>
+              <div className="mt-4 p-4 bg-cyan-50 dark:bg-cyan-950/50 rounded-xl">
+                <h5 className="text-sm font-semibold text-cyan-800 dark:text-cyan-300 mb-1">Classificação (Total: 0-100)</h5>
+                <p className="text-sm" style={{ color: 'var(--text-2)' }}>0-20: Dependência total • 21-60: Dependência severa • 61-90: Dependência moderada • 91-99: Dependência leve • 100: Independente</p>
+              </div>
+            </AccordionItem>
+          )}
+
+          {/* === ESCALA DE BORG === */}
+          {shouldShow('borg') && (
+            <AccordionItem
+              item={borg}
+              isOpen={openSections.includes('borg') || (searchTerm.trim() && hasResults.borg)}
+              onToggle={() => toggleSection('borg')}
+            >
+              <Table headers={['Valor', 'Percepção', 'Zona']}>
+                {filteredBorg.dados.map((b, idx) => (
+                  <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
+                    <td className="px-4 py-3 font-bold text-orange-600 dark:text-orange-400 font-mono">{b.valor}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text-2)' }}>{b.descricao}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-3)' }}>{b.zona}</td>
+                  </tr>
+                ))}
+              </Table>
+            </AccordionItem>
+          )}
+
+          {/* === PROTOCOLOS DE REABILITAÇÃO === */}
+          {shouldShow('protocolos') && (
+            <AccordionItem
+              item={protocolosReab}
+              isOpen={openSections.includes('protocolos') || (searchTerm.trim() && hasResults.protocolos)}
+              onToggle={() => toggleSection('protocolos')}
+            >
+              <div className="space-y-6">
+                {filteredProtocolos.dados.map((p, idx) => (
+                  <div key={idx}>
+                    <h4 className="text-base font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      {p.protocolo}
+                    </h4>
+                    <div className="space-y-3">
+                      {p.fases.map((f, i) => (
+                        <div key={i} className="rounded-xl p-4" style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                          <h5 className="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-1">{f.fase}</h5>
+                          <p className="text-sm mb-2" style={{ color: 'var(--text-1)' }}><strong>Objetivos:</strong> {f.objetivos}</p>
+                          <p className="text-sm" style={{ color: 'var(--text-2)' }}><strong>Exercícios:</strong> {f.exercicios}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </AccordionItem>
           )}

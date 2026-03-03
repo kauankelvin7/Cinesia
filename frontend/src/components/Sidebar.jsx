@@ -16,6 +16,9 @@ import {
   PenTool,
   Bone,
   ChevronRight,
+  Trophy,
+  BarChart3,
+  History,
 } from 'lucide-react';
 import Logo from './Logo';
 import ProfileModal from './ProfileModal';
@@ -35,6 +38,9 @@ const Sidebar = memo(() => {
     { to: '/consulta-rapida', icon: ClipboardList, label: 'Consulta Rápida' },
     { to: '/quadro-branco', icon: PenTool, label: 'Quadro Branco' },
     { to: '/atlas-3d', icon: Bone, label: 'Atlas 3D' },
+    { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/conquistas', icon: Trophy, label: 'Conquistas' },
+    { to: '/historico-simulados', icon: History, label: 'Histórico' },
   ];
 
   return (

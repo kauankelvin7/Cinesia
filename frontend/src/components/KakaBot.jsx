@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -83,7 +84,21 @@ Você pode ajudar com dúvidas sobre:
 ## 🎓 PRIMEIRA INTERAÇÃO
 Apresente-se brevemente em 2-3 frases mencionando suas capacidades.`;
 
+// Contexto por página para prompts mais inteligentes
+const PAGE_CONTEXTS = {
+  '/': 'O aluno está na página inicial (Dashboard). Pode querer dicas gerais de estudo ou orientação.',
+  '/flashcards': 'O aluno está na página de Flashcards. Pode querer ajuda para criar perguntas, entender conceitos, ou melhorar revisão.',
+  '/resumos': 'O aluno está na página de Resumos. Pode querer ajuda para sintetizar conteúdo, fazer anotações ou estruturar um caso clínico.',
+  '/simulado': 'O aluno está na página de Simulado. Pode querer dicas para se preparar para provas, explicar questões erradas.',
+  '/consulta-rapida': 'O aluno está na página de Consulta Rápida (tabelas de referência). Pode querer explicações sobre escalas, testes ortopédicos ou sinais vitais.',
+  '/materias': 'O aluno está organizando suas matérias. Pode querer dicas de organização de estudo.',
+  '/atlas-3d': 'O aluno está no Atlas 3D de anatomia. Pode querer explicações sobre estruturas anatômicas.',
+  '/analytics': 'O aluno está vendo suas estatísticas de estudo. Pode querer dicas de como melhorar seu desempenho.',
+  '/conquistas': 'O aluno está vendo suas conquistas. Pode querer motivação ou dicas para desbloquear mais.',
+};
+
 const KakaBot = () => {
+  const location = useLocation();
   // Estados principais
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -220,11 +235,14 @@ const KakaBot = () => {
    * Criar chat com persona injetada no histórico
    */
   const createChatWithPersona = (model) => {
+    const pageContext = PAGE_CONTEXTS[location.pathname] || '';
+    const contextNote = pageContext ? `\n\n## 📍 CONTEXTO ATUAL\n${pageContext}` : '';
+
     return model.startChat({
       history: [
         {
           role: 'user',
-          parts: [{ text: `Aja como o seguinte assistente em todas as respostas:\n\n${SYSTEM_PROMPT}` }]
+          parts: [{ text: `Aja como o seguinte assistente em todas as respostas:\n\n${SYSTEM_PROMPT}${contextNote}` }]
         },
         {
           role: 'model', 
@@ -545,6 +563,7 @@ const KakaBot = () => {
         {!isOpen && (
           <motion.button
             onClick={() => setIsOpen(true)}
+            aria-label="Abrir assistente KakaBot"
             className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6 w-16 h-16 bg-primary-600 rounded-full shadow-md flex items-center justify-center text-white hover:bg-primary-700 transition-colors group"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
