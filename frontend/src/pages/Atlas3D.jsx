@@ -2310,7 +2310,7 @@ export default function Atlas3D() {
     try { return localStorage.getItem('atlas-panel') !== 'closed'; } catch { return true; }
   });
   useEffect(() => {
-    try { localStorage.setItem('atlas-panel', painelAberto ? 'open' : 'closed'); } catch {}
+    try { localStorage.setItem('atlas-panel', painelAberto ? 'open' : 'closed'); } catch { /* ignore */ }
   }, [painelAberto]);
 
   // Mobile-specific state
