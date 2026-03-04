@@ -764,7 +764,7 @@ function Resumos() {
                       onClick={() => {
                         setModalMode('edit');
                         if (viewingResumo) {
-                          setFormData({ titulo: viewingResumo.titulo, conteudo: viewingResumo.conteudo, materiaId: viewingResumo.materiaId || '' });
+                          setFormData({ titulo: viewingResumo.titulo, conteudo: viewingResumo.conteudo, materiaId: viewingResumo.materiaId || '', imagens: viewingResumo.imagens || [] });
                           setViewingResumo(null);
                         }
                       }}
