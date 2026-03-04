@@ -1,11 +1,23 @@
 /**
- * 🧠 DASHBOARD SERVICE - Camada de Lógica de Negócio
+ * @file dashboardService.js
+ * @description Serviço de estatísticas do dashboard. Agrega dados de múltiplas
+ * coleções Firestore para exibir resumo de progresso do usuário.
  *
- * Arquitetura das queries:
- * - getDocs com where('uid','==',userId) → busca todos os docs do usuário
- * - Contagens mensais feitas no CLIENTE usando os docs já baixados
- *   (evita índices compostos uid+createdAt que requerem deploy manual)
- * - Streak → serviço dedicado
+ * @dependencies
+ *  - Firebase Firestore SDK
+ *  - streakService (updateStreak, getStreakStats)
+ *  - notificationService (checkMonthlyGoal, checkContentMilestones)
+ *
+ * @sideEffects
+ *  - Lê de: `materias`, `resumos`, `flashcards`, `eventos`, `users/{uid}`
+ *  - Efeito secundário: atualiza streak do usuário em cada chamada via updateStreak()
+ *  - Efeito secundário: pode criar notificações via checkMonthlyGoal/checkContentMilestones
+ *
+ * @notes
+ *  - PERF: todas as queries usam apenas `where('uid', '==', userId)` (índice simples)
+ *    Contagens mensais são calculadas client-side nos docs já baixados para evitar
+ *    índices compostos uid+createdAt que requerem deploy manual no Firebase Console
+ *  - NOTE: é o ponto canônico de getDashboardStats — firebaseService.js apenas re-exporta
  */
 
 import {

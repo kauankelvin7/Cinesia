@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -30,6 +31,7 @@ const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
 
 function Analytics() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const userId = user?.id || user?.uid;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ flashcards: [], resumos: [], materias: [], simulados: [] });
@@ -182,7 +184,13 @@ function Analytics() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KpiCard icon={Brain} label="Flashcards" value={data.flashcards.length} color="bg-indigo-500" />
         <KpiCard icon={FileText} label="Resumos" value={data.resumos.length} color="bg-emerald-500" />
-        <KpiCard icon={Target} label="Simulados" value={data.simulados.length} color="bg-amber-500" sub={`Média: ${avgScore}%`} />
+        <div
+          onClick={() => navigate('/historico-simulados')}
+          className="cursor-pointer"
+          title="Ver histórico de simulados"
+        >
+          <KpiCard icon={Target} label="Simulados" value={data.simulados.length} color="bg-amber-500" sub={`Média: ${avgScore}% — Ver detalhes →`} />
+        </div>
         <KpiCard icon={Clock} label="Tempo Total" value={`${totalStudyTime}min`} color="bg-purple-500" sub="Em simulados" />
       </div>
 

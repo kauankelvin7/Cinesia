@@ -3,7 +3,7 @@
  * Lista todos os simulados realizados com score, tempo e detalhes.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,8 +18,11 @@ import {
   X,
   CheckCircle,
   XCircle,
+  AlertTriangle,
+  Plus,
+  Loader2,
 } from 'lucide-react';
-import { listarSimulados } from '../services/firebaseService';
+import { listarSimulados, criarFlashcard } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from '../components/ui/Button';
 
@@ -52,6 +55,8 @@ function HistoricoSimulados() {
   const [simulados, setSimulados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSimulado, setSelectedSimulado] = useState(null);
+  // { id: string, status: 'loading' | 'done' | 'error' }
+  const [flashcardStatus, setFlashcardStatus] = useState({});
 
   useEffect(() => {
     const userId = user?.id || user?.uid;
@@ -72,6 +77,46 @@ function HistoricoSimulados() {
       tempoTotal: simulados.reduce((a, s) => a + (s.tempoSegundos || 0), 0),
     };
   }, [simulados]);
+
+  // Agrupa questões erradas por tema para exibir pontos fracos
+  const pontosFracos = useMemo(() => {
+    if (simulados.length === 0) return [];
+    const mapa = {};
+    simulados.forEach(sim => {
+      const tema = sim.tema || 'Geral';
+      if (!mapa[tema]) mapa[tema] = { tema, total: 0, erros: 0 };
+      (sim.questoes || []).forEach(q => {
+        mapa[tema].total++;
+        if (!q.acertou) mapa[tema].erros++;
+      });
+    });
+    return Object.values(mapa)
+      .filter(t => t.erros > 0 && t.total > 0)
+      .map(t => ({ ...t, pct: Math.round((t.erros / t.total) * 100) }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5);
+  }, [simulados]);
+
+  // Cria flashcard a partir de uma questão errada
+  const handleCriarFlashcard = useCallback(async (sim, q, key) => {
+    const userId = user?.id || user?.uid;
+    if (!userId) return;
+    setFlashcardStatus(prev => ({ ...prev, [key]: 'loading' }));
+    const respostaCorreta = q.opcoes?.[q.correta] ?? 'Ver gabarito';
+    const resposta = q.explicacao
+      ? `${respostaCorreta}\n\n${q.explicacao}`
+      : respostaCorreta;
+    try {
+      await criarFlashcard(
+        { pergunta: q.pergunta, resposta, materiaId: null, materiaNome: sim.tema, materiaCor: null },
+        null,
+        userId
+      );
+      setFlashcardStatus(prev => ({ ...prev, [key]: 'done' }));
+    } catch {
+      setFlashcardStatus(prev => ({ ...prev, [key]: 'error' }));
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen pb-32 pt-8 px-4">
@@ -101,7 +146,7 @@ function HistoricoSimulados() {
 
           {/* Stats Cards */}
           {stats.total > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               {[
                 { icon: <Target size={16} />, label: 'Média', value: `${stats.media}%`, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
                 { icon: <Trophy size={16} />, label: 'Melhor', value: `${stats.melhor}%`, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
@@ -120,6 +165,43 @@ function HistoricoSimulados() {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Pontos Fracos */}
+          {pontosFracos.length > 0 && (
+            <motion.div
+              className="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                <AlertTriangle size={15} className="text-amber-500" />
+                Pontos Fracos (por tema)
+              </h2>
+              <div className="space-y-2">
+                {pontosFracos.map(pt => (
+                  <div key={pt.tema}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs text-slate-600 dark:text-slate-400 truncate max-w-[60%]">{pt.tema}</span>
+                      <span className={`text-xs font-bold font-mono ${
+                        pt.pct >= 70 ? 'text-red-500' : pt.pct >= 40 ? 'text-amber-500' : 'text-emerald-500'
+                      }`}>
+                        {pt.pct}% erros ({pt.erros}/{pt.total})
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          pt.pct >= 70 ? 'bg-red-400' : pt.pct >= 40 ? 'bg-amber-400' : 'bg-emerald-400'
+                        }`}
+                        style={{ width: `${pt.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           )}
         </motion.div>
 
@@ -230,7 +312,10 @@ function HistoricoSimulados() {
 
                 {/* Questions */}
                 <div className="p-5 space-y-4">
-                  {(selectedSimulado.questoes || []).map((q, qIdx) => (
+                  {(selectedSimulado.questoes || []).map((q, qIdx) => {
+                    const fcKey = `${selectedSimulado.id}-${qIdx}`;
+                    const fcStatus = flashcardStatus[fcKey];
+                    return (
                     <div
                       key={qIdx}
                       className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden"
@@ -242,9 +327,33 @@ function HistoricoSimulados() {
                           }`}>
                             {q.acertou ? <CheckCircle size={14} /> : <XCircle size={14} />}
                           </div>
-                          <p className="text-sm font-medium text-slate-900 dark:text-white">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white flex-1">
                             {q.pergunta}
                           </p>
+                          {/* Botão criar flashcard — apenas em questões erradas */}
+                          {!q.acertou && (
+                            <button
+                              onClick={() => handleCriarFlashcard(selectedSimulado, q, fcKey)}
+                              disabled={fcStatus === 'loading' || fcStatus === 'done'}
+                              title={fcStatus === 'done' ? 'Flashcard criado!' : 'Criar flashcard desta questão'}
+                              className={`shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all font-medium ${
+                                fcStatus === 'done'
+                                  ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+                                  : fcStatus === 'error'
+                                  ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+                                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                              }`}
+                            >
+                              {fcStatus === 'loading' ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : fcStatus === 'done' ? (
+                                <CheckCircle size={12} />
+                              ) : (
+                                <Plus size={12} />
+                              )}
+                              {fcStatus === 'done' ? 'Criado' : fcStatus === 'error' ? 'Erro' : 'Flashcard'}
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="p-4 space-y-2">
@@ -271,7 +380,8 @@ function HistoricoSimulados() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </motion.div>
             </motion.div>

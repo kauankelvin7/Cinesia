@@ -1,3 +1,22 @@
+/**
+ * @file AuthContext-firebase.jsx
+ * @description Contexto de autenticação do sistema. Provê o estado do usuário logado
+ * e métodos de login/logout para toda a aplicação via React Context.
+ *
+ * @dependencies
+ *  - Firebase Auth (onAuthStateChanged, signInWithEmailAndPassword, etc.)
+ *  - firebase-config.js — instâncias `auth` e `googleProvider`
+ *
+ * @sideEffects
+ *  - Persiste dados do usuário no localStorage (chave: 'user') para restaurar sessão após refresh
+ *  - Ouve `onAuthStateChanged` continuamente enquanto o app estiver montado
+ *
+ * @notes
+ *  - O JWT token do Firebase é refreshado automaticamente pelo SDK quando expira (~1h)
+ *  - O campo `user.uid` (ou `user.id`) é o identificador principal usado em todas as queries Firestore
+ *  - `loading: true` enquanto o estado inicial de auth não foi determinado — use para evitar flicker
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,6 +31,12 @@ import { auth, googleProvider } from '../config/firebase-config';
 
 const AuthContext = createContext(null);
 
+/**
+ * Hook de acesso ao contexto de autenticação.
+ * WARN: deve ser usado dentro de um `<AuthProvider>` — lança erro se chamado fora.
+ *
+ * @returns {object} { user, token, loading, login, register, loginWithGoogle, logout, isAuthenticated }
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -27,13 +52,15 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Monitora mudanças no estado de autenticação
+    // Ouve mudanças de estado de autenticação do Firebase (login, logout, expiração de token)
+    // NOTE: `onAuthStateChanged` é disparado também no carregamento inicial da página
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Usuário está logado - pega o token JWT do Firebase
+        // Usuário está logado — busca o JWT mais recente
         const idToken = await firebaseUser.getIdToken();
-        
-        // Salva no state e localStorage
+
+        // Normaliza o objeto de usuário exposto pelo contexto
+        // NOTE: `id` e `uid` são sinônimos aqui — ambos expostos para compatibilidade com código legado
         const userData = {
           id: firebaseUser.uid,
           uid: firebaseUser.uid,
@@ -45,10 +72,11 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userData);
         setToken(idToken);
-        
+        // Persiste localmente para restaurar UI instantâneamente no próximo carregamento
+        // WARN: o localStorage não substitui o estado real do Firebase — use apenas para UI inicial
         localStorage.setItem('user', JSON.stringify(userData));
       } else {
-        // Usuário não está logado
+        // Usuário deslogado ou sessão expirada
         setUser(null);
         setToken(null);
         localStorage.removeItem('user');
@@ -59,7 +87,13 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Login com Email e Senha
+  /**
+   * Autentica o usuário com email e senha.
+   *
+   * @param {string} email
+   * @param {string} password
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -76,7 +110,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Registro com Email e Senha
+  /**
+   * Cria uma nova conta e autentica o usuário.
+   * Atualiza o displayName do perfil Firebase após o cadastro.
+   *
+   * @param {string} nome     - Nome exibido no perfil
+   * @param {string} email
+   * @param {string} password - Mínimo 6 caracteres (regra do Firebase Auth)
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
   const register = async (nome, email, password) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -99,7 +141,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Login com Google
+  /**
+   * Autentica com conta Google via popup OAuth2.
+   * NOTE: usa `googleProvider` configurado com `prompt: 'select_account'`
+   *       para sempre exibir o seletor de conta, mesmo com sessão já ativa.
+   *
+   * @returns {Promise<{ success: boolean, error?: string }>}
+   */
   const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -116,7 +164,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout
+  /**
+   * Encerra a sessão do usuário e navega para /login.
+   * O `onAuthStateChanged` acima limpa automaticamente o estado após o signOut.
+   */
   const logout = async () => {
     try {
       await signOut(auth);
@@ -126,7 +177,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Função auxiliar para traduzir erros do Firebase
+  /**
+   * Traduz códigos de erro do Firebase Auth para mensagens amigáveis em português.
+   *
+   * @param {string} errorCode - Código de erro no formato 'auth/codigo-do-erro'
+   * @returns {string} Mensagem de erro legivel pelo usuário
+   */
   const getErrorMessage = (errorCode) => {
     const errorMessages = {
       'auth/email-already-in-use': 'Este email já está cadastrado.',

@@ -1,12 +1,20 @@
 /**
- * STREAK SERVICE - Sistema de Dias de Ofensiva
- * 
- * Features:
- * - Tracking de login diário
- * - Reset automático se perder streak
- * - Proteção de fuso horário
- * - Histórico de atividades
- * - Melhor streak histórico
+ * @file streakService.js
+ * @description Serviço de rastreamento de dias consecutivos de estudo (streak/ofensiva).
+ *
+ * @dependencies
+ *  - Firebase Firestore SDK
+ *  - notificationService.checkStreakMilestones — notificações de marcos (3, 7, 30 dias)
+ *
+ * @sideEffects
+ *  - Lê/escreve em `users/{uid}/stats/streak`
+ *  - Pode criar notificações via checkStreakMilestones()
+ *
+ * @notes
+ *  - Datas normalizadas para meia-noite no timezone local (evita falsos resets por fuso horário)
+ *  - WARN: a função updateStreak() deve ser chamada apenas UMA vez por sessão diária —
+ *          chamadas duplas no mesmo dia são ignoradas (idempotente), mas geram reads desnecessários
+ *  - NOTE: resetar o streak manualmente via Console Firebase apaga também o streakHistory
  */
 
 import { 

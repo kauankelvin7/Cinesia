@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // REGRAS DE SEGURANÇA — CINESIA
+    // Gerado automaticamente com base na análise completa do sistema
+    // ============================================================
+
+    // ---- Funções auxiliares ----
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Verifica se o campo uid do documento pertence ao usuário autenticado
+    function isDocOwner() {
+      return isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    // Verifica se o campo uid sendo gravado pertence ao usuário autenticado
+    function isCreatingAsOwner() {
+      return isAuthenticated() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // ============================================================
+    // COLEÇÕES TOP-LEVEL (ownership via campo "uid")
+    // ============================================================
+
+    // -- MATÉRIAS --
+    match /materias/{materiaId} {
+      allow read:   if isDocOwner();
+      allow create: if isCreatingAsOwner();
+      allow update: if isDocOwner() && isCreatingAsOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // -- RESUMOS --
+    match /resumos/{resumoId} {
+      allow read:   if isDocOwner();
+      allow create: if isCreatingAsOwner();
+      allow update: if isDocOwner() && isCreatingAsOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // -- FLASHCARDS --
+    match /flashcards/{flashcardId} {
+      allow read:   if isDocOwner();
+      allow create: if isCreatingAsOwner();
+      allow update: if isDocOwner() && isCreatingAsOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // -- SIMULADOS --
+    match /simulados/{simuladoId} {
+      allow read:   if isDocOwner();
+      allow create: if isCreatingAsOwner();
+      // Simulados são imutáveis (não há update/delete no código)
+    }
+
+    // -- EVENTOS --
+    match /eventos/{eventoId} {
+      allow read:   if isDocOwner();
+      allow create: if isCreatingAsOwner();
+      allow update: if isDocOwner() && isCreatingAsOwner();
+      allow delete: if isDocOwner();
+    }
+
+    // -- POMODORO --
+    // Doc ID = "{userId}_{date}", também tem campo uid
+    match /pomodoro/{docId} {
+      allow read:   if isAuthenticated()
+                    && resource.data.uid == request.auth.uid;
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid
+                    && docId.matches(request.auth.uid + '_.*');
+      allow update: if isAuthenticated()
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == request.auth.uid
+                    && docId.matches(request.auth.uid + '_.*');
+    }
+
+    // ============================================================
+    // DOCUMENTO DO USUÁRIO + SUBCOLEÇÕES (ownership via path)
+    // ============================================================
+
+    match /users/{userId} {
+
+      // -- Perfil do usuário --
+      allow read:   if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+
+      // -- Stats (streak, notifications_sent) --
+      match /stats/{statId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+      }
+
+      // -- Notificações --
+      match /notifications/{notificationId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
+
+      // -- KakaBot Memória --
+      match /kakabot_memoria/{docId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+      }
+    }
+
+    // ============================================================
+    // BLOQUEAR TUDO QUE NÃO FOI EXPLICITAMENTE PERMITIDO
+    // (regra padrão do Firestore — deny all by default)
+    // ============================================================
+  }
+}

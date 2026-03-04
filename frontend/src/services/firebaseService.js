@@ -1,14 +1,22 @@
 /**
- * 🔥 FIREBASE SERVICE - Camada de Serviço Serverless
- *
- * Responsável por toda a comunicação com o Firestore e Cloudinary.
+ * @file firebaseService.js
+ * @description Camada de serviço Firestore para CRUD das coleções principais.
  * Substitui a API REST Java Spring Boot, tornando o backend 100% serverless.
  *
- * - CRUD completo para matérias, resumos, flashcards e eventos
- * - Upload de imagens para Cloudinary (CDN), URLs salvas no Firestore
- * - Funções organizadas por domínio para fácil manutenção
+ * @dependencies
+ *  - Firebase Firestore SDK
+ *  - cloudinaryService.js — upload de imagens (URLs salvas nos docs do Firestore)
+ *  - dashboardService.js — re-exportado via alias para compatibilidade legada
  *
- * NOTA: Imagens são hospedadas no Cloudinary (CDN) e as URLs são armazenadas nos documentos Firestore.
+ * @sideEffects
+ *  - Escreve/lê nas coleções Firestore: `materias`, `resumos`, `flashcards`, `simulados`, `eventos`
+ *  - Upload de imagens de flashcard no Cloudinary (CDN externo)
+ *
+ * @notes
+ *  - WARN: operações de delete/update em doc individual NÃO verificam `uid` no cliente —
+ *          a segurança é garantida pelas Firestore Security Rules
+ *  - NOTE: imagens ficam no Cloudinary, não no Firebase Storage, para aproveitar CDN e transformações
+ *  - NOTE: getDashboardStats foi migrado para dashboardService.js — re-exportado aqui para backcompat
  */
 
 import { 

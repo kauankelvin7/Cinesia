@@ -1,21 +1,34 @@
 /**
- * 🧠 SM-2 Algorithm — Spaced Repetition System
- * 
- * Based on the SuperMemo 2 algorithm (Piotr Wozniak, 1987)
- * Used by Anki, SuperMemo, and other spaced repetition systems.
- * 
- * Quality scale:
- *   0 — Complete blackout (total esquecimento)
- *   1 — Incorrect; remembered upon seeing the answer
- *   2 — Incorrect; answer seemed easy to recall (Difícil)
- *   3 — Correct with serious difficulty (Médio)
- *   4 — Correct after hesitation
- *   5 — Perfect response (Fácil)
- * 
- * Cinesia uses 3 buttons mapped to:
- *   😰 Difícil  → quality = 1 (reset)
- *   😐 Médio    → quality = 3 (correct, difficult)
- *   😄 Fácil    → quality = 5 (perfect)
+ * @file sm2.js
+ * @description Implementação do algoritmo SM-2 de repetição espaçada.
+ *
+ * Baseado no algoritmo original de Piotr Woźniak (SuperMemo 2, 1987).
+ * Referência: https://www.supermemo.com/en/blog/application-of-a-computer-to-improve-the-results-obtained-in-working-with-the-supermemo-method
+ *
+ * Escala de qualidade (quality) usada no Cinesia:
+ *   0-2 → resposta incorreta → reinicia intervalo (interval=1, repetitions=0)
+ *   3   → correto com dificuldade alta (‼ Difícil)
+ *   4   → correto com dificuldade moderada
+ *   5   → correto sem dificuldade (😄 Fácil)
+ *
+ * Mapeamento dos botões do Cinesia:
+ *   😰 Difícil → quality = 1 (reset)
+ *   😐 Médio  → quality = 3 (correto, difícil)
+ *   😄 Fácil  → quality = 5 (perfeito)
+ *
+ * Fórmula do novo EaseFactor:
+ *   EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+ *   Mínimo: 1.3 — abaixo disso o intervalo nunca cresce adequadamente.
+ *
+ * @dependencies
+ *  - Nenhuma (funções puras, sem efeitos colaterais externos)
+ *
+ * @sideEffects
+ *  - Nenhum
+ *
+ * @notes
+ *  - WARN: Não alterar os coeficientes (0.08, 0.02) sem revisar a literatura do SM-2
+ *  - WARN: EaseFactor mínimo é 1.3 — alterar afeta cards muito difíceis que nunca cresceriam
  */
 
 /**

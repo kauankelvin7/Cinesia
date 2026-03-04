@@ -1,16 +1,19 @@
 /**
- * 🔔 NOTIFICATION SERVICE — Sistema de Notificações
+ * @file notificationService.js
+ * @description Sistema de notificações automáticas do Cinesia.
+ * Cria notificações no Firestore e verifica marcos de streak, metas e conteúdo.
  *
- * Responsável por:
- * - Criar notificações no Firestore (subcoleção users/{uid}/notifications)
- * - Verificar marcos de streak, metas mensais e conteúdo
- * - Evitar duplicatas via flags em users/{uid}/stats/notifications_sent
+ * @dependencies
+ *  - Firebase Firestore SDK
  *
- * Tipos de notificações:
- *   'info'      — informações gerais
- *   'alerta'    — alertas / atenção
- *   'estudo'    — conquistas de conteúdo (resumos, flashcards)
- *   'conquista' — marcos de streak / meta mensal
+ * @sideEffects
+ *  - Escreve em `users/{uid}/notifications/{docId}` (coleção de notificações)
+ *  - Lê/escreve em `users/{uid}/stats/notifications_sent` (flags de dedupl.) 
+ *
+ * @notes
+ *  - Tipos de notificação: 'info', 'alerta', 'estudo', 'conquista'
+ *  - Dedupl. via flags dinâmicas em `notifications_sent` (ex: 'streak_7', 'goal_100_2026-03')
+ *  - WARN: todas as funções são silenciosas em caso de erro — não bloqueiam o fluxo principal
  */
 
 import {
