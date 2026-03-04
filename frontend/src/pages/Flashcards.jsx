@@ -546,7 +546,7 @@ function Flashcards() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.25 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
                 <div 
@@ -560,13 +560,34 @@ function Flashcards() {
                 Crie e estude com flashcards interativos
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:min-w-[180px]">
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus size={18} />}
+                onClick={() => setShowModal(true)}
+                className="w-full justify-center"
+              >
+                Novo Flashcard
+              </Button>
+              {flashcardsFiltrados.length > 0 && (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  leftIcon={<Play size={16} />}
+                  onClick={() => iniciarModoEstudo(false)}
+                  className="w-full justify-center"
+                >
+                  Modo Estudo
+                </Button>
+              )}
               {pendingReviewCount > 0 && (
                 <Button
                   variant="secondary"
                   size="md"
                   leftIcon={<RotateCcw size={16} />}
                   onClick={() => iniciarModoEstudo(true)}
+                  className="w-full justify-center"
                 >
                   Revisar
                   <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-bold">
@@ -574,24 +595,6 @@ function Flashcards() {
                   </span>
                 </Button>
               )}
-              {flashcardsFiltrados.length > 0 && (
-                <Button
-                  variant="secondary"
-                  size="md"
-                  leftIcon={<Play size={16} />}
-                  onClick={() => iniciarModoEstudo(false)}
-                >
-                  Modo Estudo
-                </Button>
-              )}
-              <Button
-                variant="primary"
-                size="md"
-                leftIcon={<Plus size={18} />}
-                onClick={() => setShowModal(true)}
-              >
-                Novo Flashcard
-              </Button>
             </div>
           </div>
 
