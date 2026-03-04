@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MATÉRIAS - Gerenciamento Premium de Disciplinas
  * 
  * Grid de cards gerenciais com visual Clean HealthTech
@@ -379,24 +379,24 @@ function Materias() {
                   style={{ width: `${completionPercent}%` }}
                 />
               </div>
-              <p className="text-xs text-slate-400 mt-1">{materias.filter(m => m.concluida).length} de {materias.length} conclu\u00eddas</p>
+              <p className="text-xs text-slate-400 mt-1">{materias.filter(m => m.concluida).length} de {materias.length} concluídas</p>
             </div>
-            {/* Mat\u00e9rias ativas */}
+            {/* Matérias ativas */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Mat\u00e9rias Ativas</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Matérias Ativas</p>
                 <Layers size={16} className="text-primary-500" />
               </div>
               <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">{materias.filter(m => !m.concluida).length}</p>
               <p className="text-xs text-slate-400 mt-1">de {materias.length} total</p>
             </div>
-            {/* Revis\u00f5es pendentes */}
+            {/* Revisões pendentes */}
             <div 
               className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => navigate('/flashcards')}
             >
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-slate-500 dark:text-slate-400">Revis\u00f5es Pendentes</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Revisões Pendentes</p>
                 <RotateCcw size={16} className="text-amber-500" />
               </div>
               <p className={`text-2xl font-bold ${totalPendingReviews > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>{totalPendingReviews}</p>
@@ -404,13 +404,13 @@ function Materias() {
             </div>
           </div>
 
-          {/* Barra de Busca + Ordena\u00e7\u00e3o */}
+          {/* Barra de Busca + Ordenação */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-6">
             <div className="relative flex-1">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar mat\u00e9ria..."
+                placeholder="Buscar matéria..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 transition-colors"
@@ -424,9 +424,9 @@ function Materias() {
                 className="pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 transition-colors"
               >
                 <option value="recente">Mais Recente</option>
-                <option value="nome">Alfab\u00e9tico</option>
+                <option value="nome">Alfabético</option>
                 <option value="flashcards">Mais Flashcards</option>
-                <option value="revisao">Mais Revis\u00f5es</option>
+                <option value="revisao">Mais Revisões</option>
               </select>
             </div>
           </div>
@@ -443,10 +443,10 @@ function Materias() {
               <BookOpen size={40} className="text-primary-600 dark:text-primary-400" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Nenhuma mat\u00e9ria cadastrada
+              Nenhuma matéria cadastrada
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
-              Crie sua primeira mat\u00e9ria para come\u00e7ar a organizar seus estudos
+              Crie sua primeira matéria para começar a organizar seus estudos
             </p>
             <Button
               variant="primary"
@@ -454,7 +454,7 @@ function Materias() {
               leftIcon={<Plus size={20} />}
               onClick={() => setShowModal(true)}
             >
-              Criar Primeira Mat\u00e9ria
+              Criar Primeira Matéria
             </Button>
           </motion.div>
         ) : (
@@ -465,7 +465,7 @@ function Materias() {
               return (
                 <>
                   <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 mt-8 flex items-center gap-2">
-                    Mat\u00e9rias Ativas
+                    Matérias Ativas
                     <span className="text-sm font-normal text-slate-400">({ativas.length})</span>
                   </h2>
                   <motion.div
@@ -477,7 +477,7 @@ function Materias() {
                   >
                     {ativas.length === 0 && (
                       <div className="col-span-full text-center text-slate-400 py-8">
-                        {searchTerm ? 'Nenhuma mat\u00e9ria encontrada' : 'Nenhuma mat\u00e9ria ativa'}
+                        {searchTerm ? 'Nenhuma matéria encontrada' : 'Nenhuma matéria ativa'}
                       </div>
                     )}
                     {ativas.map((materia) => {
@@ -570,7 +570,7 @@ function Materias() {
                                 <button
                                   onClick={() => toggleConcluida(materia)}
                                   className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-600 dark:text-emerald-400 transition-colors border border-emerald-100 dark:border-emerald-800 active:scale-95"
-                                  title="Marcar como conclu\u00edda"
+                                  title="Marcar como concluída"
                                 >
                                   <TrendingUp size={14} />
                                 </button>
@@ -585,14 +585,14 @@ function Materias() {
               );
             })()}
 
-            {/* Conclu\u00eddas */}
+            {/* Concluídas */}
             {(() => {
               const concluidas = filterAndSort(materias.filter(m => m.concluida));
               if (concluidas.length === 0 && !searchTerm) return null;
               return (
                 <>
                   <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 mt-10 flex items-center gap-2">
-                    Mat\u00e9rias Conclu\u00eddas
+                    Matérias Concluídas
                     <span className="text-sm font-normal text-slate-400">({concluidas.length})</span>
                   </h2>
                   <motion.div
@@ -603,7 +603,7 @@ function Materias() {
                     animate="visible"
                   >
                     {concluidas.length === 0 && (
-                      <div className="col-span-full text-center text-slate-400 py-8">Nenhuma mat\u00e9ria encontrada</div>
+                      <div className="col-span-full text-center text-slate-400 py-8">Nenhuma matéria encontrada</div>
                     )}
                     {concluidas.map((materia) => (
                       <motion.div
@@ -617,7 +617,7 @@ function Materias() {
                         >
                           <div className="absolute top-3 right-3 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950 rounded-full px-2 py-0.5 shadow border border-emerald-100 dark:border-emerald-800 text-xs z-10">
                             <CheckCircle2 size={13} />
-                            <span>Conclu\u00edda</span>
+                            <span>Concluída</span>
                           </div>
                           <div className="p-5 flex-1">
                             <div className="flex items-start justify-between mb-3">
@@ -651,7 +651,7 @@ function Materias() {
                             <button
                               onClick={() => toggleConcluida(materia)}
                               className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors border border-slate-200 dark:border-slate-700"
-                              title="Desfazer conclus\u00e3o"
+                              title="Desfazer conclusão"
                             >
                               <RotateCcw size={14} />
                             </button>
