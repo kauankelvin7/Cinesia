@@ -122,6 +122,13 @@ service cloud.firestore {
         allow update: if isOwner(userId);
         allow delete: if isOwner(userId);
       }
+
+      // -- KakaBot Mensagens Salvas (favoritas/bookmarked) --
+      match /kakabot_salvos/{salvoId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow delete: if isOwner(userId);
+      }
     }
 
     // ============================================================

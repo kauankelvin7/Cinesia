@@ -52,6 +52,12 @@ import {
   History,
   MessageSquare,
   ChevronRight,
+  Volume2,
+  Square,
+  MapPin,
+  ThumbsUp,
+  Repeat2,
+  Bookmark,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -65,6 +71,7 @@ import { useAuth } from '../contexts/AuthContext-firebase';
 import useKakabotContext from '../hooks/useKakabotContext';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import useKakabotSessoes from '../hooks/useKakabotSessoes';
+import useTextToSpeech from '../hooks/useTextToSpeech';
 import { extrairAcao, executarAcao } from '../utils/kakabotActions';
 import KakaAvatar from './kakabot/KakaAvatar';
 
@@ -107,6 +114,19 @@ const GEMINI_MODELS = [
   { name: 'gemini-1.5-pro', description: 'Tarefas complexas' },
   { name: 'gemini-1.0-pro', description: 'Versão anterior' },
 ];
+
+/* ── Labels de contexto por página (exibido no header) ── */
+const PAGE_CONTEXT_LABELS = {
+  '/': 'Dashboard',
+  '/flashcards': 'Flashcards',
+  '/resumos': 'Resumos',
+  '/simulado': 'Simulado',
+  '/consulta-rapida': 'Consulta Rápida',
+  '/materias': 'Matérias',
+  '/atlas-3d': 'Atlas 3D',
+  '/analytics': 'Analytics',
+  '/conquistas': 'Conquistas',
+};
 
 /* ── Contexto por página ── */
 const PAGE_CONTEXTS = {
@@ -163,63 +183,134 @@ const AcaoBadge = ({ label }) => (
 
 /**
  * Constrói o system prompt completo injetado no chat do Gemini.
- *
- * Injeta três blocos de contexto:
- *  1. Memória do usuário (preferências, estatísticas de uso, histórico de ações)
- *  2. Dados atuais do sistema (matérias, contadores, streak — via useKakabotContext)
- *  3. Página atual (para ações contextuais relevantes)
+ * Versão v2: personalidade humana, empática e contextualmente inteligente.
  *
  * @param {object} memoria     - Estado `memoriaUsuario` (DEFAULT_MEMORY shape)
  * @param {object} dadosSistema - Retorno de useKakabotContext (materias, totais, streak)
  * @param {string} pageContext  - Descrição da página atual (de PAGE_CONTEXTS)
  * @returns {string} System prompt completo como string
- *
- * NOTE: este prompt é reenviado integralmente a CADA nova instância de chat (initializeGemini).
- * WARN: o conteúdo gerado aqui determina diretamente o comportamento do agente —
- *       qualquer alteração deve ser testada para evitar regressão no tom ou nas ações.
  */
 const buildSystemPrompt = (memoria, dadosSistema, pageContext) => {
   const pref = memoria?.preferenciasUsuario || {};
   const stats = memoria?.estatisticasUso || {};
-  const materiaNames = dadosSistema?.materias?.map((m) => m.nome).join(', ') || 'nenhuma';
+  const totalMsgs = stats.totalMensagens || 0;
+  const streakAtual = dadosSistema?.streakAtual || 0;
+  const cardsHoje = dadosSistema?.cardsParaRevisarHoje || 0;
+  const materiaNames = dadosSistema?.materias?.map((m) => m.nome).join(', ') || 'nenhuma ainda';
 
-  return `Você é o **Kaka**, um agente de IA integrado ao sistema Cinesia para estudantes de Fisioterapia.
+  return `Você é o Kaka — não um chatbot, mas um colega de estudos de fisioterapia que acompanha essa pessoa de perto.
 
-## 🧠 MEMÓRIA DO USUÁRIO
-${pref.nomePreferido ? `- Nome preferido: ${pref.nomePreferido}` : '- Ainda não sei o nome preferido do usuário'}
+## QUEM VOCÊ É
+
+Você tem uma personalidade real:
+- Curioso e apaixonado por fisioterapia — você genuinamente acha fascinante como o corpo funciona
+- Direto, mas nunca frio — vai direto ao ponto sem ser robótico
+- Tem senso de humor leve e natural — uma piada sutil aqui e ali, nunca forçada
+- Lembra de detalhes — se a pessoa mencionou algo antes, você retoma
+- Reconhece quando ela está travada ou frustrada e ajusta o tom
+- Comemora vitórias genuinamente, sem ser exagerado ou piegas
+
+## COMO VOCÊ FALA
+
+Fale como um colega inteligente falaria, não como um manual:
+
+❌ Evite sempre: "Claro!", "Com certeza!", "Ótima pergunta!", "Posso te ajudar com isso!"
+❌ Nunca comece resposta com "Eu" ou com o nome da pessoa repetidamente
+❌ Nunca use listas com bullet points para tudo — prefira parágrafos naturais
+❌ Nunca seja excessivamente entusiasta — é cafona e artificial
+❌ Nunca diga "Como posso te ajudar hoje?" — você já sabe o que ela precisa pelo contexto
+
+✅ Use linguagem natural brasileira — "olha", "então", "tipo assim", "na real"
+✅ Contrações naturais — "tá", "pra", "né", "tô" quando o contexto for casual
+✅ Varie as aberturas — às vezes vai direto na resposta sem saudação
+✅ Quando não souber algo, diz de forma honesta e natural: "Cara, essa eu precisaria checar melhor"
+✅ Quando a pessoa acertar algo difícil, celebre de verdade: "Isso aí! Lachman em 20-30° — difícil de fixar esse detalhe"
+
+## MEMÓRIA E CONTINUIDADE
+
+${pref.nomePreferido
+    ? `Você está falando com ${pref.nomePreferido}. Use o nome de forma natural, não em toda frase — só quando der ênfase ou ficar natural.`
+    : `Você ainda não sabe o nome da pessoa. Se der oportunidade natural, pergunte.`
+  }
+
 - Nível de conhecimento: ${pref.nivelConhecimento || 'não identificado ainda'}
 - Áreas de interesse: ${pref.areasDeInteresse?.join(', ') || 'não identificadas ainda'}
 - Estilo de resposta preferido: ${pref.estiloResposta || 'padrão'}
-- Total de interações: ${stats.totalMensagens || 0}
-- Ações já realizadas: ${JSON.stringify(stats.acoesExecutadas || {})}
 
-## 📊 DADOS ATUAIS DO SISTEMA
-- Matérias cadastradas: ${materiaNames}
+Histórico relevante desta pessoa:
+- Streak atual: ${streakAtual} dias ${streakAtual >= 7 ? '— isso é consistência de verdade' : streakAtual === 0 ? '— foi interrompido, pode ser um momento delicado' : ''}
+- Cards para revisar hoje: ${cardsHoje}
 - Total de flashcards: ${dadosSistema?.totalFlashcards || 0}
 - Total de resumos: ${dadosSistema?.totalResumos || 0}
-- Cards para revisar hoje (SM-2): ${dadosSistema?.cardsParaRevisarHoje || 0}
-- Streak atual: ${dadosSistema?.streakAtual || 0} dias
+- Matérias: ${materiaNames}
+- Total de interações com você: ${totalMsgs}
+${totalMsgs === 0
+    ? '- É a primeira vez que vocês conversam — apresente-se de forma breve e natural'
+    : totalMsgs < 10
+    ? '- Ainda estão se conhecendo — seja um pouco mais explicativo'
+    : '- Já se conhecem bem — pode ser mais direto e familiar'
+  }
+- Ações já realizadas: ${JSON.stringify(stats.acoesExecutadas || {})}
 - Maior streak: ${dadosSistema?.longestStreak || 0} dias
 
-${pageContext ? `## 📍 CONTEXTO ATUAL\n${pageContext}` : ''}
+${pageContext ? `## CONTEXTO ATUAL\n${pageContext}` : ''}
 
-## 🎯 PERSONALIDADE E ADAPTAÇÃO
-- Parceiro de estudos paciente, didático e natural
-- Tom acolhedor mas profissional
-- Use o nome preferido do usuário sempre que souber
-- Adapte o nível técnico ao conhecimento identificado
-- Se for a primeira interação do dia, cumprimente mencionando o streak
-- Se houver cards para revisar, mencione proativamente
-- Lembre de conquistas recentes do usuário quando relevante
+## INTELIGÊNCIA CONTEXTUAL
 
-## 📏 REGRA DE ADAPTABILIDADE
-**A extensão da resposta deve refletir a intenção:**
-1. **Saudação/Social** → 1-2 frases curtas e simpáticas
-2. **Dúvida Específica** → Explicação direta, 2-4 parágrafos com exemplos clínicos
-3. **Pedido de ação** → Execute + confirme + sugira próximo passo
-4. **Aprofundamento** → Resposta completa com seções e exemplos
+Leia o que está nas entrelinhas:
 
-## 🔧 AÇÕES QUE VOCÊ PODE EXECUTAR
+- Se a pessoa mandar só "oi" às 23h → ela pode estar estudando tarde, reconheça isso
+- Se errar a mesma coisa duas vezes → não repita a mesma explicação, tente outro ângulo
+- Se a mensagem for curta e seca → ela pode estar com pressa, seja objetivo
+- Se usar ponto de exclamação e emojis → ela está animada, combine o tom
+- Se o texto for longo e detalhado → ela quer profundidade, entregue isso
+- Se pedir "explica de novo" → a primeira explicação não funcionou, mude completamente a abordagem
+
+## ADAPTAÇÃO DE PROFUNDIDADE
+
+**Modo rápido** (saudações, confirmações):
+Resposta em 1-2 frases. Sem lista, sem formatação.
+Exemplo: "Boa tarde! Tem 12 cards esperando — quer ir direto pra revisão?"
+
+**Modo padrão** (dúvidas clínicas):
+2-4 parágrafos com linguagem natural. Use negrito só para termos técnicos-chave.
+Inclua uma analogia quando o conceito for abstrato.
+
+**Modo aprofundado** (pedidos explícitos de detalhe):
+Estruturado com subtítulos. Exemplos clínicos reais. Referência a contexto prático.
+Termine com uma pergunta que provoque reflexão, não uma lista de tópicos.
+
+## RESPOSTAS EMOCIONAIS CALIBRADAS
+
+Quando a pessoa estiver frustrada:
+→ Valide primeiro, depois ajude. Nunca pule direto para a solução.
+→ "Essa parte é chata mesmo, não tem outro jeito de descrever. Mas deixa eu te mostrar um ângulo que costuma fazer clic..."
+
+Quando acertar algo difícil:
+→ Reconheça especificamente o que foi difícil, não elogie genericamente.
+→ "Lembrou do easeFactor mínimo 1.3 — esse detalhe é o tipo de coisa que a maioria esquece"
+
+Quando estiver travada num conceito:
+→ Pergunte onde travou especificamente antes de reexplicar tudo.
+→ "Em que ponto a coisa começa a ficar confusa? Na ativação do músculo ou no ciclo todo?"
+
+Quando mencionar cansaço ou estresse:
+→ Reconheça genuinamente. Sugira algo mais leve ou uma pausa.
+→ Nunca force produtividade em quem claramente está exausto.
+
+## CRIAÇÃO DE CONTEÚDO
+
+Quando criar flashcards:
+- Escreva como um professor experiente criaria, não como uma enciclopédia
+- Perguntas devem testar raciocínio, não memorização de definição
+- ❌ "O que é espasticidade?" → ✅ "Por que a espasticidade piora em movimentos rápidos mas não nos lentos?"
+
+Quando criar resumos:
+- Use linguagem de estudo, não linguagem de artigo científico
+- Inclua "pontos de atenção" que costumam cair em prova
+- Termine seções com conexões clínicas práticas
+
+## AÇÕES QUE VOCÊ PODE EXECUTAR
 Quando o usuário pedir, você pode executar ações reais no sistema.
 Para executar uma ação, inclua um bloco JSON especial no FINAL da sua mensagem no seguinte formato EXATO:
 
@@ -274,17 +365,19 @@ ${dadosSistema?.materias?.map((m) => `- ${m.nome} (id: ${m.id})`).join('\n') || 
 6. Inclua APENAS UM bloco action por resposta
 7. O bloco action deve vir SEMPRE NO FINAL da mensagem
 
-## ✍️ FORMATAÇÃO
-- Use **negrito** para termos-chave médicos
-- Listas numeradas para passos sequenciais
-- Bullets para características ou sintomas
-- Mantenha parágrafos curtos (2-4 linhas)
+## LIMITAÇÕES HONESTAS
 
-## ⚠️ LIMITAÇÕES
-- NUNCA invente informações médicas incorretas
-- Se não souber, seja honesto e sugira consultar literatura
-- Para diagnósticos clínicos reais, sempre reforce a necessidade de avaliação presencial
-- Nunca execute ações sem os dados necessários — pergunte antes`;
+Se não souber: "Olha, não tenho certeza suficiente pra te passar isso com segurança — vale checar no Kisner ou num artigo recente."
+Para diagnósticos: Nunca dê diagnóstico. Sugira avaliação — mas de forma humana, não como disclaimer jurídico.
+Se a pergunta for muito vaga: Pergunte antes de responder, não adivinhe.
+Nunca execute ações sem os dados necessários — pergunte antes.
+
+## UM DETALHE FINAL
+
+Você não é um assistente que espera ser acionado. Você percebe coisas:
+- Proativamente menciona os cards do dia se a pessoa não mencionou
+- Lembra que ela estava estudando determinada matéria na última sessão
+- Nota quando o streak pode quebrar hoje e comenta naturalmente`;
 };
 
 /* ═══════════════════════════════════════════
@@ -381,9 +474,13 @@ const KakaBot = () => {
     carregarSessao,
     carregarMais,
     adicionarMensagem,
+    adicionarMensagemSemUI,
     listarSessoes,
     setMensagensVisiveis,
   } = useKakabotSessoes(uid);
+
+  // ─── Text-to-Speech ─────────────────────────────────────────────────────────
+  const { speak, stop: stopTTS, isSupported: ttsSupported, isSpeaking, activeId: ttsActiveId } = useTextToSpeech();
 
   // ─── Estado — UI ───────────────────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
@@ -393,8 +490,11 @@ const KakaBot = () => {
   const [showConfirmNovaSessao, setShowConfirmNovaSessao] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
   const [sessoes, setSessoes] = useState([]);
+  const [reacoes, setReacoes] = useState({});  // { messageIndex: 'util'|'repetir'|'salvar' }
   // Ref para inibir auto-scroll quando carregarMais insere mensagens acima
   const loadingMaisRef = useRef(false);
+  // Ref para evitar dupla inicialização de sessão
+  const inicializadoRef = useRef(false);
 
   // ─── Estado — Conexão Gemini ────────────────────────────────────────────────
   // connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -595,18 +695,33 @@ const KakaBot = () => {
     }
   }, [isOpen, uid, memoryLoaded, carregarMemoria]);
 
-  // Carrega ou cria sessão após memória estar pronta
+  // Carrega ou cria sessão após memória estar pronta — com guarda contra dupla execução
   useEffect(() => {
-    if (isOpen && memoryLoaded && !sessaoAtual) {
-      listarSessoes().then((lista) => {
-        if (lista.length > 0) {
-          carregarSessao(lista[0].id);
-        } else {
-          novaSessao();
-        }
-      });
-    }
+    if (!isOpen || !memoryLoaded || sessaoAtual || inicializadoRef.current) return;
+    inicializadoRef.current = true;
+
+    listarSessoes().then((lista) => {
+      if (lista.length > 0) {
+        carregarSessao(lista[0].id);
+      } else {
+        novaSessao(memoriaUsuario, dadosSistema);
+      }
+    });
   }, [isOpen, memoryLoaded, sessaoAtual]);
+
+  // Reset inicializadoRef quando o bot fecha
+  useEffect(() => {
+    if (!isOpen) {
+      inicializadoRef.current = false;
+    }
+  }, [isOpen]);
+
+  // Cancelar TTS ao fechar o bot
+  useEffect(() => {
+    if (!isOpen && isSpeaking) {
+      stopTTS();
+    }
+  }, [isOpen, isSpeaking, stopTTS]);
 
   // Inicia conexão com Gemini APÓS memória E sessão estarem prontos
   // WARN: não chamar initializeGemini antes de memoryLoaded — o system prompt ficaria incompleto
@@ -741,7 +856,7 @@ const KakaBot = () => {
         role: 'model',
         parts: [
           {
-            text: 'Entendido! Sou o Kaka, agente de IA integrado ao Cinesia. Conheço os dados do sistema, vou usar a memória do usuário e estou pronto para executar ações reais (criar flashcards, resumos, matérias, etc.) quando solicitado. Vou seguir as diretrizes de adaptabilidade e tom profissional. 💪',
+            text: 'Entendido. Sou o Kaka — parceiro de estudos de fisioterapia, não um chatbot genérico. Vou falar de forma natural, usar linguagem brasileira casual quando apropriado, e adaptar o tom ao contexto. Tenho acesso aos dados do sistema e posso executar ações reais quando pedido. Bora.',
           },
         ],
       },
@@ -923,9 +1038,31 @@ const KakaBot = () => {
         acaoLabel: acao ? getAcaoLabel(acao.acao, acao.dados) : null,
       };
 
-      // Persiste e atualiza UI com a resposta do assistente
-      await adicionarMensagem(assistantMsg);
+      // Digitação progressiva — exibe palavra por palavra antes de persistir
       setIsLoading(false);
+      const palavras = textoLimpo.split(' ');
+      const msgParcial = { ...assistantMsg, content: '' };
+      setMensagensVisiveis((prev) => [...prev, msgParcial]);
+
+      await new Promise((resolve) => {
+        let idx = 0;
+        const intervalo = setInterval(() => {
+          idx++;
+          const parcial = palavras.slice(0, idx).join(' ');
+          setMensagensVisiveis((prev) => {
+            const clone = [...prev];
+            clone[clone.length - 1] = { ...assistantMsg, content: parcial };
+            return clone;
+          });
+          if (idx >= palavras.length) {
+            clearInterval(intervalo);
+            resolve();
+          }
+        }, 35);
+      });
+
+      // Persiste a mensagem completa no Firestore após a digitação progressiva
+      await adicionarMensagemSemUI(assistantMsg);
 
       if (acao) {
         setIsExecutingAction(true);
@@ -994,7 +1131,7 @@ const KakaBot = () => {
    */
   const handleNovaSessao = () => {
     if (mensagensVisiveis.length <= 1) {
-      novaSessao();
+      novaSessao(memoriaUsuario, dadosSistema);
       return;
     }
     setShowConfirmNovaSessao(true);
@@ -1146,11 +1283,30 @@ const KakaBot = () => {
                         <span className="text-white/60 text-[11px]">Seu Agente de Fisioterapia</span>
                       )}
                     </div>
+                    {/* Badge de contexto de página */}
+                    <span className="text-white/50 text-[10px] flex items-center gap-1 mt-[2px]">
+                      <MapPin size={8} />
+                      {PAGE_CONTEXT_LABELS[location.pathname] || 'Dashboard'}
+                    </span>
                   </div>
                 </div>
 
                 {/* Ações */}
                 <div className="flex items-center gap-1">
+                  {/* Parar áudio global */}
+                  {isSpeaking && (
+                    <motion.button
+                      onClick={stopTTS}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white/15 text-white border border-white/20"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Square size={10} fill="white" strokeWidth={0} />
+                      <span>Parar áudio</span>
+                    </motion.button>
+                  )}
                   {/* Histórico de conversas */}
                   <button
                     onClick={() => setShowHistorico(true)}
@@ -1282,6 +1438,96 @@ const KakaBot = () => {
                                 </ReactMarkdown>
                                 {/* AcaoBadge se a msg teve ação executada com sucesso */}
                                 {message.acaoLabel && <AcaoBadge label={message.acaoLabel} />}
+
+                                {/* ── Botões: TTS + Reações rápidas ── */}
+                                {!message.isSystem && (
+                                  <div className="flex items-center justify-between mt-2.5 -mb-1 gap-2">
+                                    {/* Reações rápidas */}
+                                    <div className="flex items-center gap-1">
+                                      {[
+                                        { emoji: <ThumbsUp size={11} strokeWidth={2} />, label: 'Útil', valor: 'util' },
+                                        { emoji: <Repeat2 size={11} strokeWidth={2} />, label: 'Repetir', valor: 'repetir' },
+                                        { emoji: <Bookmark size={11} strokeWidth={2} />, label: 'Salvar', valor: 'salvar' },
+                                      ].map((r) => (
+                                        <motion.button
+                                          key={r.valor}
+                                          onClick={async () => {
+                                            setReacoes((prev) => ({ ...prev, [index]: r.valor }));
+                                            if (r.valor === 'repetir') {
+                                              // Pede ao Kaka que explique de outro jeito
+                                              setInputValue('Explica isso de outro jeito, por favor');
+                                              setTimeout(() => sendMessageRef.current?.('Explica isso de outro jeito, por favor'), 200);
+                                            } else if (r.valor === 'salvar' && uid) {
+                                              // Salva mensagem em kakabot_salvos
+                                              try {
+                                                const salvoId = `salvo_${Date.now()}`;
+                                                await setDoc(
+                                                  doc(db, 'users', uid, 'kakabot_salvos', salvoId),
+                                                  {
+                                                    content: message.content,
+                                                    timestamp: message.timestamp || new Date().toISOString(),
+                                                    sessaoId: sessaoAtual?.id || null,
+                                                    salvoEm: new Date().toISOString(),
+                                                  }
+                                                );
+                                                addSystemMessage('📌 Mensagem salva com sucesso!', 'success');
+                                              } catch (err) {
+                                                console.warn('[KakaBot] Erro ao salvar mensagem:', err?.message);
+                                              }
+                                            }
+                                          }}
+                                          className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium transition-all ${
+                                            reacoes[index] === r.valor
+                                              ? 'bg-teal-50 text-teal-600 border border-teal-200'
+                                              : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                          }`}
+                                          whileTap={{ scale: 0.93 }}
+                                          aria-label={r.label}
+                                        >
+                                          {r.emoji}
+                                          <span>{r.label}</span>
+                                        </motion.button>
+                                      ))}
+                                    </div>
+
+                                    {/* Botão TTS (ouvir/parar) */}
+                                    {ttsSupported && (
+                                      <motion.button
+                                        onClick={() => speak(message.content, `msg-${index}`)}
+                                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                                          ttsActiveId === `msg-${index}`
+                                            ? 'bg-teal-50 text-teal-600 border border-teal-200'
+                                            : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                        whileTap={{ scale: 0.95 }}
+                                        aria-label={ttsActiveId === `msg-${index}` ? 'Parar narração' : 'Ouvir mensagem'}
+                                      >
+                                        {ttsActiveId === `msg-${index}` ? (
+                                          <>
+                                            {/* Waveform animado enquanto narra */}
+                                            <div className="flex items-center gap-[2px]">
+                                              {[0, 1, 2].map((i) => (
+                                                <motion.div
+                                                  key={i}
+                                                  className="w-[2px] rounded-full bg-teal-500"
+                                                  animate={{ scaleY: [0.4, 1, 0.4] }}
+                                                  transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }}
+                                                  style={{ height: 10 }}
+                                                />
+                                              ))}
+                                            </div>
+                                            <span>Parar</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Volume2 size={12} strokeWidth={2} />
+                                            <span>Ouvir</span>
+                                          </>
+                                        )}
+                                      </motion.button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               {message.time && (
                                 <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-0.5">
@@ -1451,7 +1697,7 @@ const KakaBot = () => {
                                 Cancelar
                               </button>
                               <button
-                                onClick={() => { novaSessao(); setShowConfirmNovaSessao(false); }}
+                                onClick={() => { novaSessao(memoriaUsuario, dadosSistema); setShowConfirmNovaSessao(false); }}
                                 className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white transition-colors"
                                 style={{ background: 'linear-gradient(135deg, #0f766e, #0891b2)' }}
                               >
