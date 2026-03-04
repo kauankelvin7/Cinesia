@@ -1313,7 +1313,7 @@ const KakaBot = () => {
                               }`}
                               whileTap={{ scale: 0.94 }}
                               aria-label={isListening ? 'Parar gravação' : 'Falar'}
-                              disabled={connectionStatus !== 'connected'}
+                              disabled={isLoading || isExecutingAction}
                             >
                               {isListening ? (
                                 <MicOff size={18} className="text-white" strokeWidth={2} />

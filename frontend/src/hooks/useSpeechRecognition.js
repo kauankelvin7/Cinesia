@@ -38,11 +38,54 @@ const useSpeechRecognition = (onFinalResult) => {
     // NOTE: Chrome/Edge usam 'SpeechRecognition'; Safari usa o prefixo 'webkit'
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!isSupported) {
       setError('Navegador não suporta reconhecimento de voz.');
       return;
     }
+
+    // Speech API pode falhar silenciosamente sem contexto seguro.
+    // Localhost costuma ser permitido; em produção exige HTTPS.
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      setError('Comando de voz requer contexto seguro (HTTPS).');
+      return;
+    }
+
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setError('Microfone não disponível neste navegador/dispositivo.');
+        return;
+      }
+
+      if (navigator.permissions?.query) {
+        try {
+          const permission = await navigator.permissions.query({ name: 'microphone' });
+          if (permission.state === 'denied') {
+            setError('Permissão de microfone bloqueada no navegador. Libere e tente novamente.');
+            return;
+          }
+        } catch {
+          // Alguns browsers não suportam query para microphone — segue fluxo normal.
+        }
+      }
+
+      // Força o prompt de permissão quando necessário e valida acesso real ao dispositivo.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      const errorName = err?.name || '';
+      if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+        setError('Permissão de microfone negada. Habilite nas configurações do navegador.');
+      } else if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+        setError('Nenhum microfone encontrado no dispositivo.');
+      } else if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+        setError('Não foi possível acessar o microfone (em uso por outro app).');
+      } else {
+        setError('Falha ao iniciar o microfone. Tente novamente.');
+      }
+      return;
+    }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     rec.lang = 'pt-BR';
