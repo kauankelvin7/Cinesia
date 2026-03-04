@@ -131,6 +131,17 @@ function Flashcards() {
     }
   }, [user]);
 
+  // Suporte para filterMateria vindo de Matérias
+  useEffect(() => {
+    if (location.state?.filterMateria) {
+      setSelectedMateria(location.state.filterMateria);
+      window.history.replaceState({}, document.title);
+    }
+    if (location.state?.reviewMode) {
+      setModoRevisao(true);
+    }
+  }, [location.state]);
+
   // Filtrar flashcards quando mudar a matéria selecionada
   useEffect(() => {
     let filtered = flashcards;

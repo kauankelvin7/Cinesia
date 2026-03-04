@@ -10,7 +10,7 @@
  * - Modal full-screen para edição
  */
 
-import React, { useState, useEffect, Suspense, lazy, memo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy, memo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,6 +42,10 @@ import {
   Sparkles,
   ArrowRight,
   Download,
+  Clock,
+  BarChart2,
+  ArrowUpDown,
+  Layers,
 } from 'lucide-react';
 import { 
   listarResumos, 
@@ -109,11 +113,25 @@ const stripHtml = (html) => {
   return tmp.textContent || tmp.innerText || '';
 };
 
-// Função para formatar data
+// Função para formatar data relativa
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Hoje';
+  if (days === 1) return 'Ontem';
+  if (days < 7) return `Há ${days} dias`;
+  if (days < 30) return `Há ${Math.floor(days / 7)} sem.`;
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+};
+
+// Estimar tempo de leitura
+const estimateReadingTime = (html) => {
+  const words = stripHtml(html).trim().split(/\s+/).filter(Boolean).length;
+  const mins = Math.ceil(words / 200);
+  return mins <= 1 ? '1 min' : `${mins} min`;
 };
 
 function Resumos() {
@@ -121,7 +139,6 @@ function Resumos() {
   const { refreshData } = useDashboardData();
   const location = useLocation();
   const [resumos, setResumos] = useState([]);
-  const [resumosFiltrados, setResumosFiltrados] = useState([]);
   const [materias, setMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -131,6 +148,7 @@ function Resumos() {
   const [viewFontSize, setViewFontSize] = useState(1); // Zoom da visualização
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMateria, setSelectedMateria] = useState('all');
+  const [sortBy, setSortBy] = useState('recente');
   const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
   const [error, setError] = useState(null);
 
@@ -138,11 +156,14 @@ function Resumos() {
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Auto-open new resumo modal from Home quick action
+  // Auto-open new resumo modal from Home quick action + filterMateria from Materias
   useEffect(() => {
     if (location.state?.openNew && !loading) {
       setShowModal(true);
-      // Clear the state so it doesn't re-open on re-render
+      window.history.replaceState({}, document.title);
+    }
+    if (location.state?.filterMateria) {
+      setSelectedMateria(location.state.filterMateria);
       window.history.replaceState({}, document.title);
     }
   }, [location.state, loading]);
@@ -151,19 +172,51 @@ function Resumos() {
     if (user) carregarDados();
   }, [user]);
 
-  useEffect(() => {
+  const resumosFiltrados = useMemo(() => {
     let filtered = [...resumos];
     if (searchTerm) {
-      filtered = filtered.filter(resumo => 
-        resumo.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stripHtml(resumo.conteudo).toLowerCase().includes(searchTerm.toLowerCase())
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(r =>
+        r.titulo.toLowerCase().includes(q) ||
+        stripHtml(r.conteudo).toLowerCase().includes(q)
       );
     }
     if (selectedMateria !== 'all') {
-      filtered = filtered.filter(resumo => resumo.materiaId === selectedMateria);
+      filtered = filtered.filter(r => r.materiaId === selectedMateria);
     }
-    setResumosFiltrados(filtered);
-  }, [searchTerm, selectedMateria, resumos]);
+    if (sortBy === 'antigo') {
+      filtered.sort((a, b) => {
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return da - db;
+      });
+    } else if (sortBy === 'nome') {
+      filtered.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    } else if (sortBy === 'materia') {
+      filtered.sort((a, b) => {
+        const ma = materias.find(m => m.id === a.materiaId)?.nome || '';
+        const mb = materias.find(m => m.id === b.materiaId)?.nome || '';
+        return ma.localeCompare(mb);
+      });
+    } else {
+      filtered.sort((a, b) => {
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return db - da;
+      });
+    }
+    return filtered;
+  }, [resumos, searchTerm, selectedMateria, sortBy, materias]);
+
+  const statsResumos = useMemo(() => {
+    const materiasCobertas = new Set(resumos.map(r => r.materiaId).filter(Boolean)).size;
+    const semanaPassada = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const novosNaSemana = resumos.filter(r => {
+      const d = r.createdAt?.toDate ? r.createdAt.toDate() : new Date(r.createdAt || 0);
+      return d >= semanaPassada;
+    }).length;
+    return { total: resumos.length, materiasCobertas, novosNaSemana };
+  }, [resumos]);
 
   const carregarDados = async () => {
     try {
@@ -174,7 +227,6 @@ function Resumos() {
         listarMateriasSimples(userId)
       ]);
       setResumos(resumosData);
-      setResumosFiltrados(resumosData);
       setMaterias(materiasData);
       setError(null);
     } catch (err) {
@@ -402,23 +454,59 @@ function Resumos() {
             </Button>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <Input type="text" placeholder="Buscar resumos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          {/* Stats */}
+          {resumos.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <FileText size={14} className="text-violet-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{statsResumos.total}</p>
+                <p className="text-xs text-slate-400">resumos</p>
+              </div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <Layers size={14} className="text-blue-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Matérias</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{statsResumos.materiasCobertas}</p>
+                <p className="text-xs text-slate-400">cobertas</p>
+              </div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm text-center">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <BarChart2 size={14} className="text-emerald-500" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Esta semana</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{statsResumos.novosNaSemana}</p>
+                <p className="text-xs text-slate-400">novos</p>
               </div>
             </div>
-            <div className="w-full sm:w-64">
+          )}
+
+          {/* Busca + Filtros */}
+          <div className="flex flex-col sm:flex-row gap-3 bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <Input type="text" placeholder="Buscar resumos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+            </div>
+            <div className="w-full sm:w-52">
               <Select value={selectedMateria} onChange={(e) => setSelectedMateria(e.target.value)}>
                 <option value="all">Todas as Matérias</option>
-                {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
+                {materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
               </Select>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-600 whitespace-nowrap">
-              <FileText size={16} className="text-purple-500" />
-              <span className="font-bold text-slate-900 dark:text-white">{resumosFiltrados.length}</span> 
-              {resumosFiltrados.length === 1 ? 'resumo' : 'resumos'}
+            <div className="w-full sm:w-48">
+              <Select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="recente">Mais Recente</option>
+                <option value="antigo">Mais Antigo</option>
+                <option value="nome">Alfabético</option>
+                <option value="materia">Por Matéria</option>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-slate-500 whitespace-nowrap px-1">
+              <span className="font-bold text-slate-900 dark:text-white">{resumosFiltrados.length}</span>
+              <span>{resumosFiltrados.length === 1 ? 'resumo' : 'resumos'}</span>
             </div>
           </div>
         </motion.div>
@@ -518,9 +606,10 @@ function Resumos() {
             initial="hidden"
             animate="visible"
           >
-            {resumosFiltrados.map((resumo, index) => {
+            {resumosFiltrados.map((resumo) => {
               const materiaInfo = getMateriaInfo(resumo.materiaId);
               const preview = stripHtml(resumo.conteudo);
+              const readTime = estimateReadingTime(resumo.conteudo);
               return (
                 <motion.div
                   key={resumo.id}
@@ -528,40 +617,47 @@ function Resumos() {
                   variants={cardItemVariants}
                   whileHover={{ y: -3, transition: { duration: 0.15 } }}
                 >
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full flex flex-col min-h-70">
+                  <div
+                    className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow duration-200 h-full flex flex-col cursor-pointer"
+                    onClick={() => handleView(resumo)}
+                  >
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex items-start justify-between mb-3">
                         <Badge color={materiaInfo.cor} size="sm">
                           <span className="truncate block max-w-35">{materiaInfo.nome}</span>
                         </Badge>
-                        <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleEdit(resumo)} className="p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 text-slate-400 sm:text-purple-600 sm:dark:text-purple-400 transition-colors active:scale-95" title="Editar">
-                            <Edit2 size={16} />
+                        <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(resumo); }}
+                            className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950 text-slate-400 sm:text-purple-600 sm:dark:text-purple-400 transition-colors active:scale-95"
+                            title="Editar"
+                          >
+                            <Edit2 size={15} />
                           </button>
-                          <button onClick={() => handleView(resumo)} className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950 text-slate-400 sm:text-blue-600 sm:dark:text-blue-400 transition-colors active:scale-95" title="Visualizar/Salvar PDF">
-                            <FileText size={16} />
-                          </button>
-                          <button onClick={() => handleDelete(resumo)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 sm:text-red-600 sm:dark:text-red-400 transition-colors active:scale-95" title="Excluir">
-                            <Trash2 size={16} />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(resumo); }}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 sm:text-red-500 sm:dark:text-red-400 transition-colors active:scale-95"
+                            title="Excluir"
+                          >
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 truncate">{resumo.titulo}</h3>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">{resumo.titulo}</h3>
                       <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed flex-1">{preview}</p>
                     </div>
                     <div className="px-5 py-3 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                        <Calendar size={14} />
-                        <span>{formatDate(resumo.createdAt)}</span>
+                      <div className="flex items-center gap-3 text-xs text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Calendar size={12} />
+                          {formatDate(resumo.createdAt)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={12} />
+                          {readTime} leitura
+                        </span>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleEdit(resumo)} className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors">
-                          Editar
-                        </button>
-                        <button onClick={() => handleView(resumo)} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-                          Visualizar
-                        </button>
-                      </div>
+                      <span className="text-xs font-medium text-violet-500 dark:text-violet-400">Ver →</span>
                     </div>
                   </div>
                 </motion.div>
