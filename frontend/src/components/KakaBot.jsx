@@ -47,6 +47,11 @@ import {
   RefreshCw,
   Database,
   Activity,
+  SquarePen,
+  ChevronUp,
+  History,
+  MessageSquare,
+  ChevronRight,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -59,6 +64,7 @@ import { db } from '../config/firebase-config';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import useKakabotContext from '../hooks/useKakabotContext';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
+import useKakabotSessoes from '../hooks/useKakabotSessoes';
 import { extrairAcao, executarAcao } from '../utils/kakabotActions';
 import KakaAvatar from './kakabot/KakaAvatar';
 
@@ -366,12 +372,29 @@ const KakaBot = () => {
   // Dados em tempo real injetados no system prompt do Gemini
   const { dadosSistema, materiasLista, isLoadingContext } = useKakabotContext(uid);
 
+  // ─── Sessões paginadas ─────────────────────────────────────────────────────
+  const {
+    sessaoAtual,
+    mensagensVisiveis,
+    temMais,
+    novaSessao,
+    carregarSessao,
+    carregarMais,
+    adicionarMensagem,
+    listarSessoes,
+    setMensagensVisiveis,
+  } = useKakabotSessoes(uid);
+
   // ─── Estado — UI ───────────────────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);          // aguardando resposta do Gemini
   const [isExecutingAction, setIsExecutingAction] = useState(false); // executando ação no Firestore
+  const [showConfirmNovaSessao, setShowConfirmNovaSessao] = useState(false);
+  const [showHistorico, setShowHistorico] = useState(false);
+  const [sessoes, setSessoes] = useState([]);
+  // Ref para inibir auto-scroll quando carregarMais insere mensagens acima
+  const loadingMaisRef = useRef(false);
 
   // ─── Estado — Conexão Gemini ────────────────────────────────────────────────
   // connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -381,7 +404,8 @@ const KakaBot = () => {
   const [errorMessage, setErrorMessage] = useState(null);
 
   // ─── Estado — Memória Persistente ──────────────────────────────────────────
-  // Carregada do Firestore na abertura do chat; salva ao fechar
+  // Carregada do Firestore na abertura do chat; contém preferências e estatísticas
+  // NOTE: as mensagens da conversa agora ficam em kakabot_sessoes (não mais aqui)
   const [memoriaUsuario, setMemoriaUsuario] = useState(DEFAULT_MEMORY);
   const [memoryLoaded, setMemoryLoaded] = useState(false);
 
@@ -391,9 +415,10 @@ const KakaBot = () => {
   const lastMessageTimeRef = useRef(0); // timestamp da última mensagem (para MIN_MESSAGE_INTERVAL_MS)
 
   // ─── Refs ───────────────────────────────────────────────────────────────────
-  const messagesEndRef = useRef(null); // ancora de auto-scroll
-  const inputRef = useRef(null);       // foco automático ao abrir
-  const chatRef = useRef(null);        // instância de chat do Gemini (mantém histórico da sessão)
+  const messagesEndRef = useRef(null);       // ancora de auto-scroll
+  const inputRef = useRef(null);             // foco automático ao abrir
+  const chatRef = useRef(null);              // instância de chat do Gemini (mantém histórico da sessão)
+  const messagesContainerRef = useRef(null); // referência ao container de mensagens (scroll preservation)
 
   // Voice input
   const handleVoiceFinalResult = useCallback((finalText) => {
@@ -425,6 +450,11 @@ const KakaBot = () => {
    *       é injetado silenciosamente no chatRef ao inicializar o Gemini.
    * WARN: `memoryLoaded` deve ser verdadeiro antes de initializeGemini ser chamado.
    */
+  /**
+   * Carrega preferências e estatísticas de uso do Firestore.
+   * NOTE: NÃO restaura mensagens — as mensagens ficam em kakabot_sessoes.
+   * Firestore: `users/{uid}/kakabot_memoria/historico`
+   */
   const carregarMemoria = useCallback(async () => {
     if (!uid) return;
     try {
@@ -433,7 +463,7 @@ const KakaBot = () => {
       if (snap.exists()) {
         const data = snap.data();
         const memoria = {
-          ultimasConversas: data.ultimasConversas || [],
+          ultimasConversas: [],  // não mais usado para UI — mantido por compatibilidade
           preferenciasUsuario: {
             ...DEFAULT_MEMORY.preferenciasUsuario,
             ...(data.preferenciasUsuario || {}),
@@ -444,16 +474,6 @@ const KakaBot = () => {
           },
         };
         setMemoriaUsuario(memoria);
-
-        // Restaurar últimas mensagens da sessão anterior
-        if (memoria.ultimasConversas.length > 0) {
-          const restored = memoria.ultimasConversas.slice(-10).map((m) => ({
-            role: m.role,
-            content: m.content,
-            time: m.time || '',
-          }));
-          setMessages(restored);
-        }
       }
     } catch (err) {
       console.warn('[KakaBot] Erro ao carregar memória:', err?.message);
@@ -565,39 +585,43 @@ const KakaBot = () => {
 
   // ─── Efeitos ────────────────────────────────────────────────────────────────
 
-  // Mensagem de boas-vindas inicial — exibida apenas antes da memória ser carregada
-  useEffect(() => {
-    if (messages.length === 0 && !memoryLoaded) {
-      setMessages([
-        {
-          role: 'assistant',
-          content:
-            '👋 Olá! Sou o **Kaka**, seu agente de IA em Fisioterapia!\n\nPosso te ajudar com:\n- 📚 Dúvidas sobre anatomia, patologias e protocolos\n- 🃏 **Criar flashcards** automaticamente\n- 📝 **Gerar resumos** estruturados\n- 📚 **Criar matérias** e organizar seus estudos\n- 📅 **Agendar revisões** na sua agenda\n- 💡 Dicas personalizadas de estudo\n\nComo posso ajudar hoje?',
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    }
-  }, [memoryLoaded]);
+  // Mensagem de boas-vindas — removida: agora é criada pelo novaSessao() no hook
+  // (keeped as placeholder to not break the effect count)
 
-  // Carrega memória do Firestore na primeira abertura do bot
+  // Carrega memória (preferências) do Firestore na primeira abertura do bot
   useEffect(() => {
     if (isOpen && uid && !memoryLoaded) {
       carregarMemoria();
     }
   }, [isOpen, uid, memoryLoaded, carregarMemoria]);
 
-  // Inicia conexão com Gemini APÓS memória E contexto do sistema estarem prontos
+  // Carrega ou cria sessão após memória estar pronta
+  useEffect(() => {
+    if (isOpen && memoryLoaded && !sessaoAtual) {
+      listarSessoes().then((lista) => {
+        if (lista.length > 0) {
+          carregarSessao(lista[0].id);
+        } else {
+          novaSessao();
+        }
+      });
+    }
+  }, [isOpen, memoryLoaded, sessaoAtual]);
+
+  // Inicia conexão com Gemini APÓS memória E sessão estarem prontos
   // WARN: não chamar initializeGemini antes de memoryLoaded — o system prompt ficaria incompleto
   useEffect(() => {
-    if (isOpen && connectionStatus === 'disconnected' && memoryLoaded && !isLoadingContext) {
+    if (isOpen && connectionStatus === 'disconnected' && memoryLoaded && sessaoAtual && !isLoadingContext) {
       initializeGemini();
     }
-  }, [isOpen, connectionStatus, memoryLoaded, isLoadingContext]);
+  }, [isOpen, connectionStatus, memoryLoaded, sessaoAtual, isLoadingContext]);
 
-  // Auto-scroll para a última mensagem
+  // Auto-scroll para a última mensagem (inibido durante carregarMais)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isExecutingAction]);
+    if (!loadingMaisRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [mensagensVisiveis, isExecutingAction]);
 
   // Auto-foco no input ao estabelecer conexão
   useEffect(() => {
@@ -606,13 +630,12 @@ const KakaBot = () => {
     }
   }, [isOpen, connectionStatus]);
 
-  // Persiste o histórico ao fechar o bot
-  // NOTE: disparado pela mudança de isOpen=true→false, não pelo unmount do componente
+  // Carrega lista de sessões ao abrir o painel de histórico
   useEffect(() => {
-    if (!isOpen && memoryLoaded && messages.length > 1) {
-      salvarMemoria(messages);
+    if (showHistorico) {
+      listarSessoes().then(setSessoes);
     }
-  }, [isOpen]);
+  }, [showHistorico]);
 
   // ─── Gemini — Inicialização ──────────────────────────────────────────────────
 
@@ -724,9 +747,9 @@ const KakaBot = () => {
       },
     ];
 
-    // Injeta as últimas 6 mensagens da memória para dar continuidade à conversa anterior
-    // NOTE: injetar mais mensagens aqui aumenta o custo de tokens por request
-    const remembered = memoriaUsuario.ultimasConversas.slice(-6);
+    // Injeta as últimas 6 mensagens da sessão atual para dar continuidade
+    // NOTE: filtra system messages (feedback transiente não relevante para o Gemini)
+    const remembered = (sessaoAtual?.mensagens || []).filter((m) => !m.isSystem).slice(-6);
     for (const msg of remembered) {
       history.push({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -788,14 +811,15 @@ const KakaBot = () => {
   // ─── Mensagens de Sistema ────────────────────────────────────────────────────
 
   /**
-   * Adiciona uma mensagem de sistema à conversa (sem enviar ao Gemini).
+   * Adiciona uma mensagem de sistema à conversa (sem enviar ao Gemini e sem persistir).
    * Usada para feedback de erro, sucesso, conexão, etc.
    *
    * @param {string} content - Conteúdo Markdown da mensagem
    * @param {'info'|'error'|'success'} type - Tipo visual da mensagem
    */
   const addSystemMessage = useCallback((content, type = 'info') => {
-    setMessages((prev) => [
+    // System messages são transientes — não persistidas no Firestore
+    setMensagensVisiveis((prev) => [
       ...prev,
       {
         role: 'assistant',
@@ -805,7 +829,7 @@ const KakaBot = () => {
         time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
-  }, []);
+  }, [setMensagensVisiveis]);
 
   /**
    * Verifica se o envio da próxima mensagem está dentro dos limites de rate.
@@ -873,7 +897,9 @@ const KakaBot = () => {
     setInputValue('');
     const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const userMsg = { role: 'user', content: userMessage, timestamp: new Date().toISOString(), time: nowTime };
-    setMessages((prev) => [...prev, userMsg]);
+
+    // Persiste e atualiza UI com a mensagem do usuário
+    await adicionarMensagem(userMsg);
     setIsLoading(true);
 
     const now = Date.now();
@@ -885,8 +911,6 @@ const KakaBot = () => {
       const response = await result.response;
       const textoCompleto = response.text();
 
-      // Extrai bloco ```action { ... }``` da resposta, se presente
-      // textoLimpo = resposta sem o bloco JSON; acao = objeto parseado ou null
       const { textoLimpo, acao } = extrairAcao(textoCompleto);
 
       const assistantTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -898,41 +922,30 @@ const KakaBot = () => {
         acaoExecutada: acao?.acao || null,
         acaoLabel: acao ? getAcaoLabel(acao.acao, acao.dados) : null,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+
+      // Persiste e atualiza UI com a resposta do assistente
+      await adicionarMensagem(assistantMsg);
       setIsLoading(false);
 
-      // Executa ação no Firestore se o Gemini incluiu um bloco ```action```
       if (acao) {
         setIsExecutingAction(true);
         const resultado = await executarAcao(acao, uid, materiasLista);
         setIsExecutingAction(false);
 
-        // Mensagem de confirmação de ação (sucesso ou erro) vista pelo usuário
-        const resultMsg = {
-          role: 'assistant',
-          content: resultado.mensagem,
-          isSystem: true,
-          systemType: resultado.sucesso ? 'success' : 'error',
-          timestamp: new Date().toISOString(),
-          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages((prev) => [...prev, resultMsg]);
+        // Resultado da ação é system message transiente (não persiste)
+        addSystemMessage(
+          resultado.mensagem,
+          resultado.sucesso ? 'success' : 'error'
+        );
 
         if (resultado.sucesso) {
           await registrarAcaoNaMemoria(acao.acao);
         }
 
-        // ATUALIZAR_PREFERENCIAS retorna dados para atualizar a memória — trata separado
         if (acao.acao === 'ATUALIZAR_PREFERENCIAS' && resultado.sucesso && resultado.dadosRetorno?.preferencias) {
-          await salvarMemoria(
-            [...messages, userMsg, assistantMsg, resultMsg],
-            resultado.dadosRetorno.preferencias
-          );
-          return;
+          await salvarMemoria([], resultado.dadosRetorno.preferencias);
         }
       }
-
-      await salvarMemoria([...messages, userMsg, assistantMsg]);
     } catch (error) {
       setIsLoading(false);
       if (error.message?.includes('429') || error.status === 429) {
@@ -966,12 +979,43 @@ const KakaBot = () => {
     setGeminiModel(null);
     setActiveModelName(null);
     chatRef.current = null;
-    setMessages((prev) => {
+    // Remove última mensagem de erro da UI se for system
+    setMensagensVisiveis((prev) => {
       const last = prev[prev.length - 1];
       if (last?.isSystem && last?.systemType === 'error') return prev.slice(0, -1);
       return prev;
     });
     initializeGemini();
+  };
+
+  /**
+   * Inicia uma nova sessão. Se há apenas a mensagem de boas-vindas, cria direto.
+   * Caso contrário, exibe modal de confirmação.
+   */
+  const handleNovaSessao = () => {
+    if (mensagensVisiveis.length <= 1) {
+      novaSessao();
+      return;
+    }
+    setShowConfirmNovaSessao(true);
+  };
+
+  /**
+   * Carrega bloco anterior de mensagens preservando a posição de scroll.
+   * Salva a altura antes do prepend e ajusta scrollTop após o render.
+   */
+  const carregarMaisComScroll = () => {
+    const container = messagesContainerRef.current;
+    const alturaAntes = container?.scrollHeight ?? 0;
+    loadingMaisRef.current = true;
+    carregarMais();
+    requestAnimationFrame(() => {
+      if (container) {
+        const alturaDepois = container.scrollHeight;
+        container.scrollTop = alturaDepois - alturaAntes;
+      }
+      loadingMaisRef.current = false;
+    });
   };
 
   const handleKeyPress = (e) => {
@@ -1107,6 +1151,27 @@ const KakaBot = () => {
 
                 {/* Ações */}
                 <div className="flex items-center gap-1">
+                  {/* Histórico de conversas */}
+                  <button
+                    onClick={() => setShowHistorico(true)}
+                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
+                    style={{ border: '1px solid rgba(255,255,255,0.15)' }}
+                    title="Histórico de conversas"
+                    aria-label="Histórico de conversas"
+                  >
+                    <History size={15} className="text-white/90" />
+                  </button>
+                  {/* Nova conversa */}
+                  <button
+                    onClick={handleNovaSessao}
+                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
+                    style={{ border: '1px solid rgba(255,255,255,0.15)' }}
+                    title="Nova conversa"
+                    aria-label="Iniciar nova conversa"
+                  >
+                    <SquarePen size={15} className="text-white/90" />
+                  </button>
+                  {/* Fechar */}
                   <button
                     onClick={() => setIsOpen(false)}
                     className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
@@ -1122,10 +1187,35 @@ const KakaBot = () => {
               <div className="flex flex-col flex-1 overflow-hidden">
                     {/* ════ Messages Area ════ */}
                     <div
+                      ref={messagesContainerRef}
                       className="flex-1 overflow-y-auto px-4 py-5 space-y-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent bg-slate-50 dark:bg-slate-900"
                     >
-                      {messages.map((message, index) => {
-                        const isNew = index === messages.length - 1;
+
+                      {/* Botao carregar mensagens anteriores */}
+                      {temMais && (
+                        <div className="mb-4">
+                          <div className="flex justify-center mb-3">
+                            <motion.button
+                              onClick={carregarMaisComScroll}
+                              className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-teal-300 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm transition-all"
+                              whileTap={{ scale: 0.97 }}
+                            >
+                              <ChevronUp size={13} strokeWidth={2} />
+                              Carregar mensagens anteriores
+                            </motion.button>
+                          </div>
+                          <div className="flex items-center gap-2 px-2">
+                            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                            <span className="text-[10.5px] text-slate-400 whitespace-nowrap">
+                              mensagens anteriores acima
+                            </span>
+                            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                          </div>
+                        </div>
+                      )}
+
+                      {mensagensVisiveis.map((message, index) => {
+                        const isNew = index === mensagensVisiveis.length - 1;
 
                         if (message.role === 'user') {
                           /* ── Balão Usuário ── */
@@ -1258,6 +1348,120 @@ const KakaBot = () => {
 
                       <div ref={messagesEndRef} />
                     </div>
+
+                    {/* ════ Painel Histórico de Sessões ════ */}
+                    <AnimatePresence>
+                      {showHistorico && (
+                        <motion.div
+                          className="absolute inset-0 z-10 flex flex-col bg-white dark:bg-slate-900"
+                          initial={{ x: '100%' }}
+                          animate={{ x: 0 }}
+                          exit={{ x: '100%' }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        >
+                          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-[15px] font-semibold text-slate-700 dark:text-slate-200">
+                              Conversas anteriores
+                            </span>
+                            <button
+                              onClick={() => setShowHistorico(false)}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              <X size={15} className="text-slate-500" strokeWidth={2} />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto py-2">
+                            {sessoes.length === 0 ? (
+                              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#f0fdfa' }}>
+                                  <MessageSquare size={22} color="#0d9488" strokeWidth={1.6} />
+                                </div>
+                                <p className="text-[13px] font-medium text-slate-500">Nenhuma conversa salva</p>
+                                <p className="text-[12px] text-slate-400 mt-1">Suas conversas aparecerão aqui</p>
+                              </div>
+                            ) : (
+                              sessoes.map((sessao) => (
+                                <button
+                                  key={sessao.id}
+                                  onClick={() => { carregarSessao(sessao.id); setShowHistorico(false); }}
+                                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50 transition-colors text-left"
+                                >
+                                  <div
+                                    className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5"
+                                    style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}
+                                  >
+                                    <MessageSquare size={14} color="#0f766e" strokeWidth={2} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[13.5px] font-medium text-slate-700 dark:text-slate-200 truncate">
+                                      {sessao.titulo}
+                                    </p>
+                                    <p className="text-[11.5px] text-slate-400 mt-0.5">
+                                      {sessao.totalMensagens} mensagens &middot;{' '}
+                                      {new Date(sessao.ultimaAtualizacao).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                    </p>
+                                  </div>
+                                  <ChevronRight size={14} className="text-slate-300 mt-1 flex-shrink-0" strokeWidth={2} />
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* ════ Modal Confirmar Nova Sessão ════ */}
+                    <AnimatePresence>
+                      {showConfirmNovaSessao && (
+                        <motion.div
+                          className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4"
+                          style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setShowConfirmNovaSessao(false)}
+                        >
+                          <motion.div
+                            className="w-full max-w-[320px] bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-xl"
+                            initial={{ y: 20, scale: 0.97 }}
+                            animate={{ y: 0, scale: 1 }}
+                            exit={{ y: 20, scale: 0.97 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center gap-3 mb-3">
+                              <div
+                                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                style={{ background: '#f0fdfa' }}
+                              >
+                                <SquarePen size={17} color="#0f766e" strokeWidth={2} />
+                              </div>
+                              <div>
+                                <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-100">Nova conversa</p>
+                                <p className="text-[12px] text-slate-400 dark:text-slate-500">O histórico atual será salvo.</p>
+                              </div>
+                            </div>
+                            <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                              Você pode acessar conversas anteriores pelo histórico a qualquer momento.
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setShowConfirmNovaSessao(false)}
+                                className="flex-1 py-2.5 rounded-xl text-[13px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={() => { novaSessao(); setShowConfirmNovaSessao(false); }}
+                                className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white transition-colors"
+                                style={{ background: 'linear-gradient(135deg, #0f766e, #0891b2)' }}
+                              >
+                                Nova conversa
+                              </button>
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     {/* ════ Reconnect button ════ */}
                     {connectionStatus === 'error' && (

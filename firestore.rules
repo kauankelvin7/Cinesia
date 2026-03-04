@@ -110,11 +110,19 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // -- KakaBot Memória --
+      // -- KakaBot Memória (preferências e estatísticas) --
       match /kakabot_memoria/{docId} {
         allow read:   if isOwner(userId);
         allow create: if isOwner(userId);
         allow update: if isOwner(userId);
+      }
+
+      // -- KakaBot Sessões (histórico paginado de conversas) --
+      match /kakabot_sessoes/{sessaoId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
       }
     }
 
