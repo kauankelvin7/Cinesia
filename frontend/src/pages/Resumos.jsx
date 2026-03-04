@@ -50,6 +50,10 @@ import {
   ZoomIn,
   ZoomOut,
   AlignLeft,
+  ImagePlus,
+  Paperclip,
+  XCircle,
+  Image as ImageIcon2,
 } from 'lucide-react';
 import { 
   listarResumos, 
@@ -58,6 +62,7 @@ import {
   deletarResumo, 
   listarMateriasSimples
 } from '../services/firebaseService';
+import { uploadImage } from '../services/cloudinaryService';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useDashboardData } from '../contexts/DashboardDataContext';
 import Button from '../components/ui/Button';
@@ -153,8 +158,10 @@ function Resumos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMateria, setSelectedMateria] = useState('all');
   const [sortBy, setSortBy] = useState('recente');
-  const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '' });
+  const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '', imagens: [] });
   const [error, setError] = useState(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const imageInputRef = React.useRef(null);
 
   // Estado do Modal de Confirmação
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
@@ -271,7 +278,7 @@ function Resumos() {
   };
 
   const handleEdit = (resumo) => {
-    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '' });
+    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '', imagens: resumo.imagens || [] });
     setEditingId(resumo.id);
     setModalMode('edit');
     setViewingResumo(null);
@@ -281,8 +288,8 @@ function Resumos() {
   const handleView = (resumo) => {
     setViewingResumo(resumo);
     setModalMode('view');
-    setEditingId(resumo.id); // Garante que ao voltar para editar, pega o mesmo resumo
-    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '' });
+    setEditingId(resumo.id);
+    setFormData({ titulo: resumo.titulo, conteudo: resumo.conteudo, materiaId: resumo.materiaId || '', imagens: resumo.imagens || [] });
     setShowModal(true);
   };
 
@@ -317,60 +324,108 @@ function Resumos() {
     }
   };
 
-  const [exportingPdf, setExportingPdf] = useState(false);
+  const handleImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    setUploadingImages(true);
+    try {
+      const uploads = Array.from(files).slice(0, 6 - (formData.imagens?.length || 0));
+      const urls = await Promise.all(uploads.map(f => uploadImage(f)));
+      setFormData(prev => ({ ...prev, imagens: [...(prev.imagens || []), ...urls] }));
+      toast.success(`${urls.length} imagem(ns) adicionada(s)!`);
+    } catch (err) {
+      toast.error('Erro ao enviar imagem. Tente novamente.');
+    } finally {
+      setUploadingImages(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      imagens: prev.imagens.filter((_, i) => i !== idx)
+    }));
+  };
 
   const exportarPdf = async () => {
-    if (!viewingResumo) return;
+    const resumo = viewingResumo || { titulo: formData.titulo, conteudo: formData.conteudo, materiaId: formData.materiaId, imagens: formData.imagens };
     setExportingPdf(true);
     try {
       const { default: jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const contentEl = document.getElementById('resumo-view-content');
-      if (!contentEl) {
-        toast.error('Conteúdo não encontrado para exportar.');
-        return;
-      }
+      // Build a hidden off-screen print container with forced white background
+      const container = document.createElement('div');
+      container.style.cssText = [
+        'position:fixed', 'top:-9999px', 'left:0', 'z-index:-1',
+        'width:794px', 'background:#ffffff', 'color:#1e293b',
+        'font-family:Georgia,serif', 'font-size:14px', 'line-height:1.7',
+        'padding:56px 72px 72px', 'box-sizing:border-box'
+      ].join(';');
 
-      const canvas = await html2canvas(contentEl, {
+      const materiaInfo = getMateriaInfo(resumo.materiaId);
+      const dataStr = resumo.createdAt ? formatDate(resumo.createdAt) : '';
+
+      container.innerHTML = `
+        <div style="border-bottom:2px solid #e2e8f0;padding-bottom:20px;margin-bottom:28px">
+          <p style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#7c3aed;margin:0 0 8px">${materiaInfo.nome}</p>
+          <h1 style="font-size:26px;font-weight:700;color:#0f172a;margin:0 0 12px;line-height:1.3">${resumo.titulo || 'Sem título'}</h1>
+          <div style="display:flex;gap:16px;font-size:12px;color:#94a3b8;align-items:center">
+            ${dataStr ? `<span>📅 ${dataStr}</span>` : ''}
+            <span>⏱ ${estimateReadingTime(resumo.conteudo)} de leitura</span>
+            <span>≡ ${stripHtml(resumo.conteudo).trim().split(/\s+/).filter(Boolean).length} palavras</span>
+          </div>
+        </div>
+        <div style="color:#1e293b;line-height:1.8">${resumo.conteudo || ''}</div>
+        ${(resumo.imagens && resumo.imagens.length > 0) ? `
+          <div style="margin-top:36px;border-top:1px solid #e2e8f0;padding-top:24px">
+            <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#64748b;margin:0 0 16px">Imagens Anexadas</p>
+            <div style="display:flex;flex-wrap:wrap;gap:12px">
+              ${resumo.imagens.map(url => `<img src="${url}" style="max-width:340px;max-height:480px;border-radius:8px;border:1px solid #e2e8f0;object-fit:contain" crossorigin="anonymous" />`).join('')}
+            </div>
+          </div>` : ''}
+        <div style="margin-top:48px;padding-top:12px;border-top:1px solid #f1f5f9;font-size:11px;color:#cbd5e1;text-align:center">Cinesia — Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+      `;
+
+      document.body.appendChild(container);
+
+      // Wait for images to load
+      const imgs = container.querySelectorAll('img');
+      await Promise.all(Array.from(imgs).map(img =>
+        img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; })
+      ));
+
+      const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        width: 794,
+        windowWidth: 794,
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      document.body.removeChild(container);
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const scaledWidth = imgWidth * ratio;
-      const scaledHeight = imgHeight * ratio;
-
-      // If content is taller than one page, split into multiple pages
-      const pageContentHeight = pdfHeight * (imgWidth / pdfWidth);
-      const totalPages = Math.ceil(imgHeight / pageContentHeight);
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const totalPages = Math.ceil(imgHeight / pdfHeight);
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) pdf.addPage();
-        const srcY = page * pageContentHeight;
-        const remainingHeight = Math.min(pageContentHeight, imgHeight - srcY);
-        
-        // Create a temporary canvas for this page slice
+        const srcY = page * (canvas.height / totalPages);
+        const sliceH = canvas.height / totalPages;
         const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = imgWidth;
-        pageCanvas.height = remainingHeight;
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceH;
         const ctx = pageCanvas.getContext('2d');
-        ctx.drawImage(canvas, 0, srcY, imgWidth, remainingHeight, 0, 0, imgWidth, remainingHeight);
-        
-        const pageImgData = pageCanvas.toDataURL('image/png');
-        const pageScaledHeight = (remainingHeight / imgWidth) * pdfWidth;
-        pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, pageScaledHeight);
+        ctx.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pdfWidth, pdfHeight);
       }
 
-      const fileName = (viewingResumo.titulo || 'resumo').replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g, '').replace(/\s+/g, '_');
+      const fileName = (resumo.titulo || 'resumo').replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g, '').replace(/\s+/g, '_');
       pdf.save(`${fileName}.pdf`);
       toast.success('PDF exportado com sucesso!');
     } catch (err) {
@@ -382,7 +437,7 @@ function Resumos() {
   };
 
   const resetForm = () => {
-    setFormData({ titulo: '', conteudo: '', materiaId: '' });
+    setFormData({ titulo: '', conteudo: '', materiaId: '', imagens: [] });
     setEditingId(null);
     setShowModal(false);
     setViewingResumo(null);
@@ -728,6 +783,7 @@ function Resumos() {
                           titulo: formData.titulo,
                           conteudo: formData.conteudo,
                           materiaId: formData.materiaId,
+                          imagens: formData.imagens || [],
                           createdAt: viewingResumo?.createdAt
                         });
                       }}
@@ -868,7 +924,87 @@ function Resumos() {
                       {error && (
                         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
                       )}
-                    </div>
+
+                      {/* Imagens Anexadas */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                              <Paperclip size={14} className="text-slate-400" />
+                              Imagens Anexadas
+                            </label>
+                            <span className="text-xs text-slate-400">
+                              ({formData.imagens?.length || 0}/6) &mdash; fotos do caderno, iPad, etc.
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={uploadingImages || (formData.imagens?.length || 0) >= 6}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors disabled:opacity-40"
+                          >
+                            {uploadingImages ? (
+                              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" /></svg>
+                            ) : (
+                              <ImagePlus size={14} />
+                            )}
+                            {uploadingImages ? 'Enviando...' : 'Adicionar Imagem'}
+                          </button>
+                          <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleImageUpload(e.target.files)}
+                          />
+                        </div>
+
+                        {(formData.imagens?.length || 0) === 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            disabled={uploadingImages}
+                            className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center gap-2 text-slate-400 hover:border-violet-400 hover:text-violet-500 transition-colors cursor-pointer group"
+                          >
+                            <ImageIcon2 size={28} className="group-hover:scale-105 transition-transform" />
+                            <span className="text-sm font-medium">Clique para adicionar imagens</span>
+                            <span className="text-xs">Foto do caderno, iPad, quadro branco &mdash; at&eacute; 6 imagens</span>
+                          </button>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {formData.imagens.map((url, idx) => (
+                              <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 aspect-[4/3]">
+                                <img src={url} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(idx)}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow"
+                                  title="Remover imagem"
+                                >
+                                  <X size={12} />
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <span className="text-white text-xs">{idx + 1} / {formData.imagens.length}</span>
+                                </div>
+                              </div>
+                            ))}
+                            {(formData.imagens.length < 6) && (
+                              <button
+                                type="button"
+                                onClick={() => imageInputRef.current?.click()}
+                                disabled={uploadingImages}
+                                className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:border-violet-400 hover:text-violet-500 transition-colors"
+                              >
+                                <ImagePlus size={20} />
+                                <span className="text-xs">Mais</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>{/* end space-y-5 */}
 
                     <div className="px-5 sm:px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex gap-3 print:hidden shrink-0">
                       <Button type="submit" variant="primary" size="lg" className="flex-1">
@@ -923,6 +1059,26 @@ function Resumos() {
                           __html: (viewingResumo?.conteudo || formData.conteudo) || '<p style="color:#94a3b8">Sem conteúdo</p>'
                         }}
                       />
+
+                      {/* Imagens Anexadas — visualização */}
+                      {(() => {
+                        const imgs = viewingResumo?.imagens || formData.imagens || [];
+                        if (imgs.length === 0) return null;
+                        return (
+                          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                            <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">
+                              <Paperclip size={12} /> Imagens Anexadas ({imgs.length})
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {imgs.map((url, idx) => (
+                                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                                  <img src={url} alt={`Imagem ${idx + 1}`} className="w-full h-auto object-contain" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
