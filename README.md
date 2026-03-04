@@ -1,7 +1,26 @@
 
-# Cinesia 📚🔥
+<div align="center">
 
-**Cinesia** é um sistema web e PWA inteligente criado para facilitar e potencializar os estudos de estudantes de Fisioterapia. O objetivo é oferecer uma plataforma organizada, intuitiva e moderna, que centraliza conteúdos, resumos, flashcards, simulados e ferramentas de apoio — tudo com integração a modelos de IA generativa (LLM).
+# 🧬 Cinesia
+
+**Sistema inteligente de estudos para fisioterapeutas**
+
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=black)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?logo=google&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-Instalável-5A0FC8)
+
+</div>
+
+---
+
+**Cinesia** é um sistema web e PWA inteligente criado para potencializar os estudos de estudantes de Fisioterapia. Centraliza resumos, flashcards com SM-2, simulados por IA, KakaBot, atlas 3D e pomodoro — tudo com sync em tempo real via Firebase.
+
+> 📖 **Documentação completa:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/DEPLOY.md](docs/DEPLOY.md) · [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+
+
 
 ## 🧠 Contexto e Propósito
 
@@ -405,10 +424,11 @@ npm run build
 
 ## 🤝 Contribuindo
 
-Este é um projeto de estudo. Sinta-se livre para:
-- Reportar bugs
-- Sugerir melhorias
-- Fazer fork e criar Pull Requests
+Ver [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) para fluxo de trabalho, convenção de commits e padrões de código.
+
+## 🚀 Deploy
+
+Ver [docs/DEPLOY.md](docs/DEPLOY.md) para instruções de deploy no Firebase Hosting e Vercel, incluindo configuração do GitHub Actions automático.
 
 ## 📄 Licença
 
@@ -416,8 +436,9 @@ Este projeto está sob a licença MIT.
 
 ## 👩‍💻 Desenvolvido para
 
-Sistema de estudos para uma estudante de Fisioterapia, focado em facilitar o aprendizado através de resumos organizados e flashcards visuais.
+Sistema de estudos para estudantes de Fisioterapia.
 
 ---
 
-**Cinesia** - Estudos de Fisioterapia 📚✨
+<div align="center">🧬 Cinesia — Estudos de Fisioterapia 📚</div>
+

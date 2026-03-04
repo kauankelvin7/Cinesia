@@ -165,16 +165,18 @@ export default defineConfig({
           'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'motion': ['framer-motion'],
-          'icons': ['lucide-react', 'react-icons']
+          'icons': ['lucide-react', 'react-icons'],
+          'editor': ['react-quill', 'quill'],
+          'charts': ['recharts'],
         }
       }
     },
-    // Otimizações de performance
+    // Alertar se chunk ultrapassar 500kb
     target: 'es2015',
     minify: 'esbuild',
     cssCodeSplit: true,
     sourcemap: false,
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 500
   },
   optimizeDeps: {
     include: [
