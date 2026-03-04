@@ -546,7 +546,7 @@ function Flashcards() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.25 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
                 <div 
@@ -560,22 +560,25 @@ function Flashcards() {
                 Crie e estude com flashcards interativos
               </p>
             </div>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
               {pendingReviewCount > 0 && (
                 <Button
                   variant="secondary"
-                  size="lg"
-                  leftIcon={<RotateCcw size={20} />}
+                  size="md"
+                  leftIcon={<RotateCcw size={16} />}
                   onClick={() => iniciarModoEstudo(true)}
                 >
-                  Revisar ({pendingReviewCount})
+                  Revisar
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                    {pendingReviewCount}
+                  </span>
                 </Button>
               )}
               {flashcardsFiltrados.length > 0 && (
                 <Button
-                  variant="primary"
-                  size="lg"
-                  leftIcon={<Play size={20} />}
+                  variant="secondary"
+                  size="md"
+                  leftIcon={<Play size={16} />}
                   onClick={() => iniciarModoEstudo(false)}
                 >
                   Modo Estudo
@@ -583,8 +586,8 @@ function Flashcards() {
               )}
               <Button
                 variant="primary"
-                size="lg"
-                leftIcon={<Plus size={20} />}
+                size="md"
+                leftIcon={<Plus size={18} />}
                 onClick={() => setShowModal(true)}
               >
                 Novo Flashcard
@@ -633,10 +636,10 @@ function Flashcards() {
               ) : null;
             })()}
             
-            <div className="ml-auto flex items-center gap-4">
-              <div className="text-sm text-slate-600">
-                <span className="font-bold text-slate-900 dark:text-white">{flashcardsFiltrados.length}</span> flashcard{flashcardsFiltrados.length !== 1 && 's'}
-              </div>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {flashcardsFiltrados.length} card{flashcardsFiltrados.length !== 1 && 's'}
+              </span>
             </div>
           </motion.div>
         </motion.div>
