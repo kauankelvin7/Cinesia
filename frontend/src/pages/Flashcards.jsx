@@ -23,9 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  BookOpen,
-  Upload,
-  FileSpreadsheet
+  BookOpen
 } from 'lucide-react';
 import { 
   listarFlashcards, 
@@ -320,74 +318,6 @@ function Flashcards() {
     setShowModal(false);
   }, []);
 
-  // ==================== IMPORTAR CSV ====================
-  const [showCsvModal, setShowCsvModal] = useState(false);
-  const [csvPreview, setCsvPreview] = useState([]);
-  const [csvImporting, setCsvImporting] = useState(false);
-  const [csvMateriaId, setCsvMateriaId] = useState('');
-  const csvInputRef = React.useRef(null);
-
-  const handleCsvFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
-      // Detect separator: ; or , or \t
-      const sep = lines[0]?.includes(';') ? ';' : lines[0]?.includes('\t') ? '\t' : ',';
-      const parsed = lines
-        .map(line => {
-          const parts = line.split(sep).map(p => p.trim().replace(/^["']|["']$/g, ''));
-          if (parts.length >= 2) return { pergunta: parts[0], resposta: parts[1] };
-          return null;
-        })
-        .filter(Boolean);
-      // Skip header if it looks like a header
-      const first = parsed[0];
-      if (first && (first.pergunta.toLowerCase().includes('pergunta') || first.pergunta.toLowerCase().includes('front'))) {
-        parsed.shift();
-      }
-      setCsvPreview(parsed);
-      setShowCsvModal(true);
-    };
-    reader.readAsText(file);
-    if (csvInputRef.current) csvInputRef.current.value = '';
-  };
-
-  const importCsv = async () => {
-    if (csvPreview.length === 0 || !csvMateriaId) {
-      toast.error('Selecione uma matéria para importar.');
-      return;
-    }
-    setCsvImporting(true);
-    const materia = materias.find(m => m.id === csvMateriaId);
-    const userId = user?.id || user?.uid;
-    let success = 0;
-    try {
-      for (const row of csvPreview) {
-        await criarFlashcard({
-          pergunta: row.pergunta,
-          resposta: row.resposta,
-          materiaId: csvMateriaId,
-          materiaNome: materia?.nome || '',
-          materiaCor: materia?.cor || '#94A3B8',
-        }, null, userId);
-        success++;
-      }
-      await carregarDados();
-      toast.success(`${success} flashcards importados com sucesso!`);
-      setShowCsvModal(false);
-      setCsvPreview([]);
-      setCsvMateriaId('');
-    } catch (err) {
-      toast.error(`Erro ao importar. ${success} de ${csvPreview.length} importados.`);
-      console.error(err);
-    } finally {
-      setCsvImporting(false);
-    }
-  };
-
   // ==================== MODO ESTUDO ====================
   
   const iniciarModoEstudo = (reviewOnly = false) => {
@@ -659,24 +589,6 @@ function Flashcards() {
               >
                 Novo Flashcard
               </Button>
-              <div className="relative">
-                <input
-                  ref={csvInputRef}
-                  type="file"
-                  accept=".csv,.tsv,.txt"
-                  className="hidden"
-                  onChange={handleCsvFile}
-                />
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  leftIcon={<Upload size={18} />}
-                  onClick={() => csvInputRef.current?.click()}
-                  title="Importar CSV (pergunta;resposta)"
-                >
-                  <span className="hidden sm:inline">Importar CSV</span>
-                </Button>
-              </div>
             </div>
           </div>
 
@@ -1235,99 +1147,6 @@ function Flashcards() {
         type="danger"
       />
 
-      {/* Modal de Importação CSV */}
-      <AnimatePresence>
-        {showCsvModal && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowCsvModal(false)}
-          >
-            <motion.div
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-xl max-h-[80vh] overflow-hidden flex flex-col"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                    Importar Flashcards
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {csvPreview.length} flashcard{csvPreview.length !== 1 ? 's' : ''} encontrado{csvPreview.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowCsvModal(false)}
-                  className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center"
-                >
-                  <X size={18} className="text-slate-600 dark:text-slate-300" />
-                </button>
-              </div>
-
-              <div className="p-5 space-y-4 overflow-y-auto flex-1">
-                {/* Select matéria */}
-                <div>
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
-                    Matéria para importar *
-                  </label>
-                  <Select value={csvMateriaId} onChange={(e) => setCsvMateriaId(e.target.value)}>
-                    <option value="">Selecione uma matéria...</option>
-                    {materias.map(m => (
-                      <option key={m.id} value={m.id}>{m.nome}</option>
-                    ))}
-                  </Select>
-                </div>
-
-                {/* Preview table */}
-                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-900/50">
-                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">#</th>
-                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Pergunta</th>
-                        <th className="text-left px-3 py-2 text-slate-600 dark:text-slate-400 font-medium">Resposta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {csvPreview.slice(0, 20).map((row, i) => (
-                        <tr key={i} className="border-t border-slate-100 dark:border-slate-700/50">
-                          <td className="px-3 py-2 text-slate-400 font-mono text-xs">{i + 1}</td>
-                          <td className="px-3 py-2 text-slate-900 dark:text-white truncate max-w-[200px]">{row.pergunta}</td>
-                          <td className="px-3 py-2 text-slate-600 dark:text-slate-300 truncate max-w-[200px]">{row.resposta}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {csvPreview.length > 20 && (
-                    <div className="px-3 py-2 text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
-                      ... e mais {csvPreview.length - 20} flashcards
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3">
-                <Button variant="secondary" onClick={() => setShowCsvModal(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={importCsv}
-                  disabled={csvImporting || !csvMateriaId}
-                  leftIcon={csvImporting ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><RotateCcw size={16} /></motion.div> : <Upload size={16} />}
-                >
-                  {csvImporting ? 'Importando...' : `Importar ${csvPreview.length} cards`}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
