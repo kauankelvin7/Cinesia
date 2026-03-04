@@ -73,14 +73,12 @@ service cloud.firestore {
     // Doc ID = "{userId}_{date}", também tem campo uid
     match /pomodoro/{docId} {
       allow read:   if isAuthenticated()
-                    && resource.data.uid == request.auth.uid;
+                    && (resource == null || resource.data.uid == request.auth.uid);
       allow create: if isAuthenticated()
-                    && request.resource.data.uid == request.auth.uid
-                    && docId.matches(request.auth.uid + '_.*');
+                    && request.resource.data.uid == request.auth.uid;
       allow update: if isAuthenticated()
                     && resource.data.uid == request.auth.uid
-                    && request.resource.data.uid == request.auth.uid
-                    && docId.matches(request.auth.uid + '_.*');
+                    && request.resource.data.uid == request.auth.uid;
     }
 
     // ============================================================

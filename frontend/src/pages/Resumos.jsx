@@ -160,6 +160,7 @@ function Resumos() {
   const [sortBy, setSortBy] = useState('recente');
   const [formData, setFormData] = useState({ titulo: '', conteudo: '', materiaId: '', imagens: [] });
   const [error, setError] = useState(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const imageInputRef = React.useRef(null);
 
