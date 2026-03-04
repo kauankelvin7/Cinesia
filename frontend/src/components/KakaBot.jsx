@@ -7,7 +7,7 @@
  * @dependencies
  *  - useKakabotContext  — provê dados do sistema em tempo real para o system prompt
  *  - useSpeechRecognition — entrada por voz via Web Speech API
- *  - kakabotActions (extrairAcao, executarAcao) — parser e executor de blocos ```action```
+ *  - kakabotActions (extrairAcoes, executarAcoes) — parser e executor de blocos ```action```
  *  - KakaAvatar — componente visual do avatar
  *  - @google/generative-ai — SDK do Gemini (importado dinamicamente via `import()`)
  *  - AuthContext-firebase — UID do usuário autenticado
@@ -72,7 +72,7 @@ import useKakabotContext from '../hooks/useKakabotContext';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import useKakabotSessoes from '../hooks/useKakabotSessoes';
 import useTextToSpeech from '../hooks/useTextToSpeech';
-import { extrairAcao, executarAcao } from '../utils/kakabotActions';
+import { extrairAcoes, executarAcao, executarAcoes } from '../utils/kakabotActions';
 import KakaAvatar from './kakabot/KakaAvatar';
 
 // ─── Configuração ────────────────────────────────────────────────────────────
@@ -82,6 +82,42 @@ import KakaAvatar from './kakabot/KakaAvatar';
  * WARN: aumentar muito pode causar erros de token no Gemini (contexto máx ~30k tokens).
  */
 const MAX_USER_CHARS = 2000;
+
+/**
+ * Remove qualquer bloco ```action``` ou ```json``` residual do texto antes de exibir.
+ * WARN: camada de segurança secundária — o parser principal (extrairAcoes) deve
+ *       remover os blocos. Esta função é o fallback para evitar JSON vazando na UI.
+ */
+const sanitizarTexto = (texto) =>
+  texto
+    .replace(/```action[\s\S]*?```/g, '')
+    .replace(/```json[\s\S]*?```/g, '')
+    .trim();
+
+/**
+ * Respostas locais para mensagens triviais que não precisam do Gemini.
+ * Economiza tokens e reduz latência em interações simples.
+ */
+const RESPOSTAS_LOCAIS = {
+  'oi':       'Oi! Tô aqui. O que você precisa?',
+  'ola':      'Olá! Como posso ajudar?',
+  'olá':      'Olá! Como posso ajudar?',
+  'ok':       'Certo!',
+  'obrigado': 'De nada! Se precisar de mais algo é só chamar.',
+  'obrigada': 'De nada! Se precisar de mais algo é só chamar.',
+  'valeu':    'Sempre! Qualquer coisa é só falar.',
+  'vlw':      'Sempre! Qualquer coisa é só falar.',
+  'blz':      'Beleza! Tô por aqui.',
+  'beleza':   'Show! Se precisar é só chamar.',
+};
+
+const tentarRespostaLocal = (mensagem) => {
+  const normalizada = mensagem.toLowerCase().trim().replace(/[!?.\s]+$/g, '').trim();
+  return RESPOSTAS_LOCAIS[normalizada] ?? null;
+};
+
+/** Máximo de pares (user+model) enviados ao Gemini para limitar tokens. */
+const MAX_HISTORICO_GEMINI = 10;
 
 /**
  * Intervalo mínimo (ms) entre mensagens consecutivas.
@@ -362,8 +398,21 @@ ${dadosSistema?.materias?.map((m) => `- ${m.nome} (id: ${m.id})`).join('\n') || 
 3. Para criar resumos, use formatação HTML compatível com Quill (tags: h1, h2, h3, p, ul, ol, li, strong, em)
 4. Se o usuário não especificar a matéria, pergunte antes de executar OU use null
 5. Após executar uma ação, confirme o sucesso e sugira próximos passos
-6. Inclua APENAS UM bloco action por resposta
-7. O bloco action deve vir SEMPRE NO FINAL da mensagem
+6. O(s) bloco(s) action devem vir SEMPRE NO FINAL da mensagem
+7. Quando o usuário pedir para criar MAIS DE UM item (ex: "crie as matérias Kauan e Kelvin"), gere um bloco \`\`\`action\`\`\` SEPARADO para CADA item — NUNCA agrupe em um só bloco
+
+Exemplo CORRETO para "crie as matérias Kauan e Kelvin":
+\`\`\`action
+{ "acao": "CRIAR_MATERIA", "dados": { "nome": "Kauan", "cor": "#0d9488" } }
+\`\`\`
+\`\`\`action
+{ "acao": "CRIAR_MATERIA", "dados": { "nome": "Kelvin", "cor": "#0891b2" } }
+\`\`\`
+
+Exemplo ERRADO (NÃO faça):
+\`\`\`action
+{ "acao": "CRIAR_MATERIA", "dados": [{ "nome": "Kauan" }, { "nome": "Kelvin" }] }
+\`\`\`
 
 ## LIMITAÇÕES HONESTAS
 
@@ -862,9 +911,11 @@ const KakaBot = () => {
       },
     ];
 
-    // Injeta as últimas 6 mensagens da sessão atual para dar continuidade
+    // Injeta as últimas MAX_HISTORICO_GEMINI pares da sessão atual para dar continuidade
     // NOTE: filtra system messages (feedback transiente não relevante para o Gemini)
-    const remembered = (sessaoAtual?.mensagens || []).filter((m) => !m.isSystem).slice(-6);
+    const remembered = (sessaoAtual?.mensagens || [])
+      .filter((m) => !m.isSystem)
+      .slice(-(MAX_HISTORICO_GEMINI * 2));
     for (const msg of remembered) {
       history.push({
         role: msg.role === 'user' ? 'user' : 'model',
@@ -977,7 +1028,7 @@ const KakaBot = () => {
    * Fluxo:
    *  1. Valida rate limit (intervalo mínimo + janela por minuto)
    *  2. Envia ao Gemini via `chatRef.current.sendMessage()` (mantém histórico da sessão)
-   *  3. Extrai possível bloco ```action``` da resposta via `extrairAcao()`
+   *  3. Extrai possíveis blocos ```action``` da resposta via `extrairAcoes()`
    *  4. Exibe a resposta de texto na UI
    *  5. Se houver ação, executa no Firestore via `executarAcao()`
    *  6. Persiste o histórico atualizado na memória do Firestore
@@ -1015,6 +1066,21 @@ const KakaBot = () => {
 
     // Persiste e atualiza UI com a mensagem do usuário
     await adicionarMensagem(userMsg);
+
+    // ── Resposta local para mensagens triviais (economiza tokens) ──
+    const respostaLocal = tentarRespostaLocal(userMessage);
+    if (respostaLocal) {
+      const assistantTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const localMsg = {
+        role: 'assistant',
+        content: respostaLocal,
+        timestamp: new Date().toISOString(),
+        time: assistantTime,
+      };
+      await adicionarMensagem(localMsg);
+      return;
+    }
+
     setIsLoading(true);
 
     const now = Date.now();
@@ -1026,21 +1092,25 @@ const KakaBot = () => {
       const response = await result.response;
       const textoCompleto = response.text();
 
-      const { textoLimpo, acao } = extrairAcao(textoCompleto);
+      // Extrair TODAS as ações e limpar o texto
+      const { textoLimpo, acoes } = extrairAcoes(textoCompleto);
+
+      // Sanitizar como fallback — garante que nenhum JSON vaze na UI
+      const textoFinal = sanitizarTexto(textoLimpo);
 
       const assistantTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const assistantMsg = {
         role: 'assistant',
-        content: textoLimpo,
+        content: textoFinal,
         timestamp: new Date().toISOString(),
         time: assistantTime,
-        acaoExecutada: acao?.acao || null,
-        acaoLabel: acao ? getAcaoLabel(acao.acao, acao.dados) : null,
+        acaoExecutada: acoes.length > 0 ? acoes.map(a => a.acao).join(', ') : null,
+        acaoLabel: acoes.length > 0 ? acoes.map(a => getAcaoLabel(a.acao, a.dados)).join(' | ') : null,
       };
 
       // Digitação progressiva — exibe palavra por palavra antes de persistir
       setIsLoading(false);
-      const palavras = textoLimpo.split(' ');
+      const palavras = textoFinal.split(' ');
       const msgParcial = { ...assistantMsg, content: '' };
       setMensagensVisiveis((prev) => [...prev, msgParcial]);
 
@@ -1064,23 +1134,37 @@ const KakaBot = () => {
       // Persiste a mensagem completa no Firestore após a digitação progressiva
       await adicionarMensagemSemUI(assistantMsg);
 
-      if (acao) {
+      // Executar TODAS as ações encontradas em série
+      if (acoes.length > 0) {
         setIsExecutingAction(true);
-        const resultado = await executarAcao(acao, uid, materiasLista);
+
+        const resultados = await executarAcoes(acoes, uid, materiasLista);
+
         setIsExecutingAction(false);
 
-        // Resultado da ação é system message transiente (não persiste)
-        addSystemMessage(
-          resultado.mensagem,
-          resultado.sucesso ? 'success' : 'error'
-        );
-
-        if (resultado.sucesso) {
-          await registrarAcaoNaMemoria(acao.acao);
+        for (const resultado of resultados) {
+          addSystemMessage(
+            resultado.mensagem,
+            resultado.sucesso ? 'success' : 'error'
+          );
         }
 
-        if (acao.acao === 'ATUALIZAR_PREFERENCIAS' && resultado.sucesso && resultado.dadosRetorno?.preferencias) {
-          await salvarMemoria([], resultado.dadosRetorno.preferencias);
+        // Registrar ações bem-sucedidas na memória
+        for (const [i, resultado] of resultados.entries()) {
+          if (resultado.sucesso) {
+            await registrarAcaoNaMemoria(acoes[i].acao);
+          }
+        }
+
+        // Se alguma ação for ATUALIZAR_PREFERENCIAS, processar
+        for (const [i, resultado] of resultados.entries()) {
+          if (
+            acoes[i].acao === 'ATUALIZAR_PREFERENCIAS' &&
+            resultado.sucesso &&
+            resultado.dadosRetorno?.preferencias
+          ) {
+            await salvarMemoria([], resultado.dadosRetorno.preferencias);
+          }
         }
       }
     } catch (error) {

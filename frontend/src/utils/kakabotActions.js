@@ -28,26 +28,47 @@ import {
 } from '../services/firebaseService';
 
 /**
- * Extrai o bloco ```action { ... }``` da resposta do Gemini.
- * Retorna o texto limpo (sem o bloco JSON) e a ação parseada.
+ * Extrai TODAS as ações do texto de resposta do Gemini.
+ * NOTE: o Gemini pode gerar múltiplos blocos ```action``` em uma resposta.
+ *       A versão anterior usava .match() que retorna só o primeiro — corrigido
+ *       para .matchAll() que captura todos os blocos.
  *
  * @param {string} texto - Resposta completa do Gemini
- * @returns {{ textoLimpo: string, acao: object|null }}
+ * @returns {{ textoLimpo: string, acoes: object[] }}
+ */
+export const extrairAcoes = (texto) => {
+  const regex = /```action\s*([\s\S]*?)```/g;
+  const matches = [...texto.matchAll(regex)];
+
+  if (matches.length === 0) {
+    return { textoLimpo: texto, acoes: [] };
+  }
+
+  const acoes = [];
+
+  for (const match of matches) {
+    try {
+      const acao = JSON.parse(match[1].trim());
+      acoes.push(acao);
+    } catch {
+      // WARN: bloco action malformado — ignorar silenciosamente
+      console.warn('[KakaBot] Bloco action inválido ignorado:', match[1]);
+    }
+  }
+
+  // Remover TODOS os blocos action do texto
+  const textoLimpo = texto.replace(regex, '').trim();
+
+  return { textoLimpo, acoes };
+};
+
+/**
+ * Compat: mantém a API antiga para qualquer código que ainda use extrairAcao.
+ * @deprecated Use extrairAcoes (plural) em vez desta.
  */
 export const extrairAcao = (texto) => {
-  const regex = /```action\s*([\s\S]*?)```/;
-  const match = texto.match(regex);
-
-  if (!match) return { textoLimpo: texto, acao: null };
-
-  try {
-    const acao = JSON.parse(match[1].trim());
-    const textoLimpo = texto.replace(regex, '').trim();
-    return { textoLimpo, acao };
-  } catch {
-    console.warn('[KakaBot] Falha ao parsear bloco action:', match[1]);
-    return { textoLimpo: texto, acao: null };
-  }
+  const { textoLimpo, acoes } = extrairAcoes(texto);
+  return { textoLimpo, acao: acoes[0] || null };
 };
 
 /**
@@ -248,4 +269,24 @@ export const executarAcao = async (acao, uid, materias = []) => {
       mensagem: `❌ Erro ao executar ação: ${error.message || String(error)}`,
     };
   }
+};
+
+/**
+ * Executa múltiplas ações em sequência, aguardando cada uma completar.
+ * NOTE: execução em série (não paralela) para evitar conflitos no Firestore
+ *       e garantir que o usuário veja os resultados na ordem correta.
+ *
+ * @param {object[]} acoes   - Array de ações { acao, dados }
+ * @param {string}   uid     - UID do usuário
+ * @param {Array}    materias - Lista de matérias para lookup
+ * @returns {Promise<{ sucesso: boolean, mensagem: string, dadosRetorno?: any }[]>}
+ */
+export const executarAcoes = async (acoes, uid, materias = []) => {
+  const resultados = [];
+  for (const acao of acoes) {
+    // WARN: await dentro do for é intencional — execução serial garantida
+    const resultado = await executarAcao(acao, uid, materias);
+    resultados.push(resultado);
+  }
+  return resultados;
 };
