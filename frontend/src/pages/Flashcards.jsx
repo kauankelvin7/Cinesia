@@ -852,7 +852,7 @@ function Flashcards() {
         <AnimatePresence>
           {modoEstudo && currentFlashcard && (
             <motion.div
-              className="fixed inset-0 z-50 bg-slate-900 flex flex-col"
+              className="fixed inset-0 z-[70] bg-slate-900 flex flex-col"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
