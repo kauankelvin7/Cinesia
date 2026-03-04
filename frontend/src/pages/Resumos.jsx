@@ -46,6 +46,10 @@ import {
   BarChart2,
   ArrowUpDown,
   Layers,
+  Eye,
+  ZoomIn,
+  ZoomOut,
+  AlignLeft,
 } from 'lucide-react';
 import { 
   listarResumos, 
@@ -668,172 +672,256 @@ function Resumos() {
 
         <AnimatePresence>
           {showModal && (
-            <motion.div className="resumo-modal-overlay fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm}>
-              <motion.div className="resumo-modal bg-white dark:bg-slate-900 rounded-2xl shadow-md w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none print:shadow-none" initial={{ scale: 0.97, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.97, opacity: 0, y: 8 }} onClick={(e) => e.stopPropagation()}>
-                {/* HEADER — mobile: seta voltar + título + botão Salvar; desktop: ícone + título + botões */}
-                <div className="resumo-modal-header px-4 md:px-6 py-4 md:py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800 print:bg-white print:border-none gap-2">
-                  {/* Esquerda: seta no mobile, ícone no desktop */}
-                  <div className="flex items-center gap-3 min-w-0">
+            <motion.div
+              className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={resetForm}
+            >
+              <motion.div
+                className="bg-white dark:bg-slate-900 w-full sm:rounded-2xl shadow-xl sm:max-w-5xl max-h-[96dvh] sm:max-h-[90vh] overflow-hidden flex flex-col print:max-h-full print:rounded-none"
+                initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* ── HEADER ── */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 print:hidden shrink-0">
+                  {/* Fechar */}
+                  <button
+                    onClick={resetForm}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                    aria-label="Fechar"
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Ícone + título */}
+                  <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950 flex items-center justify-center shrink-0">
+                    <FileText size={16} className="text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <span className="font-semibold text-slate-900 dark:text-white text-sm sm:text-base truncate flex-1 min-w-0">
+                    {formData.titulo || (editingId ? 'Editar Resumo' : 'Novo Resumo')}
+                  </span>
+
+                  {/* Tab switcher — Editar / Visualizar */}
+                  <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0">
                     <button
-                      onClick={resetForm}
-                      className="resumo-header-back flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors print:hidden"
-                      aria-label="Fechar"
+                      onClick={() => {
+                        setModalMode('edit');
+                        if (viewingResumo) {
+                          setFormData({ titulo: viewingResumo.titulo, conteudo: viewingResumo.conteudo, materiaId: viewingResumo.materiaId || '' });
+                          setViewingResumo(null);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        modalMode === 'edit'
+                          ? 'bg-white dark:bg-slate-700 text-violet-700 dark:text-violet-300 shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
                     >
-                      {/* seta no mobile, X no desktop */}
-                      <svg className="back-mobile" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                      <svg className="back-desktop" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      <Edit2 size={13} />
+                      <span className="hidden xs:inline">Editar</span>
                     </button>
-                    {/* ícone — só no desktop */}
-                    <div className="hidden md:flex w-9 h-9 rounded-lg bg-violet-50 items-center justify-center print:bg-white print:shadow-none flex-shrink-0">
-                      <FileText size={18} className="text-violet-600 print:text-violet-700" />
-                    </div>
-                    <h2 className="text-base md:text-xl font-semibold text-slate-900 dark:text-white truncate">{modalMode === 'edit' ? (editingId ? 'Editar Resumo' : 'Novo Resumo') : 'Visualização do Resumo'}</h2>
+                    <button
+                      onClick={() => {
+                        setModalMode('view');
+                        setViewingResumo({
+                          titulo: formData.titulo,
+                          conteudo: formData.conteudo,
+                          materiaId: formData.materiaId,
+                          createdAt: viewingResumo?.createdAt
+                        });
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                        modalMode === 'view'
+                          ? 'bg-white dark:bg-slate-700 text-violet-700 dark:text-violet-300 shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <Eye size={13} />
+                      <span className="hidden xs:inline">Visualizar</span>
+                    </button>
                   </div>
 
-                  {/* Direita: botões de ação */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Ações contextuais */}
+                  <div className="flex items-center gap-1 shrink-0">
                     {modalMode === 'edit' && (
-                      <>
-                        {/* Botão Salvar — destacado no mobile, discreet no desktop */}
-                        <button
-                          form="resumo-form"
-                          type="submit"
-                          disabled={!formData.titulo.trim() || !formData.conteudo.trim()}
-                          className="resumo-header-save mr-1 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all
-                            bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed print:hidden"
-                        >
-                          {editingId ? 'Atualizar' : 'Salvar'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setModalMode('view');
-                            setViewingResumo({
-                              titulo: formData.titulo,
-                              conteudo: formData.conteudo,
-                              materiaId: formData.materiaId,
-                              createdAt: viewingResumo?.createdAt
-                            });
-                          }}
-                          className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors print:hidden"
-                          title="Visualizar"
-                        >
-                          <FileText size={20} />
-                        </button>
-                      </>
+                      <button
+                        form="resumo-form"
+                        type="submit"
+                        disabled={!formData.titulo.trim() || !formData.conteudo.trim()}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {editingId ? 'Atualizar' : 'Salvar'}
+                      </button>
                     )}
                     {modalMode === 'view' && (
                       <>
-                        <div className="flex items-center gap-1 mr-1">
+                        {/* Zoom - / % / + */}
+                        <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
                           <button
                             onClick={() => setViewFontSize(f => Math.max(0.8, +(f - 0.1).toFixed(2)))}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                            title="Diminuir fonte"
-                            style={{fontSize: '1em'}}
-                            aria-label="Diminuir fonte"
                             disabled={viewFontSize <= 0.8}
+                            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 transition-colors text-sm font-bold"
+                            title="Diminuir fonte"
                           >
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <ZoomOut size={14} />
                           </button>
-                          <span className="text-xs text-slate-400 select-none" style={{minWidth:32,display:'inline-block',textAlign:'center'}}>{Math.round(viewFontSize*100)}%</span>
+                          <span className="text-xs text-slate-400 select-none px-1 min-w-[30px] text-center tabular-nums">
+                            {Math.round(viewFontSize * 100)}%
+                          </span>
                           <button
                             onClick={() => setViewFontSize(f => Math.min(2, +(f + 0.1).toFixed(2)))}
-                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                            title="Aumentar fonte"
-                            style={{fontSize: '1em'}}
-                            aria-label="Aumentar fonte"
                             disabled={viewFontSize >= 2}
+                            className="w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 transition-colors"
+                            title="Aumentar fonte"
                           >
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <ZoomIn size={14} />
                           </button>
                         </div>
                         <button
-                          onClick={() => {
-                            setModalMode('edit');
-                            setFormData({
-                              titulo: viewingResumo?.titulo || '',
-                              conteudo: viewingResumo?.conteudo || '',
-                              materiaId: viewingResumo?.materiaId || ''
-                            });
-                            setViewingResumo(null);
-                          }}
-                          className="p-2 rounded-lg hover:bg-purple-50 text-purple-600 transition-colors print:hidden"
-                          title="Editar"
-                        >
-                          <Edit2 size={20} />
-                        </button>
-                        <button
                           onClick={exportarPdf}
                           disabled={exportingPdf}
-                          className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 transition-colors print:hidden disabled:opacity-40"
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 transition-colors disabled:opacity-40"
                           title="Exportar PDF"
                         >
                           {exportingPdf ? (
-                            <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" /></svg>
+                            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="20" /></svg>
                           ) : (
-                            <Download size={20} />
+                            <Download size={14} />
                           )}
+                          <span className="hidden sm:inline">PDF</span>
                         </button>
                       </>
                     )}
-                    <button onClick={resetForm} className="ml-1 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors print:hidden back-desktop-only" aria-label="Fechar">
-                      <X size={20} />
-                    </button>
                   </div>
                 </div>
+
+                {/* ── BODY ── */}
                 {modalMode === 'edit' ? (
                   <form id="resumo-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-                    <div className="p-6 space-y-6">
+                    <div className="p-5 sm:p-6 space-y-5">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Input label="Título do Resumo" placeholder="Ex: Sistema Nervoso Central" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })} required />
-                        <Select label="Matéria" value={formData.materiaId} onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })} required>
+                        <div>
+                          <Input
+                            label="Título do Resumo"
+                            placeholder="Ex: Sistema Nervoso Central"
+                            value={formData.titulo}
+                            onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                            required
+                          />
+                          <p className="mt-1 text-xs text-slate-400">{formData.titulo.length} caracteres</p>
+                        </div>
+                        <Select
+                          label="Matéria"
+                          value={formData.materiaId}
+                          onChange={(e) => setFormData({ ...formData, materiaId: e.target.value })}
+                          required
+                        >
                           <option value="">Selecione uma matéria</option>
-                          {materias.map(materia => <option key={materia.id} value={materia.id}>{materia.nome}</option>)}
+                          {materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
                         </Select>
                       </div>
+
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Conteúdo do Resumo<span className="text-red-500 ml-1">*</span></label>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                              Conteúdo <span className="text-red-500">*</span>
+                            </label>
+                            {formData.conteudo && (
+                              <span className="flex items-center gap-1 text-xs text-slate-400">
+                                <AlignLeft size={12} />
+                                {stripHtml(formData.conteudo).trim().split(/\s+/).filter(Boolean).length} palavras
+                                &middot; {estimateReadingTime(formData.conteudo)} leitura
+                              </span>
+                            )}
+                          </div>
                           {!editingId && (
                             <motion.button
                               type="button"
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => setFormData({ ...formData, conteudo: TEMPLATE_CASO_CLINICO })}
-                              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 rounded-lg transition-colors"
                             >
-                              <ClipboardList size={16} />
-                              Usar Template Caso Clínico
+                              <ClipboardList size={14} />
+                              Template Caso Clínico
                             </motion.button>
                           )}
                         </div>
-                        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-purple-500 focus-within:ring-4 focus-within:ring-purple-500/10 transition-all">
-                          <Suspense fallback={<div className='text-center py-10 text-slate-400'>Carregando editor...</div>}>
-                            <ReactQuill theme="snow" value={formData.conteudo} onChange={(content) => setFormData({ ...formData, conteudo: content })} modules={quillModules} formats={quillFormats} placeholder="Escreva seu resumo aqui... Use a barra de ferramentas para formatar o texto." className="quill-editor-custom" style={{ minHeight: '320px' }} />
+                        <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all">
+                          <Suspense fallback={<div className="text-center py-10 text-slate-400 text-sm">Carregando editor...</div>}>
+                            <ReactQuill
+                              theme="snow"
+                              value={formData.conteudo}
+                              onChange={(content) => setFormData({ ...formData, conteudo: content })}
+                              modules={quillModules}
+                              formats={quillFormats}
+                              placeholder="Escreva seu resumo aqui..."
+                              className="quill-editor-custom"
+                              style={{ minHeight: '300px' }}
+                            />
                           </Suspense>
                         </div>
-                        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Use as ferramentas acima para formatar seu texto (negrito, listas, cores, etc.)</p>
                       </div>
-                      {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+
+                      {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
+                      )}
                     </div>
-                    <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex gap-3 print:hidden">
-                      <Button type="submit" variant="primary" size="lg" className="flex-1">{editingId ? 'Atualizar Resumo' : 'Salvar Resumo'}</Button>
+
+                    <div className="px-5 sm:px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex gap-3 print:hidden shrink-0">
+                      <Button type="submit" variant="primary" size="lg" className="flex-1">
+                        {editingId ? 'Atualizar Resumo' : 'Salvar Resumo'}
+                      </Button>
                       <Button type="button" variant="secondary" size="lg" onClick={resetForm}>Cancelar</Button>
                     </div>
                   </form>
                 ) : (
-                  <div className="flex-1 overflow-y-auto print:overflow-visible">
-                    <div id="resumo-view-content" className="p-8 print:p-0 max-w-3xl mx-auto" style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}>
-                      <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2 print:mb-1 print:text-2xl">{(viewingResumo?.titulo || formData.titulo) || 'Sem título'}</h1>
-                      <div className="mb-4 flex gap-2 items-center print:mb-2">
-                        <Badge color={getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).cor} size="sm">
-                          <span>{getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).nome}</span>
-                        </Badge>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">{formatDate(viewingResumo?.createdAt)}</span>
+                  <div className="flex-1 overflow-y-auto print:overflow-visible bg-slate-50 dark:bg-slate-950">
+                    <div id="resumo-view-content" className="max-w-2xl mx-auto px-6 sm:px-10 py-8 print:p-0">
+                      {/* Bloco de título + meta */}
+                      <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+                        <h1
+                          className="font-bold text-slate-900 dark:text-white leading-tight mb-3 print:text-2xl"
+                          style={{ fontSize: `${Math.min(viewFontSize * 1.8, 2.4)}em`, transition: 'font-size 0.2s' }}
+                        >
+                          {(viewingResumo?.titulo || formData.titulo) || 'Sem título'}
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
+                          <Badge color={getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).cor} size="sm">
+                            {getMateriaInfo((viewingResumo?.materiaId || formData.materiaId)).nome}
+                          </Badge>
+                          {viewingResumo?.createdAt && (
+                            <span className="flex items-center gap-1 text-slate-400">
+                              <Calendar size={13} />
+                              {formatDate(viewingResumo.createdAt)}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <Clock size={13} />
+                            {estimateReadingTime(viewingResumo?.conteudo || formData.conteudo)} leitura
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-400">
+                            <AlignLeft size={13} />
+                            {stripHtml(viewingResumo?.conteudo || formData.conteudo).trim().split(/\s+/).filter(Boolean).length} palavras
+                          </span>
+                        </div>
                       </div>
-                      <div 
-                        className="prose prose-purple max-w-none print:prose print:prose-sm"
-                        style={{ wordBreak: 'break-word', fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s' }}
-                        dangerouslySetInnerHTML={{ __html: (viewingResumo?.conteudo || formData.conteudo) || '<p class="text-slate-400">Sem conteúdo</p>' }}
+
+                      {/* Conteúdo HTML */}
+                      <div
+                        className="prose prose-slate dark:prose-invert max-w-none
+                          prose-headings:font-bold prose-headings:text-slate-900 dark:prose-headings:text-white
+                          prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-relaxed
+                          prose-li:text-slate-700 dark:prose-li:text-slate-300
+                          prose-strong:text-slate-900 dark:prose-strong:text-white
+                          prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
+                          print:prose-sm"
+                        style={{ fontSize: `${viewFontSize}em`, transition: 'font-size 0.2s', wordBreak: 'break-word' }}
+                        dangerouslySetInnerHTML={{
+                          __html: (viewingResumo?.conteudo || formData.conteudo) || '<p style="color:#94a3b8">Sem conteúdo</p>'
+                        }}
                       />
                     </div>
                   </div>
