@@ -980,7 +980,7 @@ function Resumos() {
                                 <button
                                   type="button"
                                   onClick={() => removeImage(idx)}
-                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow"
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow hover:bg-red-600 active:scale-90 transition-transform"
                                   title="Remover imagem"
                                 >
                                   <X size={12} />
