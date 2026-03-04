@@ -9,7 +9,8 @@
  * - Indicador de progresso
  */
 
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,9 +35,17 @@ import {
   FileText,
   Palette,
   Target,
-  TrendingUp
+  TrendingUp,
+  Search,
+  ArrowUpDown,
+  ChevronRight,
+  Clock,
+  RotateCcw,
+  CheckCircle2,
+  Layers
 } from 'lucide-react';
-import { listarMaterias, criarMateria, atualizarMateria, deletarMateria } from '../services/firebaseService';
+import { listarMaterias, criarMateria, atualizarMateria, deletarMateria, listarFlashcards } from '../services/firebaseService';
+import { isDueForReview } from '../utils/sm2';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useDashboardData } from '../contexts/DashboardDataContext';
 import Button from '../components/ui/Button';
@@ -57,8 +66,10 @@ const CORES_DISPONIVEIS = [
 
 function Materias() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { loadData: loadCachedData, refreshData } = useDashboardData();
   const [materias, setMaterias] = useState([]);
+  const [allFlashcards, setAllFlashcards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -69,6 +80,8 @@ function Materias() {
     concluida: false
   });
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('recente');
 
   // Estado do Modal de Confirmação
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null, nome: '' });
@@ -76,6 +89,79 @@ function Materias() {
   
   // Estado da Meta Mensal (Questões Resolvidas)
   const [metaMensal, setMetaMensal] = useState({ atual: 0, meta: 50, porcentagem: 0 });
+
+  // ========== DADOS COMPUTADOS ==========
+  const reviewsByMateria = useMemo(() => {
+    const map = {};
+    allFlashcards.forEach(fc => {
+      const mid = fc.materiaId;
+      if (!mid) return;
+      if (!map[mid]) map[mid] = { total: 0, pending: 0 };
+      map[mid].total++;
+      if (isDueForReview(fc)) map[mid].pending++;
+    });
+    return map;
+  }, [allFlashcards]);
+
+  const totalPendingReviews = useMemo(() => {
+    return Object.values(reviewsByMateria).reduce((sum, r) => sum + r.pending, 0);
+  }, [reviewsByMateria]);
+
+  const completionPercent = useMemo(() => {
+    if (materias.length === 0) return 0;
+    return Math.round((materias.filter(m => m.concluida).length / materias.length) * 100);
+  }, [materias]);
+
+  // Última atividade por matéria (baseado no flashcard mais recente)
+  const lastActivityByMateria = useMemo(() => {
+    const map = {};
+    allFlashcards.forEach(fc => {
+      const mid = fc.materiaId;
+      if (!mid) return;
+      const ts = fc.updatedAt?.toDate?.() || fc.updatedAt || fc.createdAt?.toDate?.() || fc.createdAt;
+      if (!ts) return;
+      const date = ts instanceof Date ? ts : new Date(ts);
+      if (!map[mid] || date > map[mid]) map[mid] = date;
+    });
+    return map;
+  }, [allFlashcards]);
+
+  // Filtrar + Ordenar
+  const filterAndSort = (list) => {
+    let filtered = list;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(m => m.nome.toLowerCase().includes(term) || (m.descricao || '').toLowerCase().includes(term));
+    }
+    const sorted = [...filtered];
+    switch (sortBy) {
+      case 'nome':
+        sorted.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+        break;
+      case 'flashcards':
+        sorted.sort((a, b) => (b.totalFlashcards || 0) - (a.totalFlashcards || 0));
+        break;
+      case 'revisao':
+        sorted.sort((a, b) => (reviewsByMateria[b.id]?.pending || 0) - (reviewsByMateria[a.id]?.pending || 0));
+        break;
+      case 'recente':
+      default:
+        break; // already ordered by createdAt desc from Firestore
+    }
+    return sorted;
+  };
+
+  const formatTimeAgo = (date) => {
+    if (!date) return null;
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Ontem';
+    if (diffDays < 7) return `${diffDays} dias atrás`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} sem. atrás`;
+    return `${Math.floor(diffDays / 30)} mês(es) atrás`;
+  };
 
   useEffect(() => {
     if (user) {
@@ -100,8 +186,13 @@ function Materias() {
   const carregarMaterias = async () => {
     try {
       setLoading(true);
-      const data = await listarMaterias(user.id || user.uid);
+      const userId = user.id || user.uid;
+      const [data, fcData] = await Promise.all([
+        listarMaterias(userId),
+        listarFlashcards(userId)
+      ]);
       setMaterias(data);
+      setAllFlashcards(fcData);
       setError(null);
     } catch (err) {
       setError('Não encontramos suas matérias agora. Tente novamente em instantes.');
@@ -274,20 +365,74 @@ function Materias() {
           </div>
 
           {/* Cards de estatísticas rápidas */}
-          <div className="grid grid-cols-1 ipad:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            {/* Progresso geral */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total de Matérias</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{materias.length}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Progresso Geral</p>
+                <CheckCircle2 size={16} className="text-emerald-500" />
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{completionPercent}%</p>
+              <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-500 bg-emerald-500"
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1">{materias.filter(m => m.concluida).length} de {materias.length} conclu\u00eddas</p>
             </div>
+            {/* Mat\u00e9rias ativas */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Matérias Ativas</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Mat\u00e9rias Ativas</p>
+                <Layers size={16} className="text-primary-500" />
+              </div>
               <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">{materias.filter(m => !m.concluida).length}</p>
+              <p className="text-xs text-slate-400 mt-1">de {materias.length} total</p>
+            </div>
+            {/* Revis\u00f5es pendentes */}
+            <div 
+              className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/flashcards')}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400">Revis\u00f5es Pendentes</p>
+                <RotateCcw size={16} className="text-amber-500" />
+              </div>
+              <p className={`text-2xl font-bold ${totalPendingReviews > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>{totalPendingReviews}</p>
+              <p className="text-xs text-slate-400 mt-1">flashcards para revisar hoje</p>
+            </div>
+          </div>
+
+          {/* Barra de Busca + Ordena\u00e7\u00e3o */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-6">
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar mat\u00e9ria..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 transition-colors"
+              />
+            </div>
+            <div className="relative">
+              <ArrowUpDown size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 transition-colors"
+              >
+                <option value="recente">Mais Recente</option>
+                <option value="nome">Alfab\u00e9tico</option>
+                <option value="flashcards">Mais Flashcards</option>
+                <option value="revisao">Mais Revis\u00f5es</option>
+              </select>
             </div>
           </div>
         </motion.div>
 
         {/* Grid de Cards */}
-        {/* Separar matérias ativas e concluídas */}
         {materias.length === 0 ? (
           <motion.div
             className="text-center py-20"
@@ -298,10 +443,10 @@ function Materias() {
               <BookOpen size={40} className="text-primary-600 dark:text-primary-400" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Nenhuma matéria cadastrada
+              Nenhuma mat\u00e9ria cadastrada
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-8">
-              Crie sua primeira matéria para começar a organizar seus estudos
+              Crie sua primeira mat\u00e9ria para come\u00e7ar a organizar seus estudos
             </p>
             <Button
               variant="primary"
@@ -309,185 +454,215 @@ function Materias() {
               leftIcon={<Plus size={20} />}
               onClick={() => setShowModal(true)}
             >
-              Criar Primeira Matéria
+              Criar Primeira Mat\u00e9ria
             </Button>
           </motion.div>
         ) : (
           <>
             {/* Ativas */}
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2 mt-8">Matérias Ativas</h2>
-            <motion.div
-              className="grid gap-6"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
-              variants={gridVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {materias.filter(m => !m.concluida).length === 0 && (
-                <div className="col-span-full text-center text-slate-400 py-8">Nenhuma matéria ativa</div>
-              )}
-              {materias.filter(m => !m.concluida).map((materia, index) => (
-                <motion.div
-                  key={materia.id}
-                  className="group"
-                  variants={cardItemVariants}
-                  whileHover={{ y: -3, transition: { duration: 0.15 } }}
-                >
-                  <div 
-                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-slate-200/60 dark:border-slate-700/60 min-h-[180px] h-full flex flex-col"
-                    style={{ borderTopColor: materia.cor || '#0EA5E9', borderTopWidth: '3px', borderTopStyle: 'solid' }}
+            {(() => {
+              const ativas = filterAndSort(materias.filter(m => !m.concluida));
+              return (
+                <>
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 mt-8 flex items-center gap-2">
+                    Mat\u00e9rias Ativas
+                    <span className="text-sm font-normal text-slate-400">({ativas.length})</span>
+                  </h2>
+                  <motion.div
+                    className="grid gap-6"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                    variants={gridVariants}
+                    initial="hidden"
+                    animate="visible"
                   >
-                    {/* Card Header */}
-                    <div className="p-4 sm:p-5 flex-1">
-                      <div className="flex items-start justify-between mb-3">
-                        <div 
-                          className="w-12 h-12 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${materia.cor || '#0EA5E9'}15`, color: materia.cor || '#0EA5E9' }}
+                    {ativas.length === 0 && (
+                      <div className="col-span-full text-center text-slate-400 py-8">
+                        {searchTerm ? 'Nenhuma mat\u00e9ria encontrada' : 'Nenhuma mat\u00e9ria ativa'}
+                      </div>
+                    )}
+                    {ativas.map((materia) => {
+                      const pendingCount = reviewsByMateria[materia.id]?.pending || 0;
+                      const lastActivity = lastActivityByMateria[materia.id];
+                      const timeAgo = formatTimeAgo(lastActivity);
+                      return (
+                        <motion.div
+                          key={materia.id}
+                          className="group"
+                          variants={cardItemVariants}
+                          whileHover={{ y: -3, transition: { duration: 0.15 } }}
                         >
-                          <BookOpen size={22} />
-                        </div>
-                        <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ml-2">
-                          <button
-                            onClick={() => handleEdit(materia)}
-                            className="p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950 text-slate-400 sm:text-primary-600 sm:dark:text-primary-400 transition-colors active:scale-95"
-                            title="Editar"
+                          <div 
+                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-slate-200/60 dark:border-slate-700/60 h-full flex flex-col"
+                            style={{ borderTopColor: materia.cor || '#0EA5E9', borderTopWidth: '3px', borderTopStyle: 'solid' }}
                           >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(materia)}
-                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 sm:text-red-600 sm:dark:text-red-400 transition-colors active:scale-95"
-                            title="Excluir"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1 truncate max-w-full" style={{wordBreak:'break-word'}}>
-                        {materia.nome}
-                      </h3>
-                      {materia.descricao && (
-                        <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm line-clamp-2 mb-3 max-w-full" style={{wordBreak:'break-word'}}>
-                          {materia.descricao}
-                        </p>
-                      )}
-                    </div>
-                    {/* Card Footer */}
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
-                      <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center">
-                        <div>
-                          <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
-                            <CreditCard size={14} />
-                            <p className="text-[10px] sm:text-xs font-medium">Flashcards</p>
+                            {/* Card Header */}
+                            <div className="p-4 sm:p-5 flex-1">
+                              <div className="flex items-start justify-between mb-3">
+                                <div 
+                                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                  style={{ backgroundColor: `${materia.cor || '#0EA5E9'}15`, color: materia.cor || '#0EA5E9' }}
+                                >
+                                  <BookOpen size={20} />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  {pendingCount > 0 && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold border border-amber-200/60 dark:border-amber-700/40">
+                                      <RotateCcw size={11} />
+                                      {pendingCount}
+                                    </span>
+                                  )}
+                                  <div className="flex gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ml-1">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleEdit(materia); }}
+                                      className="p-1.5 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950 text-slate-400 sm:text-primary-600 sm:dark:text-primary-400 transition-colors active:scale-95"
+                                      title="Editar"
+                                    >
+                                      <Edit2 size={14} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDelete(materia); }}
+                                      className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 sm:text-red-600 sm:dark:text-red-400 transition-colors active:scale-95"
+                                      title="Excluir"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1 truncate" style={{wordBreak:'break-word'}}>
+                                {materia.nome}
+                              </h3>
+                              {materia.descricao && (
+                                <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm line-clamp-2 mb-2" style={{wordBreak:'break-word'}}>
+                                  {materia.descricao}
+                                </p>
+                              )}
+                              {timeAgo && (
+                                <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                                  <Clock size={12} />
+                                  <span>{timeAgo}</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Card Footer — Atalhos + Stats */}
+                            <div className="px-4 sm:px-5 py-3 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={() => navigate('/flashcards', { state: { filterMateria: materia.id } })}
+                                    className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors group/link"
+                                    title="Ver Flashcards"
+                                  >
+                                    <CreditCard size={13} />
+                                    <span>{materia.totalFlashcards || 0}</span>
+                                    <ChevronRight size={12} className="opacity-0 -ml-1 group-hover/link:opacity-100 transition-opacity" />
+                                  </button>
+                                  <button
+                                    onClick={() => navigate('/resumos', { state: { filterMateria: materia.id } })}
+                                    className="flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors group/link"
+                                    title="Ver Resumos"
+                                  >
+                                    <FileText size={13} />
+                                    <span>{materia.totalResumos || 0}</span>
+                                    <ChevronRight size={12} className="opacity-0 -ml-1 group-hover/link:opacity-100 transition-opacity" />
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => toggleConcluida(materia)}
+                                  className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-600 dark:text-emerald-400 transition-colors border border-emerald-100 dark:border-emerald-800 active:scale-95"
+                                  title="Marcar como conclu\u00edda"
+                                >
+                                  <TrendingUp size={14} />
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                            {materia.totalFlashcards || 0}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
-                            <FileText size={14} />
-                            <p className="text-[10px] sm:text-xs font-medium">Resumos</p>
-                          </div>
-                          <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                            {materia.totalResumos || 0}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleConcluida(materia)}
-                        className="p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-600 dark:text-emerald-400 transition-colors border border-emerald-100 dark:border-emerald-800 ml-2 active:scale-95"
-                        title="Marcar como concluída"
-                      >
-                        <TrendingUp size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                </>
+              );
+            })()}
 
-            {/* Concluídas */}
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2 mt-10">Matérias Concluídas</h2>
-            <motion.div
-              className="grid gap-6"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}
-              variants={gridVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {materias.filter(m => m.concluida).length === 0 && (
-                <div className="col-span-full text-center text-slate-400 py-8">Nenhuma matéria concluída</div>
-              )}
-              {materias.filter(m => m.concluida).map((materia, index) => (
-                <motion.div
-                  key={materia.id}
-                  className="group opacity-60 hover:opacity-80 transition-opacity"
-                  variants={cardItemVariants}
-                >
-                  <div 
-                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 min-h-[220px] h-full flex flex-col relative"
-                    style={{ borderTopColor: materia.cor || '#0EA5E9', borderTopWidth: '3px', borderTopStyle: 'solid' }}
+            {/* Conclu\u00eddas */}
+            {(() => {
+              const concluidas = filterAndSort(materias.filter(m => m.concluida));
+              if (concluidas.length === 0 && !searchTerm) return null;
+              return (
+                <>
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-3 mt-10 flex items-center gap-2">
+                    Mat\u00e9rias Conclu\u00eddas
+                    <span className="text-sm font-normal text-slate-400">({concluidas.length})</span>
+                  </h2>
+                  <motion.div
+                    className="grid gap-6"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                    variants={gridVariants}
+                    initial="hidden"
+                    animate="visible"
                   >
-                    {/* Selo de concluída ajustado para o canto superior direito, menor e sem sobrepor o ícone */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950 rounded-full px-2 py-0.5 shadow border border-emerald-100 dark:border-emerald-800 text-xs z-10" style={{minHeight:'28px'}}>
-                      <TrendingUp size={14} />
-                      <span>Concluída</span>
-                    </div>
-                    <div className="p-6 flex-1">
-                      <div className="flex items-start justify-between mb-4">
-                        <div 
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${materia.cor || '#0EA5E9'}15`, color: materia.cor || '#0EA5E9' }}
-                        >
-                          <BookOpen size={24} />
-                        </div>
-                        {/* Botão desfazer conclusão no rodapé */}
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2 truncate line-through">
-                        {materia.nome}
-                      </h3>
-                      {materia.descricao && (
-                        <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 mb-4 italic">
-                          {materia.descricao}
-                        </p>
-                      )}
-                    </div>
-                    {/* Card Footer - Info Extras e botão desfazer conclusão */}
-                    <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        <div>
-                          <div className="flex items-center justify-center gap-1 text-blue-400 mb-1">
-                            <CreditCard size={16} />
-                            <p className="text-xs font-medium">Flashcards</p>
-                          </div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {materia.totalFlashcards || 0}
-                          </p>
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-center gap-1 text-purple-400 mb-1">
-                            <FileText size={16} />
-                            <p className="text-xs font-medium">Resumos</p>
-                          </div>
-                          <p className="text-lg font-bold text-slate-900 dark:text-white">
-                            {materia.totalResumos || 0}
-                          </p>
-                        </div>
-                      </div>
-                      {/* Botão desfazer conclusão */}
-                      <button
-                        onClick={() => toggleConcluida(materia)}
-                        className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors border border-slate-200 dark:border-slate-700 ml-2"
-                        title="Desfazer conclusão"
+                    {concluidas.length === 0 && (
+                      <div className="col-span-full text-center text-slate-400 py-8">Nenhuma mat\u00e9ria encontrada</div>
+                    )}
+                    {concluidas.map((materia) => (
+                      <motion.div
+                        key={materia.id}
+                        className="group opacity-60 hover:opacity-80 transition-opacity"
+                        variants={cardItemVariants}
                       >
-                        <TrendingUp size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+                        <div 
+                          className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 h-full flex flex-col relative"
+                          style={{ borderTopColor: materia.cor || '#0EA5E9', borderTopWidth: '3px', borderTopStyle: 'solid' }}
+                        >
+                          <div className="absolute top-3 right-3 flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950 rounded-full px-2 py-0.5 shadow border border-emerald-100 dark:border-emerald-800 text-xs z-10">
+                            <CheckCircle2 size={13} />
+                            <span>Conclu\u00edda</span>
+                          </div>
+                          <div className="p-5 flex-1">
+                            <div className="flex items-start justify-between mb-3">
+                              <div 
+                                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: `${materia.cor || '#0EA5E9'}15`, color: materia.cor || '#0EA5E9' }}
+                              >
+                                <BookOpen size={20} />
+                              </div>
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 truncate line-through">
+                              {materia.nome}
+                            </h3>
+                            {materia.descricao && (
+                              <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2 italic">
+                                {materia.descricao}
+                              </p>
+                            )}
+                          </div>
+                          <div className="px-5 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1.5 text-xs text-blue-400">
+                                <CreditCard size={13} />
+                                {materia.totalFlashcards || 0}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-xs text-purple-400">
+                                <FileText size={13} />
+                                {materia.totalResumos || 0}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => toggleConcluida(materia)}
+                              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors border border-slate-200 dark:border-slate-700"
+                              title="Desfazer conclus\u00e3o"
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </>
+              );
+            })()}
           </>
         )}
 
