@@ -293,18 +293,15 @@ const Layout = memo(({ children }) => {
             ${!isQuadroBranco ? (isDesktop ? 'pt-8 px-8' : 'px-4 pt-4') : ''}
           `}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              className={`w-full ${isQuadroBranco ? 'h-full' : 'max-w-full mx-auto'}`}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <motion.div
+            key={location.pathname}
+            className={`w-full ${isQuadroBranco ? 'h-full' : 'max-w-full mx-auto'}`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
         </main>
 
         {/* Floating utilities */}

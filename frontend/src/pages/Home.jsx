@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useMemo, memo, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -24,6 +24,13 @@ import {
   Target,
   Trash2,
   CalendarDays,
+  Sun,
+  CloudSun,
+  Moon,
+  Search,
+  Layers,
+  PenLine,
+  Pencil,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useDashboardData } from '../contexts/DashboardDataContext';
@@ -40,9 +47,9 @@ import Button from '../components/ui/Button';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return { text: 'Bom dia', emoji: '☀️' };
-  if (hour >= 12 && hour < 18) return { text: 'Boa tarde', emoji: '🌤️' };
-  return { text: 'Boa noite', emoji: '🌙' };
+  if (hour >= 5 && hour < 12) return { text: 'Bom dia', Icon: Sun, color: '#FBBF24' };
+  if (hour >= 12 && hour < 18) return { text: 'Boa tarde', Icon: CloudSun, color: '#FB923C' };
+  return { text: 'Boa noite', Icon: Moon, color: '#A78BFA' };
 };
 
 const motivationalPhrases = [
@@ -61,20 +68,29 @@ const getMotivationalPhrase = () => {
   return motivationalPhrases[idx];
 };
 
-const timeAgo = (date) => {
-  if (!date) return '';
-  const now = new Date();
-  const d = date?.toDate?.() || new Date(date);
-  const diffMs = now - d;
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return 'agora';
-  if (diffMin < 60) return `há ${diffMin}min`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `há ${diffH}h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `há ${diffD}d`;
-  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+const getStoredMetaMensal = () => {
+  try {
+    const raw = localStorage.getItem('cinesia:meta:mensal');
+    if (raw == null) return { value: 50, hasSaved: false };
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed < 1) return { value: 50, hasSaved: false };
+    return { value: Math.min(500, Math.round(parsed)), hasSaved: true };
+  } catch {
+    return { value: 50, hasSaved: false };
+  }
 };
+
+const parseSafeDate = (value) => {
+  try {
+    const candidate = value?.toDate?.() || (value ? new Date(value) : null);
+    if (!candidate || Number.isNaN(candidate.getTime())) return null;
+    return candidate;
+  } catch {
+    return null;
+  }
+};
+
+
 
 /* ═══════════════════════════════════════════
    ANIMATION VARIANTS
@@ -186,13 +202,13 @@ Avatar.displayName = 'Avatar';
    KPI CARD — hero mini-card com linha colorida
    ═══════════════════════════════════════════ */
 const KPI_VARIANTS = {
-  materias:  { color: '#60a5fa', icon: '📚', label: 'Matérias',   sublabel: 'cadastradas',    path: '/materias'  },
-  flashcard: { color: '#fb923c', icon: '🃏', label: 'Flashcards', sublabel: 'para revisão',   path: '/flashcards' },
-  resumos:   { color: '#34d399', icon: '📝', label: 'Resumos',    sublabel: 'salvos',          path: '/resumos'   },
+  materias:  { color: '#60a5fa', Icon: BookOpen,   label: 'Matérias',   sublabel: 'cadastradas',    path: '/materias'  },
+  flashcard: { color: '#fb923c', Icon: CreditCard, label: 'Flashcards', sublabel: 'para revisão',   path: '/flashcards' },
+  resumos:   { color: '#34d399', Icon: FileText,   label: 'Resumos',    sublabel: 'salvos',          path: '/resumos'   },
 };
 
 const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDarkMode = true }) => {
-  const { color, icon, label, sublabel, path } = KPI_VARIANTS[variant] || {};
+  const { color, Icon, label, sublabel, path } = KPI_VARIANTS[variant] || {};
   return (
     <motion.div
       role="listitem"
@@ -221,7 +237,7 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
 
       {/* Icon + label row */}
       <div className="flex items-center gap-1.5 mb-1.5">
-        <span style={{ fontSize: '13px', lineHeight: 1 }}>{icon}</span>
+        {Icon && <Icon size={13} style={{ color, opacity: 0.9 }} />}
         <span className="uppercase font-bold" style={{ fontSize: '9px', letterSpacing: '0.06em', color: isDarkMode ? 'rgba(199,210,254,0.6)' : 'rgba(255,255,255,0.85)' }}>{label}</span>
       </div>
 
@@ -260,7 +276,7 @@ KpiCard.displayName = 'KpiCard';
 /* ═══════════════════════════════════════════
    CIRCULAR PROGRESS (SVG) for Meta Mensal
    ═══════════════════════════════════════════ */
-const CircularProgress = memo(({ current = 0, total = 50, size = 90 }) => {
+const CircularProgress = memo(({ current = 0, total = 50, size = 90, showStartMessage = false }) => {
   const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -288,10 +304,16 @@ const CircularProgress = memo(({ current = 0, total = 50, size = 90 }) => {
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="font-mono font-bold" style={{ fontSize: '22px', color: 'var(--text-1)', lineHeight: 1 }}>
-          <AnimatedNumber value={current} duration={1.5} />
-        </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>de {total}</span>
+        {showStartMessage ? (
+          <span className="font-display font-bold" style={{ fontSize: '13px', color: 'var(--primary)', lineHeight: 1.2, textAlign: 'center' }}>Comece!</span>
+        ) : (
+          <>
+            <span className="font-mono font-bold" style={{ fontSize: '22px', color: 'var(--text-1)', lineHeight: 1 }}>
+              <AnimatedNumber value={current} duration={1.5} />
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>de {total}</span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -338,7 +360,7 @@ const Home = () => {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { data: cachedData, isLoading: cacheLoading, loadData, refreshData } = useDashboardData();
+  const { loadData, refreshData } = useDashboardData();
 
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -347,6 +369,21 @@ const Home = () => {
   const [confirmDeleteEvento, setConfirmDeleteEvento] = useState({ isOpen: false, evento: null });
   const [isDeletingEvento, setIsDeletingEvento] = useState(false);
   const [pendingReviews, setPendingReviews] = useState(0);
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [metaValue, setMetaValue] = useState(() => getStoredMetaMensal().value);
+  const [hasSavedMeta, setHasSavedMeta] = useState(() => getStoredMetaMensal().hasSaved);
+  const location = useLocation();
+
+  const persistMetaMensal = useCallback((value) => {
+    const safe = Math.max(1, Math.min(500, Number(value) || 50));
+    try {
+      localStorage.setItem('cinesia:meta:mensal', String(safe));
+      setHasSavedMeta(true);
+    } catch {
+      setHasSavedMeta(false);
+    }
+    setMetaValue(safe);
+  }, []);
 
   // Carregar contagem de flashcards pendentes de revisão (SM-2)
   useEffect(() => {
@@ -354,8 +391,8 @@ const Home = () => {
     if (!userId) return;
     listarFlashcards(userId)
       .then(fcs => setPendingReviews(fcs.filter(fc => isDueForReview(fc)).length))
-      .catch(() => {});
-  }, [user, dashboardData]);
+      .catch(() => setPendingReviews(0));
+  }, [user?.uid]);
 
   // Ouvir evento de alteração de resumo e re-fetchar o dashboard
   useEffect(() => {
@@ -365,8 +402,8 @@ const Home = () => {
       try {
         const updatedData = await refreshData(userId);
         setDashboardData(updatedData);
-      } catch (err) {
-        console.error('Erro ao atualizar após mudança de resumo:', err);
+      } catch {
+        setDashboardData((prev) => prev);
       }
     };
     window.addEventListener('cinesia:resumo:alterado', handleResumoAlterado);
@@ -381,8 +418,8 @@ const Home = () => {
       try {
         const data = await loadData(userId);
         setDashboardData(data);
-      } catch (error) {
-        console.error('Erro ao carregar dashboard:', error);
+      } catch {
+        setDashboardData(null);
       } finally {
         setIsLoading(false);
       }
@@ -406,7 +443,6 @@ const Home = () => {
       setIsEventModalOpen(false);
       toast.success('Evento adicionado com sucesso!');
     } catch (error) {
-      console.error('Erro ao adicionar evento:', error);
       toast.error('Não foi possível salvar o evento.');
       throw error;
     }
@@ -427,7 +463,6 @@ const Home = () => {
       setConfirmDeleteEvento({ isOpen: false, evento: null });
       toast.success('Evento excluído com sucesso.');
     } catch (error) {
-      console.error('Erro ao excluir evento:', error);
       toast.error('Não foi possível excluir o evento.');
     } finally {
       setIsDeletingEvento(false);
@@ -448,7 +483,8 @@ const Home = () => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     return eventos
-      .map(e => ({ ...e, dataObj: e.data?.toDate?.() || new Date(e.data) }))
+      .map(e => ({ ...e, dataObj: parseSafeDate(e?.data) }))
+      .filter(e => e.dataObj)
       .filter(e => e.dataObj >= hoje)
       .sort((a, b) => a.dataObj - b.dataObj)
       .slice(0, 4);
@@ -458,12 +494,12 @@ const Home = () => {
 
   /* ── Quick actions with distinct colors ── */
   const quickActions = [
-    { icon: '📝', label: 'Novo Resumo', badge: 'NOVO', onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
-    { icon: '🃏', label: 'Flashcards', onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
-    { icon: '🎯', label: 'Simulados', onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
-    { icon: '🔍', label: 'Consulta', onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
-    { icon: '🫀', label: 'Atlas 3D', onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
-    { icon: '✏️', label: 'Quadro', onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
+    { Icon: FileText,   label: 'Novo Resumo', path: '/resumos',         onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
+    { Icon: CreditCard,  label: 'Flashcards',                  path: '/flashcards',     onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
+    { Icon: Target,      label: 'Simulados',                   path: '/simulado',       onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
+    { Icon: Search,      label: 'Consulta',                    path: '/consulta-rapida',onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
+    { Icon: Layers,      label: 'Atlas 3D',                    path: '/atlas-3d',       onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
+    { Icon: PenLine,     label: 'Quadro',                      path: '/quadro-branco',  onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
   ];
 
   /* ═══════════════════════════════════════════
@@ -482,14 +518,11 @@ const Home = () => {
           borderRadius: '20px',
           backgroundImage: isDarkMode ? [
             'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.20) 0%, transparent 60%)',
-            'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
             'linear-gradient(135deg, #0f1f3d 0%, #0d2540 35%, #0a3040 65%, #083c3c 100%)',
           ].join(', ') : [
             'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.12) 0%, transparent 60%)',
-            'radial-gradient(circle, rgba(37,99,235,0.06) 1px, transparent 1px)',
             'linear-gradient(135deg, #1e3a8a 0%, #1e40af 35%, #0e7490 65%, #0f766e 100%)',
           ].join(', '),
-          backgroundSize: '100%, 24px 24px, 100%',
           padding: 'clamp(20px, 4vw, 28px) clamp(20px, 4vw, 28px) clamp(16px, 3.5vw, 24px)',
         }}
       >
@@ -516,11 +549,19 @@ const Home = () => {
               }}
               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
             >
-              {greeting.text}, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'} 👋
+              {greeting.text}, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}
+              {' '}
+              <motion.span
+                className="inline-flex ml-1 align-middle"
+                animate={{ rotate: [0, 12, -8, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+              >
+                <greeting.Icon size={22} style={{ color: greeting.color }} />
+              </motion.span>
             </motion.h1>
 
             <motion.p
-              className="italic mt-1 line-clamp-2"
+              className="italic mt-1 line-clamp-2 hidden sm:block"
               style={{ fontSize: '13px', color: isDarkMode ? 'rgba(199,210,254,0.7)' : 'rgba(219,234,254,0.9)' }}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
             >
@@ -557,7 +598,7 @@ const Home = () => {
           {/* ═══════════════════════════════
               ① REVISÃO DE HOJE (SM-2)
               ═══════════════════════════════ */}
-          {pendingReviews > 0 && (
+          {pendingReviews > 0 ? (
             <motion.div variants={fadeUp} className="mb-4">
               <motion.div
                 className="relative overflow-hidden cursor-pointer"
@@ -572,8 +613,8 @@ const Home = () => {
                 whileTap={{ scale: 0.99 }}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center shrink-0">
-                    <span className="text-2xl">🧠</span>
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                    <BookOpen size={22} style={{ color: '#EA580C' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>
@@ -594,6 +635,26 @@ const Home = () => {
                 </div>
               </motion.div>
             </motion.div>
+          ) : (
+            <motion.div variants={fadeUp} className="mb-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div
+                className="flex items-center gap-3 rounded-2xl"
+                style={{
+                  padding: '14px 20px',
+                  backgroundColor: 'rgba(13,148,136,0.08)',
+                  border: '1px solid rgba(13,148,136,0.20)',
+                }}
+              >
+                <span style={{ fontSize: '18px' }}>✅</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--teal)' }}>
+                  Tudo em dia!
+                </span>
+              </div>
+            </motion.div>
           )}
 
           {/* ═══════════════════════════════
@@ -609,17 +670,20 @@ const Home = () => {
                   Acesso Rápido
                 </h2>
                 <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
-                  {quickActions.map((action, idx) => (
+                  {quickActions.map((action, idx) => {
+                    const isActive = location.pathname === action.path;
+                    return (
                     <motion.button
                       key={action.label}
                       onClick={action.onClick}
                       className="group relative flex flex-col items-center gap-2.5 rounded-2xl overflow-hidden"
                       style={{
-                        padding: '18px 10px 14px',
-                        border: `1px solid rgba(${action.rgb}, 0.25)`,
-                        backgroundColor: `rgba(${action.rgb}, 0.10)`,
+                        padding: '16px 8px 12px',
+                        border: isActive ? `2px solid ${action.color}` : `1px solid rgba(${action.rgb}, 0.25)`,
+                        backgroundColor: isActive ? `rgba(${action.rgb}, 0.18)` : `rgba(${action.rgb}, 0.10)`,
                         transition: 'all 220ms ease',
                         cursor: 'pointer',
+                        boxShadow: isActive ? `0 0 0 1px rgba(${action.rgb}, 0.15), 0 4px 12px rgba(${action.rgb}, 0.20)` : 'none',
                       }}
                       whileHover={{
                         y: -3,
@@ -635,19 +699,17 @@ const Home = () => {
                       <div
                         className="flex items-center justify-center rounded-2xl shrink-0"
                         style={{
-                          width: '52px',
-                          height: '52px',
+                          width: '46px',
+                          height: '46px',
                           backgroundColor: action.color,
                           boxShadow: `0 6px 16px rgba(${action.rgb}, 0.40), 0 2px 6px rgba(${action.rgb}, 0.25)`,
-                          fontSize: '24px',
-                          lineHeight: 1,
                         }}
                       >
-                        {action.icon}
+                        <action.Icon size={22} color="#FFFFFF" />
                       </div>
                       <span
                         className="font-bold text-center leading-tight"
-                        style={{ fontSize: '11px', color: 'var(--text-1)', letterSpacing: '0.01em' }}
+                        style={{ fontSize: '12px', color: 'var(--text-1)', letterSpacing: '0.01em' }}
                       >
                         {action.label}
                       </span>
@@ -670,7 +732,8 @@ const Home = () => {
                         </span>
                       )}
                     </motion.button>
-                  ))}
+                    );
+                  })}
                 </div>
               </SectionCard>
             </motion.div>
@@ -801,6 +864,11 @@ const Home = () => {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>{materia.nome}</h3>
                           {materia.descricao && <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-3)' }}>{materia.descricao}</p>}
+                          <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: '11px', color: 'var(--text-4)' }}>
+                            <span>{materia.totalFlashcards || 0} cards</span>
+                            <span>·</span>
+                            <span>{materia.totalResumos || 0} resumos</span>
+                          </div>
                         </div>
                         {/* Progress pill — only show if real data exists */}
                         {materia.progresso != null && (
@@ -859,10 +927,12 @@ const Home = () => {
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Resumos</span>
                     </div>
                     <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
-                      {isLoading ? '—' : <AnimatedNumber value={dashboardData?.metaMensal?.resumosDoMes || 0} />}
+                      {isLoading ? '—' : (dashboardData?.metaMensal?.resumosDoMes || 0) === 0
+                        ? <button onClick={() => navigate('/resumos')} className="text-xs underline font-sans font-normal" style={{ color: 'var(--text-4)' }}>Criar primeiro →</button>
+                        : <><span style={{ color: 'var(--teal)', fontWeight: 700 }}>+</span><AnimatedNumber value={dashboardData?.metaMensal?.resumosDoMes || 0} /></>}
                     </p>
                     <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
-                      criados este mês · {dashboardData?.totalResumos || 0} no total
+                      este mês · {dashboardData?.totalResumos || 0} no total
                     </p>
                   </motion.div>
 
@@ -879,10 +949,12 @@ const Home = () => {
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Flashcards</span>
                     </div>
                     <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
-                      {isLoading ? '—' : <AnimatedNumber value={dashboardData?.metaMensal?.flashcardsDoMes || 0} />}
+                      {isLoading ? '—' : (dashboardData?.metaMensal?.flashcardsDoMes || 0) === 0
+                        ? <button onClick={() => navigate('/flashcards')} className="text-xs underline font-sans font-normal" style={{ color: 'var(--text-4)' }}>Criar primeiro →</button>
+                        : <><span style={{ color: 'var(--teal)', fontWeight: 700 }}>+</span><AnimatedNumber value={dashboardData?.metaMensal?.flashcardsDoMes || 0} /></>}
                     </p>
                     <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
-                      criados este mês · {dashboardData?.totalFlashcards || 0} no total
+                      este mês · {dashboardData?.totalFlashcards || 0} no total
                     </p>
                   </motion.div>
                 </div>
@@ -895,7 +967,7 @@ const Home = () => {
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span style={{ fontSize: '14px' }}>🔥</span>
+                      <Zap size={14} style={{ color: 'var(--accent)' }} />
                       <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Sequência de acesso</span>
                     </div>
                     <span className="font-mono font-bold text-sm" style={{ color: 'var(--accent)' }}>
@@ -920,7 +992,9 @@ const Home = () => {
                       });
                       const isToday = i === 6;
                       return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1"
+                          title={dayDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                        >
                           <div
                             className="w-full rounded-lg"
                             style={{
@@ -931,7 +1005,7 @@ const Home = () => {
                             }}
                           />
                           <span style={{ fontSize: '9px', color: 'var(--text-4)', userSelect: 'none' }}>
-                            {dayDate.toLocaleDateString('pt-BR', { weekday: 'narrow' })}
+                            {dayDate.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
                           </span>
                         </div>
                       );
@@ -948,15 +1022,53 @@ const Home = () => {
                 border: '1px solid var(--border-strong)', borderRadius: '16px', padding: '20px',
               }}>
                 {/* Decorative */}
-                <div className="absolute pointer-events-none" style={{ right: '16px', top: '16px', fontSize: '40px', opacity: 0.12 }}>🎯</div>
+                <div className="absolute pointer-events-none" style={{ right: '16px', top: '16px', opacity: 0.12 }}>
+                  <Target size={40} style={{ color: 'var(--text-1)' }} />
+                </div>
 
                 <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
                   <Target size={15} style={{ color: 'var(--primary)' }} />
                   Meta de {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
+                  <button
+                    onClick={() => { setMetaValue(dashboardData?.metaMensal?.meta || 50); setEditingMeta(true); }}
+                    className="ml-1 p-1 rounded-md transition-colors"
+                    style={{ color: 'var(--text-4)' }}
+                    title="Editar meta"
+                  >
+                    <Pencil size={12} />
+                  </button>
                 </h2>
 
+                {editingMeta && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={metaValue}
+                      onChange={(e) => setMetaValue(Math.max(1, Math.min(500, Number(e.target.value))))}
+                      className="w-20 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-center"
+                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-1)' }}
+                      autoFocus
+                      onKeyDown={(e) => { if (e.key === 'Enter') { persistMetaMensal(metaValue); setEditingMeta(false); } }}
+                    />
+                    <button
+                      onClick={() => { persistMetaMensal(metaValue); setEditingMeta(false); }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      style={{ backgroundColor: 'var(--primary)', color: 'white' }}
+                    >
+                      OK
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex justify-center mb-4">
-                  <CircularProgress current={dashboardData?.metaMensal?.atual || 0} total={dashboardData?.metaMensal?.meta || 50} size={90} />
+                  <CircularProgress
+                    current={dashboardData?.metaMensal?.atual || 0}
+                    total={editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
+                    size={90}
+                    showStartMessage={(dashboardData?.metaMensal?.atual || 0) === 0 && !hasSavedMeta}
+                  />
                 </div>
 
                 <p className="text-center text-xs mb-1" style={{ color: 'var(--text-3)' }}>resumos + flashcards criados</p>
@@ -974,7 +1086,7 @@ const Home = () => {
                 <div className="mt-4">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
-                      {dashboardData?.metaMensal?.atual || 0}/{dashboardData?.metaMensal?.meta || 50}
+                      {dashboardData?.metaMensal?.atual || 0}/{editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
                     </span>
                     <span className="font-mono" style={{ fontSize: '10px', color: 'var(--text-4)' }}>
                       {dashboardData?.metaMensal?.porcentagem || 0}% do mês

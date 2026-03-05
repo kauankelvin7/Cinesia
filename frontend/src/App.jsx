@@ -107,6 +107,7 @@ function AppContent() {
                     <Route path="/historico-simulados" element={<HistoricoSimulados />} />
                     <Route path="/conquistas" element={<Conquistas />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
               </Layout>

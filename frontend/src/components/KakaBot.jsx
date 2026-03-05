@@ -58,6 +58,7 @@ import {
   ThumbsUp,
   Repeat2,
   Bookmark,
+  ArrowDown,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -74,6 +75,7 @@ import useKakabotSessoes from '../hooks/useKakabotSessoes';
 import useTextToSpeech from '../hooks/useTextToSpeech';
 import { extrairAcoes, executarAcao, executarAcoes } from '../utils/kakabotActions';
 import KakaAvatar from './kakabot/KakaAvatar';
+import KakaSkeleton from './kakabot/KakaSkeleton';
 
 // ─── Configuração ────────────────────────────────────────────────────────────
 
@@ -428,7 +430,51 @@ Nunca execute ações sem os dados necessários — pergunte antes.
 Você não é um assistente que espera ser acionado. Você percebe coisas:
 - Proativamente menciona os cards do dia se a pessoa não mencionou
 - Lembra que ela estava estudando determinada matéria na última sessão
-- Nota quando o streak pode quebrar hoje e comenta naturalmente`;
+- Nota quando o streak pode quebrar hoje e comenta naturalmente
+
+## SUGESTÃO DE PRÓXIMO PASSO
+
+Ao final de respostas sobre conceitos clínicos ou temas de estudo,
+SEMPRE adicione uma sugestão de próximo passo no seguinte formato:
+
+[PROXPASSO: texto curto da sugestão]
+
+Exemplos:
+[PROXPASSO: Criar flashcards sobre isso]
+[PROXPASSO: Ver meus cards de Neurológico]
+[PROXPASSO: Fazer um simulado sobre esse tema]
+[PROXPASSO: Explicar a diferença com rigidez]
+
+Regras:
+- Máximo 5 palavras
+- Deve ser algo acionável, não genérico
+- NUNCA em respostas de saudação ou ações já executadas
+
+## MODO QUIZ
+
+Quando o usuário pedir "me testa", "quiz", "perguntas" ou similar,
+ative o Modo Quiz seguindo este protocolo:
+
+1. Pergunte sobre qual tema e quantas questões (padrão: 5)
+2. Faça UMA pergunta por vez — nunca todas de uma vez
+3. Aguarde a resposta antes de avançar
+4. Após cada resposta: corrija, explique o porquê e dê pontuação (acertou/errou)
+5. No final: mostre aproveitamento e identifique o ponto mais fraco
+
+Tipos de pergunta que deve variar:
+- Direta: "Qual nervo inerva o deltóide?"
+- Aplicada: "Um paciente com marcha ceifante apresenta... qual seria a hipótese?"
+- Diferencial: "Qual a diferença entre teste de Lachman e gaveta anterior?"
+- Clínica: "Em qual posição o teste de Neer deve ser realizado e o que indica positivo?"
+
+Ao entrar no Modo Quiz, gere o seguinte bloco:
+[QUIZ_INICIO: tema | total de questões]
+
+A cada questão:
+[QUIZ_QUESTAO: número atual | total]
+
+Ao finalizar:
+[QUIZ_FIM: acertos | total | ponto_fraco]`;
 };
 
 /* ═══════════════════════════════════════════
@@ -504,6 +550,105 @@ const getAcaoLabel = (acao, dados) => {
   }
 };
 
+// ─── Vocabulário para inferência de nível ─────────────────────────────────────
+
+const VOCAB_AVANCADO = [
+  'cinesiologia', 'biomecânica', 'propriocepção', 'facilitação neuromuscular',
+  'coativação', 'recrutamento motor', 'plasticidade neural', 'mecanotransdução',
+  'sarcoplasmático', 'unidade motora', 'potencial de ação', 'PNF', 'FNP',
+];
+
+const VOCAB_INICIANTE = [
+  'o que é', 'não entendo', 'pode explicar', 'nunca ouvi', 'como funciona',
+  'o que significa', 'pra que serve', 'não sei',
+];
+
+const inferirNivel = (mensagem) => {
+  const lower = mensagem.toLowerCase();
+  if (VOCAB_AVANCADO.some(v => lower.includes(v.toLowerCase()))) return 'avancado';
+  if (VOCAB_INICIANTE.some(v => lower.includes(v))) return 'iniciante';
+  return null;
+};
+
+// ─── Detecção de humor ────────────────────────────────────────────────────────
+
+const detectarHumor = (mensagem) => {
+  const lower = mensagem.toLowerCase();
+
+  const sinaisFrustracao = ['não entendo', 'não consigo', 'difícil demais',
+    'odeio', 'tô perdido', 'que confusão', 'não faz sentido'];
+  const sinaisAnimacao = ['!', 'amei', 'incrível', 'adorei', 'ótimo',
+    'consegui', 'entendi', 'finalmente'];
+  const sinaisCansaco = ['cansado', 'cansada', 'tô exausto', 'tô exausta',
+    'chega', 'não aguento', 'dormindo', 'tarde'];
+  const sinaisPressa = ['rápido', 'resumo', 'só preciso saber',
+    'me diz logo', 'curto'];
+
+  if (sinaisFrustracao.some(s => lower.includes(s))) return 'frustrado';
+  if (sinaisAnimacao.some(s => lower.includes(s))) return 'animado';
+  if (sinaisCansaco.some(s => lower.includes(s))) return 'cansado';
+  if (sinaisPressa.some(s => lower.includes(s))) return 'com_pressa';
+  return 'neutro';
+};
+
+const instrucaoHumor = {
+  frustrado: 'HUMOR DETECTADO: frustração. Valide primeiro ("é complicado mesmo"), depois ajude. Nunca vá direto à solução.',
+  animado: 'HUMOR DETECTADO: animação. Combine a energia, celebre com ela.',
+  cansado: 'HUMOR DETECTADO: cansaço. Seja gentil e breve. Sugira pausa se fizer sentido. Nunca force produtividade.',
+  com_pressa: 'HUMOR DETECTADO: pressa. Resposta direta e curta. Sem introduções.',
+  neutro: '',
+};
+
+// ─── Parser de próximo passo e quiz ───────────────────────────────────────────
+
+const processarProximoPasso = (texto) => {
+  const proxPassoRegex = /\[PROXPASSO:\s*(.*?)\]/;
+  const match = texto.match(proxPassoRegex);
+  return {
+    proximoPasso: match?.[1]?.trim() ?? null,
+    textoSemPasso: texto.replace(proxPassoRegex, '').trim(),
+  };
+};
+
+const processarQuiz = (texto) => {
+  const inicio = texto.match(/\[QUIZ_INICIO:\s*(.*?)\]/);
+  const questao = texto.match(/\[QUIZ_QUESTAO:\s*(\d+)\s*\|\s*(\d+)\]/);
+  const fim = texto.match(/\[QUIZ_FIM:\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(.*?)\]/);
+
+  return {
+    textoLimpo: texto
+      .replace(/\[QUIZ_INICIO:.*?\]/g, '')
+      .replace(/\[QUIZ_QUESTAO:.*?\]/g, '')
+      .replace(/\[QUIZ_FIM:.*?\]/g, '')
+      .trim(),
+    quizMeta: inicio ? { tipo: 'inicio', tema: inicio[1] } :
+              questao ? { tipo: 'questao', atual: parseInt(questao[1]), total: parseInt(questao[2]) } :
+              fim ? { tipo: 'fim', acertos: parseInt(fim[1]), total: parseInt(fim[2]), pontoFraco: fim[3] } :
+              null,
+  };
+};
+
+// ─── Descrição humana de ação ─────────────────────────────────────────────────
+
+const descreverAcao = (acao) => {
+  switch (acao.acao) {
+    case 'CRIAR_MATERIA':
+      return `Criar matéria "${acao.dados?.nome || ''}"`;
+    case 'CRIAR_FLASHCARD':
+      return `Criar flashcard em "${acao.dados?.materiaId || 'sem matéria'}"`;
+    case 'CRIAR_MULTIPLOS_FLASHCARDS':
+      return `Criar ${acao.dados?.flashcards?.length || 0} flashcards em "${acao.dados?.materia || acao.dados?.materiaId || 'sem matéria'}"`;
+    case 'CRIAR_RESUMO':
+      return `Criar resumo "${acao.dados?.titulo || ''}"`;
+    case 'AGENDAR_REVISAO':
+      return `Agendar revisão para ${acao.dados?.data || ''}`;
+    case 'ATUALIZAR_PREFERENCIAS':
+      return 'Atualizar suas preferências';
+    default:
+      return acao.acao;
+  }
+};
+
 // ─── Componente Principal ─────────────────────────────────────────────────────
 
 const KakaBot = () => {
@@ -521,6 +666,7 @@ const KakaBot = () => {
     sessaoAtual,
     mensagensVisiveis,
     temMais,
+    carregando,
     novaSessao,
     carregarSessao,
     carregarMais,
@@ -542,6 +688,17 @@ const KakaBot = () => {
   const [showHistorico, setShowHistorico] = useState(false);
   const [sessoes, setSessoes] = useState([]);
   const [reacoes, setReacoes] = useState({});  // { messageIndex: 'util'|'repetir'|'salvar' }
+  // Smart scroll — só auto-rolar se o usuário estiver perto do fundo
+  const deveScrollarRef = useRef(true);
+  const [hasNewMessage, setHasNewMessage] = useState(false);
+  // Preview de ação antes de executar
+  const [acaoPendente, setAcaoPendente] = useState(null);
+  // Reactions hover
+  const [hoveredId, setHoveredId] = useState(null);
+  // Quiz mode
+  const [quizAtivo, setQuizAtivo] = useState(null);
+  // Proatividade — 1x por sessão
+  const proativoDisparadoRef = useRef(false);
   // Ref para inibir auto-scroll quando carregarMais insere mensagens acima
   const loadingMaisRef = useRef(false);
   // Ref para evitar dupla inicialização de sessão
@@ -697,6 +854,7 @@ const KakaBot = () => {
   );
 
   /**
+  /**
    * Incrementa o contador de uma ação específica nas estatísticas de uso do Firestore.
    *
    * Firestore: `users/{uid}/kakabot_memoria/historico` (merge parcial)
@@ -733,6 +891,110 @@ const KakaBot = () => {
     },
     [uid, memoriaUsuario]
   );
+
+  // ─── Inteligência: Proatividade ──────────────────────────────────────────────
+
+  const dispararMensagemProativa = useCallback(async (texto) => {
+    const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const msg = {
+      role: 'assistant',
+      content: texto,
+      timestamp: new Date().toISOString(),
+      time,
+      isProativa: true,
+    };
+    await adicionarMensagem(msg);
+  }, [adicionarMensagem]);
+
+  const verificarProatividade = useCallback(async () => {
+    if (proativoDisparadoRef.current) return;
+    if (!dadosSistema || !memoriaUsuario) return;
+
+    const agora = new Date();
+    const hora = agora.getHours();
+    const streakAtual = dadosSistema?.streakAtual || 0;
+    const cardsHoje = dadosSistema?.cardsParaRevisarHoje || 0;
+    const ultimoAcesso = memoriaUsuario?.estatisticasUso?.ultimoAcesso;
+
+    // PRIORIDADE 1: streak em risco
+    if (ultimoAcesso) {
+      const diasSemEstudar = Math.floor(
+        (agora.getTime() - new Date(ultimoAcesso).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (diasSemEstudar >= 1 && hora >= 20 && streakAtual > 0) {
+        proativoDisparadoRef.current = true;
+        await dispararMensagemProativa(
+          `Oi! Só passando pra lembrar que seu streak de ${streakAtual} dias pode quebrar hoje se você não revisar. Tem ${cardsHoje} cards esperando — leva uns 5 minutinhos. Quer começar?`
+        );
+        return;
+      }
+    }
+
+    // PRIORIDADE 2: muitos cards acumulados
+    if (cardsHoje > 20) {
+      proativoDisparadoRef.current = true;
+      await dispararMensagemProativa(
+        `Você acumulou ${cardsHoje} cards pra revisar — tá ficando pesado. Que tal dividir em blocos de 10 hoje? Consigo montar uma sessão focada pra você.`
+      );
+      return;
+    }
+  }, [memoriaUsuario, dadosSistema, dispararMensagemProativa]);
+
+  // ─── Inteligência: Resumo de Sessão ────────────────────────────────────────
+
+  const gerarResumoSessao = useCallback(async () => {
+    if (!sessaoAtual || (sessaoAtual.mensagens || []).length < 4) return;
+
+    const mensagensTexto = (sessaoAtual.mensagens || [])
+      .filter(m => !m.isSystem)
+      .slice(-20)
+      .map(m => `${m.role === 'user' ? 'Usuário' : 'Kaka'}: ${m.content?.substring(0, 200) || ''}`)
+      .join('\n');
+
+    try {
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const result = await model.generateContent(
+        `Em 2-3 frases curtas e diretas, resuma o que foi estudado/feito nesta conversa.
+         Mencione temas, ações realizadas e aprendizados. Seja específico.
+         NÃO use bullet points. Linguagem natural em português.
+         Conversa:\n${mensagensTexto}`
+      );
+
+      const resumo = result.response.text().trim();
+
+      await setDoc(
+        doc(db, 'users', uid, 'kakabot_sessoes', sessaoAtual.id),
+        { resumoAutoGerado: resumo, resumoGeradoEm: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch {
+      // Resumo é opcional — falha silenciosa
+    }
+  }, [sessaoAtual, uid]);
+
+  // ─── Inteligência: Contexto Cross-Sessão ───────────────────────────────────
+
+  const construirContextoHistorico = useCallback(async () => {
+    const sessoes = await listarSessoes();
+    const sessoesComResumo = sessoes
+      .filter(s => s.resumoAutoGerado && s.id !== sessaoAtual?.id)
+      .slice(0, 3);
+
+    if (sessoesComResumo.length === 0) return '';
+
+    const contexto = sessoesComResumo
+      .map((s) => {
+        const data = new Date(s.ultimaAtualizacao)
+          .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        return `- ${data}: ${s.resumoAutoGerado}`;
+      })
+      .join('\n');
+
+    return `\n## CONTEXTO DE SESSÕES ANTERIORES\n${contexto}\n\nUse esse histórico para dar continuidade natural — mencione se algo se conecta com o que foi estudado antes.`;
+  }, [listarSessoes, sessaoAtual]);
 
   // ─── Efeitos ────────────────────────────────────────────────────────────────
 
@@ -774,6 +1036,13 @@ const KakaBot = () => {
     }
   }, [isOpen, isSpeaking, stopTTS]);
 
+  // Verificar proatividade após sessão e memória estarem prontos
+  useEffect(() => {
+    if (isOpen && sessaoAtual && memoryLoaded && connectionStatus === 'connected') {
+      verificarProatividade();
+    }
+  }, [isOpen, sessaoAtual, memoryLoaded, connectionStatus, verificarProatividade]);
+
   // Inicia conexão com Gemini APÓS memória E sessão estarem prontos
   // WARN: não chamar initializeGemini antes de memoryLoaded — o system prompt ficaria incompleto
   useEffect(() => {
@@ -782,10 +1051,20 @@ const KakaBot = () => {
     }
   }, [isOpen, connectionStatus, memoryLoaded, sessaoAtual, isLoadingContext]);
 
-  // Auto-scroll para a última mensagem (inibido durante carregarMais)
+  // Smart scroll — só rola para o fundo se o usuário já estiver perto dele
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanciaDoFundo = el.scrollHeight - el.scrollTop - el.clientHeight;
+    deveScrollarRef.current = distanciaDoFundo < 100;
+    if (deveScrollarRef.current) setHasNewMessage(false);
+  }, []);
+
   useEffect(() => {
-    if (!loadingMaisRef.current) {
+    if (!loadingMaisRef.current && deveScrollarRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (!loadingMaisRef.current && !deveScrollarRef.current) {
+      setHasNewMessage(true);
     }
   }, [mensagensVisiveis, isExecutingAction]);
 
@@ -837,6 +1116,12 @@ const KakaBot = () => {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(apiKey);
 
+      // Buscar contexto de sessões anteriores para injetar no system prompt
+      let contextoHistorico = '';
+      try {
+        contextoHistorico = await construirContextoHistorico();
+      } catch { /* não crítico */ }
+
       // Percorre GEMINI_MODELS em fallback — para no primeiro que funcionar
       for (let i = 0; i < GEMINI_MODELS.length; i++) {
         const modelName = GEMINI_MODELS[i].name;
@@ -851,7 +1136,7 @@ const KakaBot = () => {
             },
           });
 
-          const chat = createChatWithPersona(model);
+          const chat = createChatWithPersona(model, contextoHistorico);
           chatRef.current = chat;
           setGeminiModel(chat);
           setActiveModelName(modelName);
@@ -894,9 +1179,9 @@ const KakaBot = () => {
    * @param {object} model - Instância do modelo retornada por genAI.getGenerativeModel()
    * @returns {object} Instância de chat do Gemini com histórico pré-populado
    */
-  const createChatWithPersona = (model) => {
+  const createChatWithPersona = (model, contextoHistorico = '') => {
     const pageContext = PAGE_CONTEXTS[location.pathname] || '';
-    const systemPrompt = buildSystemPrompt(memoriaUsuario, dadosSistema, pageContext);
+    const systemPrompt = buildSystemPrompt(memoriaUsuario, dadosSistema, pageContext) + contextoHistorico;
 
     const history = [
       {
@@ -1089,8 +1374,31 @@ const KakaBot = () => {
     lastMessageTimeRef.current = now;
     setMessageTimestamps((prev) => [...prev.filter((t) => now - t < 60000), now]);
 
+    // ── Inteligência local: inferir nível e humor ──
+    const nivelInferido = inferirNivel(userMessage);
+    if (nivelInferido && nivelInferido !== memoriaUsuario?.preferenciasUsuario?.nivelConhecimento) {
+      try {
+        const docRef = doc(db, 'users', uid, 'kakabot_memoria', 'historico');
+        await setDoc(docRef, {
+          preferenciasUsuario: { nivelConhecimento: nivelInferido },
+        }, { merge: true });
+        setMemoriaUsuario((prev) => ({
+          ...prev,
+          preferenciasUsuario: { ...prev.preferenciasUsuario, nivelConhecimento: nivelInferido },
+        }));
+      } catch { /* não crítico */ }
+    }
+
+    const humor = detectarHumor(userMessage);
+    const instrucaoExtra = instrucaoHumor[humor] || '';
+
     try {
-      const result = await chatRef.current.sendMessage(userMessage);
+      // Injetar instrução de humor como prefixo da mensagem (sem alterar o histórico do chat)
+      const mensagemComContexto = instrucaoExtra
+        ? `[CONTEXTO INTERNO - NÃO REPETIR]: ${instrucaoExtra}\n\nMensagem do usuário: ${userMessage}`
+        : userMessage;
+
+      const result = await chatRef.current.sendMessage(mensagemComContexto);
       const response = await result.response;
       const textoCompleto = response.text();
 
@@ -1098,7 +1406,25 @@ const KakaBot = () => {
       const { textoLimpo, acoes } = extrairAcoes(textoCompleto);
 
       // Sanitizar como fallback — garante que nenhum JSON vaze na UI
-      const textoFinal = sanitizarTexto(textoLimpo);
+      let textoFinal = sanitizarTexto(textoLimpo);
+
+      // ── Processar próximo passo ──
+      const { proximoPasso, textoSemPasso } = processarProximoPasso(textoFinal);
+      textoFinal = textoSemPasso;
+
+      // ── Processar blocos de quiz ──
+      const { textoLimpo: textoSemQuiz, quizMeta } = processarQuiz(textoFinal);
+      textoFinal = textoSemQuiz;
+
+      if (quizMeta) {
+        if (quizMeta.tipo === 'inicio') {
+          setQuizAtivo({ tema: quizMeta.tema, atual: 0, total: 5 });
+        } else if (quizMeta.tipo === 'questao') {
+          setQuizAtivo((prev) => prev ? { ...prev, atual: quizMeta.atual, total: quizMeta.total } : null);
+        } else if (quizMeta.tipo === 'fim') {
+          setQuizAtivo(null);
+        }
+      }
 
       const assistantTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       const assistantMsg = {
@@ -1108,12 +1434,14 @@ const KakaBot = () => {
         time: assistantTime,
         acaoExecutada: acoes.length > 0 ? acoes.map(a => a.acao).join(', ') : null,
         acaoLabel: acoes.length > 0 ? acoes.map(a => getAcaoLabel(a.acao, a.dados)).join(' | ') : null,
+        proximoPasso: proximoPasso || null,
       };
 
       // Digitação progressiva — exibe palavra por palavra antes de persistir
       setIsLoading(false);
       const palavras = textoFinal.split(' ');
-      const msgParcial = { ...assistantMsg, content: '' };
+      const velocidade = palavras.length > 100 ? 20 : 30;
+      const msgParcial = { ...assistantMsg, content: '', isStreaming: true };
       setMensagensVisiveis((prev) => [...prev, msgParcial]);
 
       await new Promise((resolve) => {
@@ -1123,51 +1451,24 @@ const KakaBot = () => {
           const parcial = palavras.slice(0, idx).join(' ');
           setMensagensVisiveis((prev) => {
             const clone = [...prev];
-            clone[clone.length - 1] = { ...assistantMsg, content: parcial };
+            clone[clone.length - 1] = { ...assistantMsg, content: parcial, isStreaming: idx < palavras.length };
             return clone;
           });
           if (idx >= palavras.length) {
             clearInterval(intervalo);
             resolve();
           }
-        }, 35);
+        }, velocidade);
       });
 
       // Persiste a mensagem completa no Firestore após a digitação progressiva
       await adicionarMensagemSemUI(assistantMsg);
 
-      // Executar TODAS as ações encontradas em série
+      // ── Preview de ação — mostrar modal de confirmação ──
       if (acoes.length > 0) {
-        setIsExecutingAction(true);
-
-        const resultados = await executarAcoes(acoes, uid, materiasLista);
-
-        setIsExecutingAction(false);
-
-        for (const resultado of resultados) {
-          addSystemMessage(
-            resultado.mensagem,
-            resultado.sucesso ? 'success' : 'error'
-          );
-        }
-
-        // Registrar ações bem-sucedidas na memória
-        for (const [i, resultado] of resultados.entries()) {
-          if (resultado.sucesso) {
-            await registrarAcaoNaMemoria(acoes[i].acao);
-          }
-        }
-
-        // Se alguma ação for ATUALIZAR_PREFERENCIAS, processar
-        for (const [i, resultado] of resultados.entries()) {
-          if (
-            acoes[i].acao === 'ATUALIZAR_PREFERENCIAS' &&
-            resultado.sucesso &&
-            resultado.dadosRetorno?.preferencias
-          ) {
-            await salvarMemoria([], resultado.dadosRetorno.preferencias);
-          }
-        }
+        const descricoes = acoes.map(a => descreverAcao(a));
+        setAcaoPendente({ acoes, descricoes });
+        // Não executa imediatamente — aguarda confirmação do usuário
       }
     } catch (error) {
       setIsLoading(false);
@@ -1194,6 +1495,45 @@ const KakaBot = () => {
     if (name.includes('1.5-flash')) return '1.5 Flash';
     if (name.includes('1.5-pro')) return '1.5 Pro';
     return name;
+  };
+
+  /** Executa ações confirmadas pelo modal de preview */
+  const executarAcoesConfirmadas = async (acoes) => {
+    setAcaoPendente(null);
+    setIsExecutingAction(true);
+
+    const resultados = await executarAcoes(acoes, uid, materiasLista);
+    setIsExecutingAction(false);
+
+    for (const resultado of resultados) {
+      addSystemMessage(
+        resultado.mensagem,
+        resultado.sucesso ? 'success' : 'error'
+      );
+    }
+
+    for (const [i, resultado] of resultados.entries()) {
+      if (resultado.sucesso) {
+        await registrarAcaoNaMemoria(acoes[i].acao);
+      }
+    }
+
+    for (const [i, resultado] of resultados.entries()) {
+      if (
+        acoes[i].acao === 'ATUALIZAR_PREFERENCIAS' &&
+        resultado.sucesso &&
+        resultado.dadosRetorno?.preferencias
+      ) {
+        await salvarMemoria([], resultado.dadosRetorno.preferencias);
+      }
+    }
+  };
+
+  /** Fecha o KakaBot — gera resumo de sessão assincronamente */
+  const handleFechar = () => {
+    gerarResumoSessao(); // async, não aguardar
+    stopTTS();
+    setIsOpen(false);
   };
 
   const handleRetryConnection = () => {
@@ -1312,7 +1652,7 @@ const KakaBot = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
+              onClick={handleFechar}
             />
 
             <motion.div
@@ -1415,7 +1755,7 @@ const KakaBot = () => {
                   </button>
                   {/* Fechar */}
                   <button
-                    onClick={() => setIsOpen(false)}
+                    onClick={handleFechar}
                     className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}
                     aria-label="Fechar"
@@ -1426,10 +1766,36 @@ const KakaBot = () => {
               </div>
 
               {/* ════ BODY ════ */}
-              <div className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex flex-col flex-1 overflow-hidden relative">
+
+                    {/* ════ Quiz Progress Bar ════ */}
+                    {quizAtivo && (
+                      <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                        <span className="text-[11px] font-semibold text-teal-600">
+                          Quiz {quizAtivo.tema}
+                        </span>
+                        <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: 'linear-gradient(90deg, #0d9488, #0891b2)' }}
+                            animate={{ width: `${(quizAtivo.atual / quizAtivo.total) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] text-slate-400">
+                          {quizAtivo.atual}/{quizAtivo.total}
+                        </span>
+                      </div>
+                    )}
+
                     {/* ════ Messages Area ════ */}
+                    {carregando ? (
+                      <div className="flex-1 overflow-y-auto px-4 py-5 bg-slate-50 dark:bg-slate-900">
+                        <KakaSkeleton />
+                      </div>
+                    ) : (
                     <div
                       ref={messagesContainerRef}
+                      onScroll={handleScroll}
                       className="flex-1 overflow-y-auto px-4 py-5 space-y-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent bg-slate-50 dark:bg-slate-900"
                     >
 
@@ -1500,9 +1866,11 @@ const KakaBot = () => {
                             key={index}
                             className="flex items-end gap-2 mb-[14px]"
                             style={{ animation: isNew ? 'kakafadeUp .22s ease' : 'none' }}
+                            onMouseEnter={() => setHoveredId(index)}
+                            onMouseLeave={() => setHoveredId(null)}
                           >
                             <KakaAvatar size="sm" />
-                            <div className="flex flex-col gap-1 max-w-[78%]">
+                            <div className="flex flex-col gap-1 max-w-[78%] relative">
                               <span
                                 className="text-[10.5px] font-semibold ml-0.5 tracking-[0.4px]"
                                 style={{ color: '#0f766e' }}
@@ -1522,61 +1890,20 @@ const KakaBot = () => {
                                 <ReactMarkdown components={markdownComponents}>
                                   {message.content}
                                 </ReactMarkdown>
+                                {/* Cursor piscante durante streaming */}
+                                {message.isStreaming && (
+                                  <motion.span
+                                    className="inline-block w-[2px] h-[14px] bg-teal-500 ml-0.5 rounded-full align-middle"
+                                    animate={{ opacity: [1, 0] }}
+                                    transition={{ duration: 0.5, repeat: Infinity }}
+                                  />
+                                )}
                                 {/* AcaoBadge se a msg teve ação executada com sucesso */}
                                 {message.acaoLabel && <AcaoBadge label={message.acaoLabel} />}
 
-                                {/* ── Botões: TTS + Reações rápidas ── */}
-                                {!message.isSystem && (
-                                  <div className="flex items-center justify-between mt-2.5 -mb-1 gap-2">
-                                    {/* Reações rápidas */}
-                                    <div className="flex items-center gap-1">
-                                      {[
-                                        { emoji: <ThumbsUp size={11} strokeWidth={2} />, label: 'Útil', valor: 'util' },
-                                        { emoji: <Repeat2 size={11} strokeWidth={2} />, label: 'Repetir', valor: 'repetir' },
-                                        { emoji: <Bookmark size={11} strokeWidth={2} />, label: 'Salvar', valor: 'salvar' },
-                                      ].map((r) => (
-                                        <motion.button
-                                          key={r.valor}
-                                          onClick={async () => {
-                                            setReacoes((prev) => ({ ...prev, [index]: r.valor }));
-                                            if (r.valor === 'repetir') {
-                                              // Pede ao Kaka que explique de outro jeito
-                                              setInputValue('Explica isso de outro jeito, por favor');
-                                              setTimeout(() => sendMessageRef.current?.('Explica isso de outro jeito, por favor'), 200);
-                                            } else if (r.valor === 'salvar' && uid) {
-                                              // Salva mensagem em kakabot_salvos
-                                              try {
-                                                const salvoId = `salvo_${Date.now()}`;
-                                                await setDoc(
-                                                  doc(db, 'users', uid, 'kakabot_salvos', salvoId),
-                                                  {
-                                                    content: message.content,
-                                                    timestamp: message.timestamp || new Date().toISOString(),
-                                                    sessaoId: sessaoAtual?.id || null,
-                                                    salvoEm: new Date().toISOString(),
-                                                  }
-                                                );
-                                                addSystemMessage('📌 Mensagem salva com sucesso!', 'success');
-                                              } catch (err) {
-                                                console.warn('[KakaBot] Erro ao salvar mensagem:', err?.message);
-                                              }
-                                            }
-                                          }}
-                                          className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium transition-all ${
-                                            reacoes[index] === r.valor
-                                              ? 'bg-teal-50 text-teal-600 border border-teal-200'
-                                              : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                                          }`}
-                                          whileTap={{ scale: 0.93 }}
-                                          aria-label={r.label}
-                                        >
-                                          {r.emoji}
-                                          <span>{r.label}</span>
-                                        </motion.button>
-                                      ))}
-                                    </div>
-
-                                    {/* Botão TTS (ouvir/parar) */}
+                                {/* ── Botões: TTS (sempre visível) ── */}
+                                {!message.isSystem && !message.isStreaming && (
+                                  <div className="flex items-center justify-end mt-2.5 -mb-1 gap-2">
                                     {ttsSupported && (
                                       <motion.button
                                         onClick={() => speak(message.content, `msg-${index}`)}
@@ -1590,7 +1917,6 @@ const KakaBot = () => {
                                       >
                                         {ttsActiveId === `msg-${index}` ? (
                                           <>
-                                            {/* Waveform animado enquanto narra */}
                                             <div className="flex items-center gap-[2px]">
                                               {[0, 1, 2].map((i) => (
                                                 <motion.div
@@ -1615,6 +1941,82 @@ const KakaBot = () => {
                                   </div>
                                 )}
                               </div>
+
+                              {/* ── Próximo passo chip ── */}
+                              {message.proximoPasso && !message.isStreaming && (
+                                <motion.button
+                                  onClick={() => sendMessage(message.proximoPasso)}
+                                  className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-medium border transition-all self-start"
+                                  style={{
+                                    background: '#f0fdfa',
+                                    borderColor: '#99f6e4',
+                                    color: '#0f766e',
+                                  }}
+                                  whileTap={{ scale: 0.97 }}
+                                  initial={{ opacity: 0, y: 4 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                >
+                                  <Zap size={11} strokeWidth={2.5} />
+                                  {message.proximoPasso}
+                                </motion.button>
+                              )}
+
+                              {/* ── Reactions (hover) ── */}
+                              <AnimatePresence>
+                                {hoveredId === index && !message.isSystem && !message.isStreaming && (
+                                  <motion.div
+                                    className="flex items-center gap-1 mt-1"
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 4 }}
+                                    transition={{ duration: 0.15 }}
+                                  >
+                                    {[
+                                      { emoji: <ThumbsUp size={11} strokeWidth={2} />, label: 'Útil', valor: 'util' },
+                                      { emoji: <Repeat2 size={11} strokeWidth={2} />, label: 'Repetir', valor: 'repetir' },
+                                      { emoji: <Bookmark size={11} strokeWidth={2} />, label: 'Salvar', valor: 'salvar' },
+                                    ].map((r) => (
+                                      <motion.button
+                                        key={r.valor}
+                                        onClick={async () => {
+                                          setReacoes((prev) => ({ ...prev, [index]: r.valor }));
+                                          if (r.valor === 'repetir') {
+                                            const trecho = message.content?.substring(0, 80) || '';
+                                            sendMessageRef.current?.(`Explica de outro jeito: "${trecho}..."`);
+                                          } else if (r.valor === 'salvar' && uid) {
+                                            try {
+                                              const salvoId = `salvo_${Date.now()}`;
+                                              await setDoc(
+                                                doc(db, 'users', uid, 'kakabot_salvos', salvoId),
+                                                {
+                                                  content: message.content,
+                                                  timestamp: message.timestamp || new Date().toISOString(),
+                                                  sessaoId: sessaoAtual?.id || null,
+                                                  salvoEm: new Date().toISOString(),
+                                                }
+                                              );
+                                              addSystemMessage('📌 Mensagem salva com sucesso!', 'success');
+                                            } catch (err) {
+                                              console.warn('[KakaBot] Erro ao salvar mensagem:', err?.message);
+                                            }
+                                          }
+                                        }}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium transition-all ${
+                                          reacoes[index] === r.valor
+                                            ? 'bg-teal-50 text-teal-600 border border-teal-200'
+                                            : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 hover:border-teal-300 hover:bg-teal-50'
+                                        }`}
+                                        whileTap={{ scale: 0.93 }}
+                                        aria-label={r.label}
+                                      >
+                                        {r.emoji}
+                                        <span>{r.label}</span>
+                                      </motion.button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
                               {message.time && (
                                 <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-0.5">
                                   {message.time}
@@ -1680,6 +2082,99 @@ const KakaBot = () => {
 
                       <div ref={messagesEndRef} />
                     </div>
+                    )}
+
+                    {/* ════ Botão "Nova mensagem" (scroll inteligente) ════ */}
+                    <AnimatePresence>
+                      {hasNewMessage && !deveScrollarRef.current && (
+                        <motion.button
+                          onClick={() => {
+                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            deveScrollarRef.current = true;
+                            setHasNewMessage(false);
+                          }}
+                          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10
+                            flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+                            text-white shadow-lg"
+                          style={{ background: 'linear-gradient(135deg, #0f766e, #0891b2)' }}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                        >
+                          <ArrowDown size={12} strokeWidth={2.5} />
+                          Nova mensagem
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
+
+                    {/* ════ Modal Preview de Ação ════ */}
+                    <AnimatePresence>
+                      {acaoPendente && (
+                        <motion.div
+                          className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4"
+                          style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <motion.div
+                            className="w-full max-w-[320px] bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700"
+                            initial={{ y: 20, scale: 0.96 }}
+                            animate={{ y: 0, scale: 1 }}
+                            exit={{ y: 20, scale: 0.96 }}
+                          >
+                            <div className="px-5 pt-5 pb-3">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                  style={{ background: '#f0fdfa' }}
+                                >
+                                  <Zap size={17} color="#0f766e" strokeWidth={2} />
+                                </div>
+                                <div>
+                                  <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-100">
+                                    Kaka quer executar {acaoPendente.acoes.length > 1
+                                      ? `${acaoPendente.acoes.length} ações`
+                                      : '1 ação'}
+                                  </p>
+                                  <p className="text-[11.5px] text-slate-400">Confirme para continuar</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1.5">
+                                {acaoPendente.descricoes.map((desc, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-700/50"
+                                  >
+                                    <CheckCircle2 size={13} color="#0d9488" strokeWidth={2} />
+                                    <span className="text-[12.5px] text-slate-600 dark:text-slate-300">
+                                      {desc}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 px-5 pb-5 pt-2">
+                              <button
+                                onClick={() => setAcaoPendente(null)}
+                                className="flex-1 py-2.5 rounded-xl text-[13px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={() => executarAcoesConfirmadas(acaoPendente.acoes)}
+                                className="flex-1 py-2.5 rounded-xl text-[13px] font-medium text-white transition-colors"
+                                style={{ background: 'linear-gradient(135deg, #0f766e, #0891b2)' }}
+                              >
+                                Confirmar
+                              </button>
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     {/* ════ Painel Histórico de Sessões ════ */}
                     <AnimatePresence>
@@ -1732,6 +2227,11 @@ const KakaBot = () => {
                                       {sessao.totalMensagens} mensagens &middot;{' '}
                                       {new Date(sessao.ultimaAtualizacao).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                                     </p>
+                                    {sessao.resumoAutoGerado && (
+                                      <p className="text-[11.5px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                                        {sessao.resumoAutoGerado}
+                                      </p>
+                                    )}
                                   </div>
                                   <ChevronRight size={14} className="text-slate-300 mt-1 flex-shrink-0" strokeWidth={2} />
                                 </button>
