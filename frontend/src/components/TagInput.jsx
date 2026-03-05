@@ -36,40 +36,70 @@ export default function TagInput({
   maxTags = 5, 
   suggestions = [] 
 }) {
+  // Estado interno para feedback visual imediato — não depende do round-trip do pai
+  const [localTags, setLocalTags] = useState(tags);
   const [input, setInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef(null);
+  // Ref para rastrear a última versão que nós mesmos enviamos ao pai, evitando loop de sync
+  const ownUpdateRef = useRef(false);
+
+  // Sincroniza do pai apenas quando a mudança vier de fora (ex: resetForm, handleEdit)
+  useEffect(() => {
+    if (ownUpdateRef.current) {
+      ownUpdateRef.current = false;
+      return;
+    }
+    setLocalTags(tags);
+  }, [tags]);
 
   const filteredSuggestions = suggestions.filter(
-    s => s.toLowerCase().includes(input.toLowerCase()) && !tags.includes(s)
+    s => s.toLowerCase().includes(input.toLowerCase()) && !localTags.includes(s)
   ).slice(0, 5);
+
+  const notify = (newTags) => {
+    ownUpdateRef.current = true;
+    onChange?.(newTags);
+  };
 
   const addTag = (tag) => {
     const trimmed = tag.trim().toLowerCase();
-    if (!trimmed || tags.includes(trimmed) || tags.length >= maxTags) return;
-    onChange([...tags, trimmed]);
+    if (!trimmed || localTags.includes(trimmed) || localTags.length >= maxTags) return;
+    const newTags = [...localTags, trimmed];
+    setLocalTags(newTags);
+    notify(newTags);
     setInput('');
     setShowSuggestions(false);
   };
 
   const removeTag = (tagToRemove) => {
-    onChange(tags.filter(t => t !== tagToRemove));
+    const newTags = localTags.filter(t => t !== tagToRemove);
+    setLocalTags(newTags);
+    notify(newTags);
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
+      e.stopPropagation(); // impede submissão do formulário pai
       addTag(input);
+      return;
     }
-    if (e.key === 'Backspace' && !input && tags.length > 0) {
-      removeTag(tags[tags.length - 1]);
+    if (e.key === 'Backspace' && !input && localTags.length > 0) {
+      removeTag(localTags[localTags.length - 1]);
     }
+  };
+
+  const handleBlur = () => {
+    // Confirma a tag ao sair do campo (clicar fora ou Tab)
+    if (input.trim()) addTag(input);
+    setTimeout(() => setShowSuggestions(false), 150);
   };
 
   return (
     <div className="relative">
       <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 min-h-[42px] focus-within:ring-2 focus-within:ring-indigo-500/30 focus-within:border-indigo-400 transition-all">
-        {tags.map(tag => (
+        {localTags.map(tag => (
           <span
             key={tag}
             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${getTagColor(tag)}`}
@@ -84,7 +114,7 @@ export default function TagInput({
             </button>
           </span>
         ))}
-        {tags.length < maxTags && (
+        {localTags.length < maxTags && (
           <input
             ref={inputRef}
             type="text"
@@ -95,16 +125,16 @@ export default function TagInput({
             }}
             onKeyDown={handleKeyDown}
             onFocus={() => input && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            placeholder={tags.length === 0 ? placeholder : ''}
+            onBlur={handleBlur}
+            placeholder={localTags.length === 0 ? placeholder : ''}
             className="flex-1 min-w-[80px] bg-transparent outline-none text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
           />
         )}
       </div>
       
-      {tags.length < maxTags && (
+      {localTags.length < maxTags && (
         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          {tags.length}/{maxTags} tags · Enter ou vírgula para adicionar
+          {localTags.length}/{maxTags} tags · Enter ou vírgula para adicionar
         </p>
       )}
 

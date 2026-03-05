@@ -821,6 +821,7 @@ function Flashcards() {
                 Tags (Opcional)
               </label>
               <TagInput
+                key={editingId ?? 'new'}
                 tags={formData.tags}
                 onChange={(newTags) => setFormData(prev => ({ ...prev, tags: newTags }))}
                 placeholder="Ex: anatomia, prova, importante..."
