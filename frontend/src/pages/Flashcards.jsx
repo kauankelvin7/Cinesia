@@ -228,12 +228,12 @@ function Flashcards() {
     const materiaId = e.target.value;
     const materia = materias.find(m => m.id === materiaId);
     
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       materiaId: materiaId,
       materiaNome: materia?.nome || '',
       materiaCor: materia?.cor || '#94A3B8'
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -743,7 +743,7 @@ function Flashcards() {
               label="Pergunta"
               placeholder="Digite a pergunta..."
               value={formData.pergunta}
-              onChange={(e) => setFormData({ ...formData, pergunta: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, pergunta: e.target.value }))}
               onKeyDown={(e) => e.stopPropagation()}
               required
               rows={3}
@@ -753,7 +753,7 @@ function Flashcards() {
               label="Resposta"
               placeholder="Digite a resposta..."
               value={formData.resposta}
-              onChange={(e) => setFormData({ ...formData, resposta: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, resposta: e.target.value }))}
               onKeyDown={(e) => e.stopPropagation()}
               required
               rows={4}
@@ -822,7 +822,7 @@ function Flashcards() {
               </label>
               <TagInput
                 tags={formData.tags}
-                onChange={(tags) => setFormData({ ...formData, tags })}
+                onChange={(newTags) => setFormData(prev => ({ ...prev, tags: newTags }))}
                 placeholder="Ex: anatomia, prova, importante..."
                 suggestions={[...new Set(flashcards.flatMap(fc => fc.tags || []))]}
               />
