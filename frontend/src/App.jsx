@@ -20,6 +20,7 @@ import { FocusModeProvider } from './contexts/FocusModeContext';
 import Layout from './components/Layout';
 import LoadingScreen from './components/ui/LoadingScreen';
 import PWAInstallBanner from './components/PWAInstallBanner';
+import OnboardingFlow from './components/OnboardingFlow';
 import { initPWA } from './utils/pwaUtils';
 import { useFontSize } from './utils/useFontSize';
 
@@ -89,6 +90,7 @@ function AppContent() {
               <DashboardDataProvider>
               <FocusModeProvider>
               <CacheCleaner />
+              <OnboardingFlow />
               <Layout>
                 {/* Suspense interno para transições entre páginas protegidas */}
                 <Suspense fallback={<LoadingScreen />}>

@@ -681,6 +681,14 @@ const KakaBot = () => {
 
   // ─── Estado — UI ───────────────────────────────────────────────────────────
   const [isOpen, setIsOpen] = useState(false);
+
+  // Escuta evento externo para abrir o KakaBot (ex: onboarding)
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('cinesia:kakabot:abrir', handleOpen);
+    return () => window.removeEventListener('cinesia:kakabot:abrir', handleOpen);
+  }, []);
+
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);          // aguardando resposta do Gemini
   const [isExecutingAction, setIsExecutingAction] = useState(false); // executando ação no Firestore
@@ -1141,7 +1149,6 @@ const KakaBot = () => {
           setGeminiModel(chat);
           setActiveModelName(modelName);
           setConnectionStatus('connected');
-          addSystemMessage('✅ **Conexão estabelecida!**\n\nPronto para responder suas dúvidas e executar ações no sistema! 💪', 'success');
           return;
         } catch (err) {
           // Erros 429 param o loop — devem ser tratados com backoff, não com fallback de modelo

@@ -108,6 +108,13 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // -- Perfil do usuário (onboarding, preferências) --
+      match /perfil/{docId} {
+        allow read:   if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isOwner(userId);
+      }
+
       // -- KakaBot Memória (preferências e estatísticas) --
       match /kakabot_memoria/{docId} {
         allow read:   if isOwner(userId);
