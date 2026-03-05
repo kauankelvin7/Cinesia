@@ -236,8 +236,9 @@ export const criarFlashcard = async (flashcard, imageFile, userId) => {
       pergunta: flashcard.pergunta,
       resposta: flashcard.resposta,
       materiaId: flashcard.materiaId,
-      materiaNome: flashcard.materiaNome || null,  // CORREÇÃO: Salvar nome da matéria
-      materiaCor: flashcard.materiaCor || null,    // CORREÇÃO: Salvar cor da matéria
+      materiaNome: flashcard.materiaNome || null,
+      materiaCor: flashcard.materiaCor || null,
+      tags: flashcard.tags || [],
       imagemUrl: null,  // Será preenchido com URL do Cloudinary se houver imagem
       // SM-2 fields (BUG-008)
       nextReviewDate: serverTimestamp(), // revisar imediatamente

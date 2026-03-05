@@ -622,7 +622,7 @@ function Flashcards() {
             </div>
             <Select
               value={selectedMateria}
-              onChange={(e) => setSelectedMateria(e.target.value)}
+              onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTag('all'); }}
               className="w-full sm:w-64"
             >
               <option value="all">Todas as Matérias</option>
@@ -635,7 +635,8 @@ function Flashcards() {
 
             {/* Tag filter */}
             {(() => {
-              const allTags = [...new Set(flashcards.flatMap(fc => fc.tags || []))].sort();
+              const baseCards = selectedMateria === 'all' ? flashcards : flashcards.filter(fc => fc.materiaId === selectedMateria);
+              const allTags = [...new Set(baseCards.flatMap(fc => fc.tags || []))].sort();
               return allTags.length > 0 ? (
                 <Select
                   value={selectedTag}
