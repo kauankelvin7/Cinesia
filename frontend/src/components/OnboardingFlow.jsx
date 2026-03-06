@@ -128,6 +128,9 @@ export default function OnboardingFlow() {
       await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), {
         nomePreferido: trimmed,
       }, { merge: true });
+      await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), cleanUndefined({
+        nomePreferido: trimmed,
+      }), { merge: true });
       goNext();
     } catch {
       setNomeError('Erro ao salvar. Tente novamente.');

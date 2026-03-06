@@ -148,6 +148,13 @@ const PomodoroTimer = memo(() => {
         minutesStudied: minutes,
         updatedAt: serverTimestamp()
       }, { merge: true });
+      await setDoc(pomodoroRef, cleanUndefined({
+        uid: userId,
+        date: today,
+        cycles,
+        minutesStudied: minutes,
+        updatedAt: serverTimestamp()
+      }), { merge: true });
       
       // Atualizar também o total do usuário (setDoc + merge para criar se não existir)
       const userRef = doc(db, 'users', userId);
@@ -155,6 +162,10 @@ const PomodoroTimer = memo(() => {
         totalMinutesStudied: increment(25),
         lastPomodoroAt: serverTimestamp()
       }, { merge: true });
+      await setDoc(userRef, cleanUndefined({
+        totalMinutesStudied: increment(25),
+        lastPomodoroAt: serverTimestamp()
+      }), { merge: true });
       
     } catch (error) {
       if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {

@@ -55,7 +55,15 @@ export function useFriends() {
   const sendRequest = useCallback(
     async (targetUser) => {
       if (!user) throw new Error('Não autenticado');
-      return friendsService.sendFriendRequest(user, targetUser);
+      const targetComUid = {
+        ...targetUser,
+        uid: targetUser.uid || targetUser.id || null,
+      };
+      const currentComUid = {
+        ...user,
+        uid: user.uid || user.id || null,
+      };
+      return friendsService.sendFriendRequest(currentComUid, targetComUid);
     },
     [user],
   );

@@ -18,6 +18,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext-firebase';
 import { DashboardDataProvider, useDashboardData } from './contexts/DashboardDataContext';
 import { FocusModeProvider } from './contexts/FocusModeContext';
 import { SocialProvider } from './features/social/context/SocialContext';
+import { ensureUserProfileOnAuth } from './features/social/services/friendsService';
 import Layout from './components/Layout';
 import LoadingScreen from './components/ui/LoadingScreen';
 import PWAInstallBanner from './components/PWAInstallBanner';
@@ -174,6 +175,10 @@ function App() {
   // Inicializar PWA (listeners de instalação e status)
   useEffect(() => {
     initPWA();
+  }, []);
+
+  useEffect(() => {
+    ensureUserProfileOnAuth();
   }, []);
 
   return (

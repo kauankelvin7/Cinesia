@@ -8,8 +8,12 @@ import {
   collection, doc, setDoc, getDoc, updateDoc, deleteDoc,
   query, where, getDocs, onSnapshot, orderBy, Timestamp, limit,
 } from 'firebase/firestore';
+import { cleanUndefined } from '../../../utils/firestoreHelpers';
 import { db } from '../../../config/firebase-config';
 import { handleFirestoreError } from '../../../utils/firestoreErrorHandler';
+import { getAuth } from 'firebase/auth';
+
+const auth = getAuth();
 
 /**
  * Gera um ID determinístico para a amizade (sempre o mesmo independente da ordem).
@@ -22,21 +26,48 @@ export const friendsService = {
    * Envia um pedido de amizade.
    */
   async sendFriendRequest(currentUser, targetUser) {
-    const fid = getFriendshipId(currentUser.uid, targetUser.uid);
+    // Resolve uid — compatível com documentos Firestore antigos que têm .id mas não têm .uid
+    const currentUserResolved = {
+      ...currentUser,
+      uid: currentUser?.uid || currentUser?.id || null,
+    };
+    const targetUserResolved = {
+      ...targetUser,
+      uid: targetUser?.uid || targetUser?.id || null,
+    };
+
+    // Fallback: se currentUser ainda sem uid, pega do Firebase Auth
+    if (!currentUserResolved.uid) {
+      const { getAuth } = await import('firebase/auth');
+      const authUid = getAuth().currentUser?.uid;
+      if (authUid) currentUserResolved.uid = authUid;
+    }
+
+    if (!currentUserResolved.uid || !targetUserResolved.uid) {
+      console.error('[Friendship] UID ausente após resolução:', {
+        currentUser: currentUserResolved,
+        targetUser: targetUserResolved,
+      });
+      throw new Error(
+        'Não foi possível identificar o usuário. ' +
+        'Tente fazer logout e login novamente.'
+      );
+    }
+
+    const fid = getFriendshipId(currentUserResolved.uid, targetUserResolved.uid);
     const friendshipRef = doc(db, 'friendships', fid);
 
-    // Verifica se já existe
     const existing = await getDoc(friendshipRef);
     if (existing.exists()) {
       const data = existing.data();
       if (data.status === 'accepted') throw new Error('Vocês já são amigos!');
-      if (data.status === 'pending') throw new Error('Pedido já enviado!');
-      if (data.status === 'blocked') throw new Error('Não é possível enviar pedido.');
+      if (data.status === 'pending')  throw new Error('Pedido já enviado!');
+      if (data.status === 'blocked')  throw new Error('Não é possível enviar pedido.');
     }
 
     const sortedUsers = [currentUser.uid, targetUser.uid].sort();
 
-    await setDoc(friendshipRef, {
+    const dadosAmizade = {
       id: fid,
       users: sortedUsers,
       status: 'pending',
@@ -48,37 +79,51 @@ export const friendsService = {
         uid: sortedUsers[0] === currentUser.uid ? currentUser.uid : targetUser.uid,
         displayName: sortedUsers[0] === currentUser.uid
           ? (currentUser.displayName || currentUser.email || '')
-          : (targetUser.displayName || targetUser.email || ''),
+          : (targetUser.displayName  || targetUser.email  || ''),
         photoURL: sortedUsers[0] === currentUser.uid
           ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
-          : (typeof targetUser.photoURL === 'string' ? targetUser.photoURL : null),
+          : (typeof targetUser.photoURL  === 'string' ? targetUser.photoURL  : null),
       },
       user2Data: {
         uid: sortedUsers[1] === currentUser.uid ? currentUser.uid : targetUser.uid,
         displayName: sortedUsers[1] === currentUser.uid
           ? (currentUser.displayName || currentUser.email || '')
-          : (targetUser.displayName || targetUser.email || ''),
+          : (targetUser.displayName  || targetUser.email  || ''),
         photoURL: sortedUsers[1] === currentUser.uid
           ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
-          : (typeof targetUser.photoURL === 'string' ? targetUser.photoURL : null),
+          : (typeof targetUser.photoURL  === 'string' ? targetUser.photoURL  : null),
       },
-    });
+    };
 
-    // Cria notificação in-app para o destinatário
-    await setDoc(doc(collection(db, 'notifications')), {
+    const encontrarUndefined = (obj, caminho = '') => {
+      Object.entries(obj).forEach(([key, value]) => {
+        const caminhoAtual = caminho ? `${caminho}.${key}` : key;
+        if (value === undefined) {
+          console.error(`[Firestore] Campo undefined: "${caminhoAtual}"`);
+        } else if (typeof value === 'object' && value !== null && !value?.toDate) {
+          encontrarUndefined(value, caminhoAtual);
+        }
+      });
+    };
+
+    encontrarUndefined(dadosAmizade);
+    await setDoc(friendshipRef, cleanUndefined(dadosAmizade));
+
+    const dadosNotificacao = {
       recipientId: targetUser.uid,
       type: 'friend_request',
       title: 'Novo pedido de amizade',
       body: `${currentUser.displayName || currentUser.email} quer ser seu amigo no Cinesia`,
       data: {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName || currentUser.email,
+        senderId:    currentUser.uid,
+        senderName:  currentUser.displayName || currentUser.email,
         senderPhoto: currentUser.photoURL || null,
         friendshipId: fid,
       },
       read: false,
       createdAt: Timestamp.now(),
-    });
+    };
+    await setDoc(doc(collection(db, 'notifications')), cleanUndefined(dadosNotificacao));
 
     return fid;
   },
@@ -87,10 +132,10 @@ export const friendsService = {
    * Aceita um pedido de amizade pendente.
    */
   async acceptFriendRequest(friendshipId) {
-    await updateDoc(doc(db, 'friendships', friendshipId), {
+    await updateDoc(doc(db, 'friendships', friendshipId), cleanUndefined({
       status: 'accepted',
       updatedAt: Timestamp.now(),
-    });
+    }));
   },
 
   /**
@@ -111,10 +156,10 @@ export const friendsService = {
    * Bloqueia um usuário.
    */
   async blockUser(friendshipId) {
-    await updateDoc(doc(db, 'friendships', friendshipId), {
+    await updateDoc(doc(db, 'friendships', friendshipId), cleanUndefined({
       status: 'blocked',
       updatedAt: Timestamp.now(),
-    });
+    }));
   },
 
   /**
@@ -220,38 +265,14 @@ export const friendsService = {
     const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
 
     if (!snap.exists()) {
-      await setDoc(userRef, {
-        uid: user.uid,
+      await setDoc(userRef, cleanUndefined({
+        uid:               user.uid,
         displayName,
-        displayNameLower: displayName.toLowerCase(),
-        email: user.email || '',
-        photoURL: user.photoURL || null,
-        bio: '',
-        institution: '',
-        streakDays: 0,
-        totalStudyMinutes: 0,
-        lastActive: Timestamp.now(),
-        isOnline: true,
-        isStudying: false,
-        currentPage: 'home',
-        createdAt: Timestamp.now(),
-        settings: {
-          allowFriendRequests: true,
-          showOnlineStatus: true,
-          showStudyActivity: true,
-          challengeNotifications: true,
-        },
-      });
-    } else {
-      // Atualiza campos que podem ter mudado (nome, foto) e garante displayNameLower
-      const currentName = user.displayName || snap.data().displayName;
-      await updateDoc(userRef, {
-        displayName: currentName,
-        displayNameLower: currentName.toLowerCase(),
-        email: user.email || snap.data().email,
-        photoURL: user.photoURL || snap.data().photoURL || null,
-        lastActive: Timestamp.now(),
-      });
+        displayNameLower:  displayName.toLowerCase(),
+        email:             user.email    || '',
+        photoURL:          user.photoURL || null,
+        bio:               '',
+      }));
     }
   },
 
@@ -264,3 +285,37 @@ export const friendsService = {
     return { id: snap.id, ...snap.data() };
   },
 };
+
+export function ensureUserProfileOnAuth() {
+  auth.onAuthStateChanged(async (user) => {
+    if (user && user.uid) {
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+      const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
+      if (!snap.exists() || !snap.data().uid) {
+        await setDoc(userRef, cleanUndefined({
+          uid:                user.uid,
+          displayName,
+          displayNameLower:   displayName.toLowerCase(),
+          email:              user.email    || '',
+          photoURL:           user.photoURL || null,
+          bio:                '',
+          institution:        '',
+          streakDays:         0,
+          totalStudyMinutes:  0,
+          lastActive:         Timestamp.now(),
+          isOnline:           true,
+          isStudying:         false,
+          currentPage:        'home',
+          createdAt:          Timestamp.now(),
+          settings: {
+            allowFriendRequests:      true,
+            showOnlineStatus:         true,
+            showStudyActivity:        true,
+            challengeNotifications:   true,
+          },
+        }));
+      }
+    }
+  });
+}

@@ -815,6 +815,7 @@ const KakaBot = () => {
         }
 
         await setDoc(docRef, updateData, { merge: true });
+  await setDoc(docRef, cleanUndefined(updateData), { merge: true });
 
         setMemoriaUsuario((prev) => ({
           ...prev,
@@ -838,7 +839,7 @@ const KakaBot = () => {
 
         await setDoc(
           docRef,
-          { estatisticasUso: { acoesExecutadas: acoesAtuais } },
+          cleanUndefined({ estatisticasUso: { acoesExecutadas: acoesAtuais } }),
           { merge: true }
         );
 
@@ -931,7 +932,7 @@ const KakaBot = () => {
 
       await setDoc(
         doc(db, 'users', uid, 'kakabot_sessoes', sessaoAtual.id),
-        { resumoAutoGerado: resumo, resumoGeradoEm: new Date().toISOString() },
+        cleanUndefined({ resumoAutoGerado: resumo, resumoGeradoEm: new Date().toISOString() }),
         { merge: true }
       );
     } catch {
@@ -1288,6 +1289,9 @@ const KakaBot = () => {
         await setDoc(docRef, {
           preferenciasUsuario: { nivelConhecimento: nivelInferido },
         }, { merge: true });
+        await setDoc(docRef, cleanUndefined({
+          preferenciasUsuario: { nivelConhecimento: nivelInferido },
+        }), { merge: true });
         setMemoriaUsuario((prev) => ({
           ...prev,
           preferenciasUsuario: { ...prev.preferenciasUsuario, nivelConhecimento: nivelInferido },
@@ -1881,12 +1885,12 @@ const KakaBot = () => {
                                             const salvoId = `salvo_${Date.now()}`;
                                             await setDoc(
                                               doc(db, 'users', uid, 'kakabot_salvos', salvoId),
-                                              {
+                                              cleanUndefined({
                                                 content: message.content,
                                                 timestamp: message.timestamp || new Date().toISOString(),
                                                 sessaoId: sessaoAtual?.id || null,
                                                 salvoEm: new Date().toISOString(),
-                                              }
+                                              })
                                             );
                                             addSystemMessage('📌 Mensagem salva com sucesso!', 'success');
                                           } catch (err) {

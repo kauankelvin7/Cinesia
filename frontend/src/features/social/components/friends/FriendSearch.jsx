@@ -44,14 +44,18 @@ const FriendSearch = memo(({ onSearch, onSendRequest, sentRequests = [], friends
   );
 
   const handleSendRequest = async (targetUser) => {
-    setSending((prev) => ({ ...prev, [targetUser.uid]: true }));
+    const targetComUid = {
+      ...targetUser,
+      uid: targetUser.uid || targetUser.id || null,
+    };
+    setSending((prev) => ({ ...prev, [targetComUid.uid]: true }));
     try {
-      await onSendRequest(targetUser);
-      toast.success(`Pedido enviado para ${targetUser.displayName}!`);
+      await onSendRequest(targetComUid);
+      toast.success(`Pedido enviado para ${targetComUid.displayName}!`);
     } catch (err) {
       toast.error(err.message || 'Erro ao enviar pedido');
     }
-    setSending((prev) => ({ ...prev, [targetUser.uid]: false }));
+    setSending((prev) => ({ ...prev, [targetComUid.uid]: false }));
   };
 
   const getStatus = (userId) => {

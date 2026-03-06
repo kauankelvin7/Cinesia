@@ -8,6 +8,7 @@ import {
   query, where, orderBy, limit, onSnapshot, Timestamp,
   getDocs, writeBatch,
 } from 'firebase/firestore';
+import { cleanUndefined } from '../../../utils/firestoreHelpers';
 import { db } from '../../../config/firebase-config';
 
 export const notificationService = {
@@ -16,12 +17,12 @@ export const notificationService = {
    */
   async create(notification) {
     const notifRef = doc(collection(db, 'notifications'));
-    await setDoc(notifRef, {
+    await setDoc(notifRef, cleanUndefined({
       id: notifRef.id,
       ...notification,
       read: false,
       createdAt: Timestamp.now(),
-    });
+    }));
     return notifRef.id;
   },
 
@@ -29,9 +30,9 @@ export const notificationService = {
    * Marca uma notificação como lida.
    */
   async markAsRead(notificationId) {
-    await updateDoc(doc(db, 'notifications', notificationId), {
+    await updateDoc(doc(db, 'notifications', notificationId), cleanUndefined({
       read: true,
-    });
+    }));
   },
 
   /**
