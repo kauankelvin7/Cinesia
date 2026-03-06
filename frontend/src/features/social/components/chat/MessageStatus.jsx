@@ -1,13 +1,23 @@
 /**
  * @file MessageStatus.jsx
- * @description Indicador de status da mensagem: ✓ enviado / ✓✓ lido.
+ * @description Indicador visual de status: ✓ enviado / ✓✓ entregue / ✓✓ azul lido.
+ * Usa readBy map para determinar status real per-message.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Check, CheckCheck } from 'lucide-react';
 
-const MessageStatus = memo(({ status }) => {
-  if (status === 'read') {
+const MessageStatus = memo(({ status, readBy, senderId }) => {
+  // Determine actual status from readBy map
+  const computedStatus = useMemo(() => {
+    if (readBy && senderId) {
+      const otherReaders = Object.keys(readBy).filter((uid) => uid !== senderId);
+      if (otherReaders.length > 0) return 'read';
+    }
+    return status || 'sent';
+  }, [status, readBy, senderId]);
+
+  if (computedStatus === 'read') {
     return (
       <CheckCheck
         size={14}
@@ -17,7 +27,7 @@ const MessageStatus = memo(({ status }) => {
     );
   }
 
-  if (status === 'delivered') {
+  if (computedStatus === 'delivered') {
     return (
       <CheckCheck
         size={14}
@@ -27,7 +37,7 @@ const MessageStatus = memo(({ status }) => {
     );
   }
 
-  if (status === 'sent') {
+  if (computedStatus === 'sent') {
     return (
       <Check
         size={14}

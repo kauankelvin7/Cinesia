@@ -1,12 +1,12 @@
 /**
  * @file ChatPanel.jsx
- * @description Painel flutuante do chat — desliza da direita sobre o conteúdo.
- * Mobile: full-screen; Desktop: w-80 fixed right.
+ * @description Painel flutuante do chat estilo WhatsApp — desliza da direita.
+ * Mobile: full-screen; Desktop: w-96 fixed right.
  */
 
 import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X } from 'lucide-react';
+import { MessageCircle, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { useSocial } from '../../context/SocialContext';
 import { useChat } from '../../hooks/useChat';
@@ -15,9 +15,8 @@ import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
 import NotificationBadge from '../shared/NotificationBadge';
 import { chatService } from '../../services/chatService';
-import { presenceService } from '../../services/presenceService';
 
-const ChatPanel = memo(() => {
+const ChatPanel = memo(({ showButton = true }) => {
   const { user } = useAuth();
   const {
     isChatOpen, toggleChat, closeChat,
@@ -33,7 +32,7 @@ const ChatPanel = memo(() => {
 
   // Resolve friend data when opening a conversation
   useEffect(() => {
-    if (!activeConversationId || !conversations.length) return;
+    if (!activeConversationId) return;
     const conv = conversations.find((c) => c.id === activeConversationId);
     if (!conv) return;
 
@@ -55,31 +54,24 @@ const ChatPanel = memo(() => {
     backToList();
   };
 
-  // Open chat from friend (create or get conversation)
-  const openChatWithFriend = async (friend) => {
-    if (!user?.uid || !friend?.uid) return;
-    const convId = await chatService.getOrCreateConversation(
-      user.uid,
-      friend.uid,
-      user,
-      friend,
-    );
-    openConversation(convId);
-  };
-
   return (
     <>
-      {/* Floating button — positioned by parent container in Layout.jsx */}
-      {/* Oculta no desktop quando o painel está aberto (X no header basta) */}
+      {/* Floating button — hidden on mobile (chat is accessed via bottom sheet "Mais") */}
+      {showButton && (
       <button
         onClick={toggleChat}
-        className={`relative w-12 h-12 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center group
+        className={`relative w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-cyan-500 hover:from-primary-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl hover:shadow-primary-500/20 transition-all flex items-center justify-center group
           ${isChatOpen ? 'hidden md:hidden' : ''}
         `}
         aria-label="Abrir chat"
         title="Mensagens"
       >
-        <motion.div key="open" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.15 }}>
+        <motion.div
+          key="open"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.15 }}
+        >
           <MessageCircle size={20} />
         </motion.div>
 
@@ -87,6 +79,7 @@ const ChatPanel = memo(() => {
           <NotificationBadge count={totalUnread} className="-top-1 -right-1" />
         )}
       </button>
+      )}
 
       {/* Panel */}
       <AnimatePresence>
@@ -94,7 +87,7 @@ const ChatPanel = memo(() => {
           <>
             {/* Mobile: backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-48 md:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -103,11 +96,11 @@ const ChatPanel = memo(() => {
 
             {/* Panel slide from right */}
             <motion.div
-              className="fixed right-0 top-0 bottom-0 z-49 w-full md:w-80 bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-700 flex flex-col"
+              className="fixed right-0 top-0 bottom-0 z-[61] w-full md:w-96 bg-white dark:bg-slate-900 shadow-2xl shadow-black/10 dark:shadow-black/30 border-l border-slate-200/80 dark:border-slate-700/80 flex flex-col"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
             >
               {activeConversationId && activeFriendData ? (
                 <ChatWindow
@@ -115,17 +108,30 @@ const ChatPanel = memo(() => {
                   friendData={activeFriendData}
                   friendStatus={activeFriendStatus}
                   onBack={handleBack}
+                  onClose={closeChat}
                 />
               ) : (
                 <>
                   {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                    <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">
-                      Mensagens
-                    </h2>
+                  <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-primary-500/5 to-cyan-500/5 dark:from-primary-500/10 dark:to-cyan-500/10">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center">
+                        <MessageCircle size={16} className="text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          Mensagens
+                        </h2>
+                        {conversations.length > 0 && (
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            {conversations.length} conversa{conversations.length !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     <button
                       onClick={closeChat}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                      className="flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
                       aria-label="Fechar"
                       title="Fechar"
                     >

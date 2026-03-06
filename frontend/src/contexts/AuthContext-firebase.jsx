@@ -195,7 +195,8 @@ export const AuthProvider = ({ children }) => {
       'auth/invalid-credential': 'Credenciais inválidas.',
       'auth/too-many-requests': 'Muitas tentativas. Tente novamente mais tarde.',
       'auth/popup-closed-by-user': 'Login cancelado.',
-      'auth/cancelled-popup-request': 'Login cancelado.'
+      'auth/cancelled-popup-request': 'Login cancelado.',
+      'auth/unauthorized-domain': 'Domínio não autorizado no Firebase Auth. Acesse por localhost:3000 ou adicione 127.0.0.1 em Authentication > Settings > Authorized domains.'
     };
 
     return errorMessages[errorCode] || 'Erro ao autenticar. Tente novamente.';

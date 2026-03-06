@@ -77,7 +77,7 @@ const GroupCreate = memo(({ isOpen, onClose, friends = [], onCreateGroup }) => {
               <div className="relative bg-linear-to-r from-violet-500 to-purple-600 px-4 py-4 shrink-0">
                 <button
                   onClick={onClose}
-                  className="absolute top-3 right-3 p-1.5 rounded-lg bg-black/20 text-white hover:bg-black/30 transition-colors"
+                  className="absolute top-3 right-3 flex items-center justify-center p-1.5 rounded-lg bg-black/20 text-white hover:bg-black/30 transition-colors"
                   aria-label="Fechar"
                 >
                   <X size={16} />

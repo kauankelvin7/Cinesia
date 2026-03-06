@@ -151,7 +151,7 @@ const ChallengeRoom = memo(({ challengeId, currentUserId, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             aria-label="Sair"
           >
             <X size={16} className="text-slate-500" />

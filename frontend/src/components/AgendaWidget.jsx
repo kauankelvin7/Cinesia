@@ -198,7 +198,7 @@ const AgendaWidget = () => {
                 </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  className="flex items-center justify-center p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <X size={20} />
                 </button>

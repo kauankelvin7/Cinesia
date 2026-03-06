@@ -140,6 +140,9 @@ export const updateStreak = async (userId) => {
       const streakRef = doc(db, 'users', userId, 'stats', 'streak');
       await updateDoc(streakRef, newData);
 
+      // Sincroniza streakDays no perfil público (não-bloqueante)
+      updateDoc(doc(db, 'users', userId), { streakDays: 1 }).catch(() => {});
+
       // Notificação de boas-vindas no primeiro login (não-bloqueante)
       checkStreakMilestones(userId, 1, true).catch(() => {});
       
@@ -179,6 +182,9 @@ export const updateStreak = async (userId) => {
       const streakRef = doc(db, 'users', userId, 'stats', 'streak');
       await updateDoc(streakRef, newData);
 
+      // Sincroniza streakDays no perfil público (não-bloqueante)
+      updateDoc(doc(db, 'users', userId), { streakDays: newStreak }).catch(() => {});
+
       // Verifica marcos de streak (não-bloqueante)
       checkStreakMilestones(userId, newStreak, false).catch(() => {});
 
@@ -208,6 +214,9 @@ export const updateStreak = async (userId) => {
 
     const streakRef = doc(db, 'users', userId, 'stats', 'streak');
     await updateDoc(streakRef, newData);
+
+    // Sincroniza streakDays no perfil público (não-bloqueante)
+    updateDoc(doc(db, 'users', userId), { streakDays: 1 }).catch(() => {});
 
     return newData;
 

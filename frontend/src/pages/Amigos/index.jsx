@@ -3,7 +3,7 @@
  * @description Página principal do sistema social – 4 abas: Amigos, Pedidos, Buscar, Grupos.
  */
 
-import React, { memo, useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { memo, useState, useCallback, useMemo, lazy, Suspense, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Search, BookOpen, Swords, Bell } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ import { useFriends } from '../../features/social/hooks/useFriends';
 import { useGroups } from '../../features/social/hooks/useGroups';
 import { challengeService } from '../../features/social/services/challengeService';
 import { chatService } from '../../features/social/services/chatService';
-import { groupService } from '../../features/social/services/groupService';
+import { getStreakData } from '../../services/streakService';
 import FriendsList from '../../features/social/components/friends/FriendsList';
 import FriendRequests from '../../features/social/components/friends/FriendRequests';
 import FriendSearch from '../../features/social/components/friends/FriendSearch';
@@ -23,7 +23,6 @@ import GroupCreate from '../../features/social/components/groups/GroupCreate';
 import GroupChat from '../../features/social/components/groups/GroupChat';
 import GroupMembers from '../../features/social/components/groups/GroupMembers';
 import ChallengeInvite from '../../features/social/components/challenges/ChallengeInvite';
-import ChallengeRoom from '../../features/social/components/challenges/ChallengeRoom';
 import NotificationBadge from '../../features/social/components/shared/NotificationBadge';
 
 const TABS = [
@@ -35,7 +34,7 @@ const TABS = [
 
 const Amigos = memo(() => {
   const { user } = useAuth();
-  const { pendingRequestsCount, activeChallengeId, startChallenge, endChallenge, openConversation } =
+  const { pendingRequestsCount, startChallenge, openConversation } =
     useSocial();
   const {
     friends,
@@ -52,6 +51,7 @@ const Amigos = memo(() => {
   } = useFriends();
   const { groups, loading: groupsLoading, createGroup, leaveGroup, removeMember } = useGroups();
 
+  const [myStreakDays, setMyStreakDays] = useState(0);
   const [activeTab, setActiveTab] = useState('friends');
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -61,6 +61,14 @@ const Amigos = memo(() => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
 
+  // Busca streak do usuário logado para exibir na comparação
+  useEffect(() => {
+    if (!user?.uid) return;
+    getStreakData(user.uid)
+      .then((data) => setMyStreakDays(data?.currentStreak ?? 0))
+      .catch(() => {});
+  }, [user?.uid]);
+
   // Abrir perfil do amigo
   const handleOpenProfile = useCallback((friend) => {
     setSelectedFriend(friend);
@@ -69,10 +77,17 @@ const Amigos = memo(() => {
 
   // Mensagem direta
   const handleMessage = useCallback(
-    (friend) => {
-      openConversation(friend.uid);
+    async (friend) => {
+      try {
+        const convId = await chatService.getOrCreateConversation(
+          user.uid, friend.uid, user, friend,
+        );
+        openConversation(convId);
+      } catch (err) {
+        toast.error('Erro ao abrir conversa');
+      }
     },
-    [openConversation],
+    [user, openConversation],
   );
 
   // Abrir modal de desafio
@@ -149,17 +164,6 @@ const Amigos = memo(() => {
     [selectedGroup, removeMember],
   );
 
-  // Se tem desafio ativo, mostra a sala
-  if (activeChallengeId) {
-    return (
-      <ChallengeRoom
-        challengeId={activeChallengeId}
-        currentUserId={user?.uid}
-        onClose={endChallenge}
-      />
-    );
-  }
-
   // Se grupo selecionado, mostra chat do grupo
   if (selectedGroup) {
     return (
@@ -179,9 +183,14 @@ const Amigos = memo(() => {
           }
           onRemoveMember={handleRemoveMember}
           onLeaveGroup={handleLeaveGroup}
-          onMessage={(member) => {
+          onMessage={async (member) => {
             setShowGroupMembers(false);
-            openConversation(member.uid);
+            try {
+              const mConvId = await chatService.getOrCreateConversation(user.uid, member.uid, user, member);
+              openConversation(mConvId);
+            } catch (err) {
+              toast.error('Erro ao abrir conversa');
+            }
           }}
         />
       </div>
@@ -300,6 +309,7 @@ const Amigos = memo(() => {
         onChallenge={handleChallengeOpen}
         onRemove={removeFriend}
         onBlock={blockUser}
+        myStreak={myStreakDays}
       />
 
       <ChallengeInvite

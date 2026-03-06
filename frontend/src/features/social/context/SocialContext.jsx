@@ -37,6 +37,7 @@ export const SocialProvider = ({ children }) => {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
 
   const presenceInitialized = useRef(false);
+  const presenceCleanup = useRef(null);
 
   // Inicializa presença e perfil público
   useEffect(() => {
@@ -50,14 +51,22 @@ export const SocialProvider = ({ children }) => {
 
     // Inicializa presença (online/offline automático)
     if (!presenceInitialized.current) {
-      presenceService.initPresence(user.uid, location.pathname.replace('/', '') || 'home');
+      presenceCleanup.current = presenceService.initPresence(
+        user.uid,
+        location.pathname.replace('/', '') || 'home',
+      );
       presenceInitialized.current = true;
     }
 
     return () => {
+      if (presenceCleanup.current) {
+        presenceCleanup.current();
+        presenceCleanup.current = null;
+      }
       if (user?.uid) {
         presenceService.goOffline(user.uid);
       }
+      presenceInitialized.current = false;
     };
   }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 

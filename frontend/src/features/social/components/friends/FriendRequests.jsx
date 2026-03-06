@@ -87,7 +87,7 @@ const FriendRequests = memo(({ pendingRequests, sentRequests, onAccept, onDeclin
                     <button
                       onClick={() => handleAction(req.id, 'accept')}
                       disabled={!!processing[req.id]}
-                      className="p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors disabled:opacity-50"
                       title="Aceitar"
                       aria-label="Aceitar pedido"
                     >
@@ -100,7 +100,7 @@ const FriendRequests = memo(({ pendingRequests, sentRequests, onAccept, onDeclin
                     <button
                       onClick={() => handleAction(req.id, 'decline')}
                       disabled={!!processing[req.id]}
-                      className="p-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                      className="flex items-center justify-center p-2 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
                       title="Recusar"
                       aria-label="Recusar pedido"
                     >

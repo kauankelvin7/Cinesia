@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import BottomNavigation from './BottomNavigation';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useFocusMode } from '../contexts/FocusModeContext';
+import { useSocial } from '../features/social/context/SocialContext';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -46,6 +47,7 @@ class ErrorBoundary extends React.Component {
 const PomodoroTimer = lazy(() => import('./PomodoroTimer'));
 const KakaBot = lazy(() => import('./KakaBot'));
 const ChatPanel = lazy(() => import('../features/social/components/chat/ChatPanel'));
+const ChallengeRoom = lazy(() => import('../features/social/components/challenges/ChallengeRoom'));
 
 /* ── Mobile Topbar with Avatar ── */
 const MobileTopbar = memo(({ onOpenDrawer }) => {
@@ -113,6 +115,8 @@ MobileTopbar.displayName = 'MobileTopbar';
 const Layout = memo(({ children }) => {
   const location = useLocation();
   const { focusMode, exitFocusMode } = useFocusMode();
+  const { activeChallengeId, endChallenge } = useSocial();
+  const { user } = useAuth();
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
 
   const [sidebarVisible, setSidebarVisible] = useState(() => {
@@ -321,13 +325,13 @@ const Layout = memo(({ children }) => {
 
         {/* Botões flutuantes — canto inferior direito (Chat + IA) */}
         {!focusMode && (
-          <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-center gap-3">
-            {/* Botão do Chat de Amigos — fica em cima */}
+          <div className="fixed bottom-[80px] right-3 md:bottom-6 md:right-6 z-50 flex flex-col items-center gap-3">
+            {/* Chat — botão oculto no mobile (acessível pelo Bottom Sheet "Mais") */}
             <Suspense fallback={null}>
-              <ChatPanel />
+              <ChatPanel showButton={isDesktop} />
             </Suspense>
 
-            {/* Botão do Agente IA — fica embaixo */}
+            {/* Agente IA */}
             {!isQuadroBranco && (
               <Suspense fallback={null}>
                 <KakaBot />
@@ -354,6 +358,17 @@ const Layout = memo(({ children }) => {
             </motion.button>
           )}
         </AnimatePresence>
+
+        {/* Global Challenge Room overlay — renders from any page */}
+        {activeChallengeId && (
+          <Suspense fallback={null}>
+            <ChallengeRoom
+              challengeId={activeChallengeId}
+              currentUserId={user?.uid}
+              onClose={endChallenge}
+            />
+          </Suspense>
+        )}
       </div>
     </ErrorBoundary>
   );

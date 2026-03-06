@@ -59,7 +59,7 @@ const FriendProfile = memo(({ friend, friendStatus, isOpen, onClose, onMessage, 
               <div className="relative bg-linear-to-br from-primary-500 to-cyan-500 h-24">
                 <button
                   onClick={onClose}
-                  className="absolute top-3 right-3 p-1.5 rounded-lg bg-black/20 text-white hover:bg-black/30 transition-colors"
+                  className="absolute top-3 right-3 flex items-center justify-center p-1.5 rounded-lg bg-black/20 text-white hover:bg-black/30 transition-colors"
                   aria-label="Fechar"
                 >
                   <X size={16} />

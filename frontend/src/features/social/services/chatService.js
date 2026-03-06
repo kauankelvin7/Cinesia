@@ -1,11 +1,11 @@
 /**
  * @file chatService.js
  * @description Serviço de chat em tempo real via Firestore.
- * Gerencia conversas, mensagens, indicadores de digitação e leitura.
+ * Gerencia conversas, mensagens, indicadores de digitação, leitura e status de entrega.
  */
 
 import {
-  collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, Timestamp,
   increment, writeBatch, startAfter,
 } from 'firebase/firestore';
@@ -75,6 +75,7 @@ export const chatService = {
       attachedContent: messageData.attachedContent || null,
       status: 'sent',
       readBy: { [senderId]: Timestamp.now() },
+      deliveredTo: { [senderId]: Timestamp.now() },
       createdAt: Timestamp.now(),
       editedAt: null,
       deletedAt: null,
@@ -109,25 +110,59 @@ export const chatService = {
   },
 
   /**
-   * Marca conversa como lida pelo usuário.
+   * Marca conversa como lida pelo usuário e atualiza readBy nas mensagens não lidas.
    */
   async markAsRead(conversationId, userId) {
     if (!conversationId || !userId) return;
+
+    const batch = writeBatch(db);
+
+    // 1. Zera unreadCount + marca readBy na conversa
     const convRef = doc(db, 'conversations', conversationId);
-    await updateDoc(convRef, {
+    batch.update(convRef, {
       [`unreadCount.${userId}`]: 0,
       [`readBy.${userId}`]: Timestamp.now(),
     });
+
+    // 2. Atualiza readBy em mensagens que ainda não foram lidas por este usuário
+    try {
+      const msgsSnap = await getDocs(
+        query(
+          collection(db, 'conversations', conversationId, 'messages'),
+          orderBy('createdAt', 'desc'),
+          limit(50),
+        ),
+      );
+      const now = Timestamp.now();
+      msgsSnap.docs.forEach((msgDoc) => {
+        const data = msgDoc.data();
+        if (data.senderId !== userId && !data.readBy?.[userId]) {
+          batch.update(msgDoc.ref, {
+            [`readBy.${userId}`]: now,
+            [`deliveredTo.${userId}`]: data.deliveredTo?.[userId] || now,
+            status: 'read',
+          });
+        }
+      });
+    } catch {
+      // silently continue — conversation-level read is still set
+    }
+
+    await batch.commit();
   },
 
   /**
    * Define indicador de "digitando..." para o usuário.
    */
-  async setTyping(conversationId, userId, isTyping) {
+  async setTyping(conversationId, userId, isTyping, userName = null) {
     if (!conversationId || !userId) return;
     const typingRef = doc(db, 'conversations', conversationId, 'typing', userId);
     if (isTyping) {
-      await setDoc(typingRef, { userId, typingAt: Timestamp.now() });
+      await setDoc(typingRef, {
+        userId,
+        userName: userName || 'Alguém',
+        typingAt: Timestamp.now(),
+      });
     } else {
       try {
         await deleteDoc(typingRef);
@@ -157,10 +192,10 @@ export const chatService = {
   },
 
   /**
-   * Assina mensagens de uma conversa em tempo real.
+   * Assina mensagens de uma conversa em tempo real (últimas N mensagens).
    * @returns {Function} unsubscribe
    */
-  subscribeMessages(conversationId, callback, limitCount = 50) {
+  subscribeMessages(conversationId, callback, limitCount = 80) {
     if (!conversationId) return () => {};
     const q = query(
       collection(db, 'conversations', conversationId, 'messages'),
@@ -248,5 +283,14 @@ export const chatService = {
       },
       (error) => handleFirestoreError(error, 'subscribeTotalUnread'),
     );
+  },
+
+  /**
+   * Deleta uma mensagem (soft delete).
+   */
+  async deleteMessage(conversationId, messageId) {
+    if (!conversationId || !messageId) return;
+    const msgRef = doc(db, 'conversations', conversationId, 'messages', messageId);
+    await updateDoc(msgRef, { deletedAt: Timestamp.now() });
   },
 };

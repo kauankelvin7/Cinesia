@@ -217,9 +217,9 @@ const PomodoroTimer = memo(() => {
         <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAgAj9teleAgAMbS0rVwLxsdaK/k4pdmGwBAt9fQpE8EDkOE0+nGjT4AAIzL5tCMRQAAZqbl57aHMAAA" />
       </audio>
 
-      {/* Widget Flutuante - Empilhado ACIMA do KakaBot no mobile */}
+      {/* Widget Flutuante — acima da bottom nav bar no mobile (bottom-[148px] = 80px tab bar + 12px gap + ~56px KakaBot) */}
       <motion.div
-        className="fixed bottom-40 right-4 z-40 sm:bottom-6 sm:right-24 lg:bottom-6 lg:right-28"
+        className="fixed bottom-[148px] right-4 z-[50] sm:bottom-6 sm:right-24 lg:bottom-6 lg:right-28"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
@@ -232,7 +232,7 @@ const PomodoroTimer = memo(() => {
               onClick={() => setIsExpanded(true)}
               aria-label="Abrir temporizador Pomodoro"
               aria-pressed={false}
-              className={`relative w-14 h-14 rounded-full shadow-md flex items-center justify-center transition-colors ${
+              className={`relative w-14 h-14 max-[374px]:w-12 max-[374px]:h-12 rounded-full shadow-md flex items-center justify-center transition-colors ${
                 isRunning
                   ? mode === 'focus'
                     ? 'bg-primary-600'

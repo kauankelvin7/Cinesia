@@ -304,7 +304,7 @@ export default function MeuPerfil() {
                     </span>
                     <button
                       onClick={() => { setSelectedFile(null); setPreviewURL(null); }}
-                      className="text-slate-400 hover:text-red-500 transition-colors"
+                      className="flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"
                     >
                       <X size={16} />
                     </button>

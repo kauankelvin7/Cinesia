@@ -819,7 +819,7 @@ function Simulado() {
                           </div>
                           <button
                             onClick={removeFile}
-                            className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                            className="flex items-center justify-center p-2 hover:bg-red-100 rounded-lg transition-colors"
                             title="Remover arquivo"
                           >
                             <X size={20} className="text-red-500" />

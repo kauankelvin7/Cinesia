@@ -1,6 +1,6 @@
 /**
  * @file useChat.js
- * @description Hook para chat em tempo real — mensagens, conversas e typing indicators.
+ * @description Hook para chat em tempo real — mensagens, conversas, typing indicators e read receipts.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -9,7 +9,7 @@ import { chatService } from '../services/chatService';
 
 /**
  * @param {string|null} conversationId - ID da conversa ativa (null se nenhuma aberta)
- * @returns {{ messages, conversations, typing, loading, sendMessage, handleTyping, shareContent, markAsRead }}
+ * @returns {{ messages, conversations, typing, loading, sendMessage, handleTyping, shareContent, markAsRead, deleteMessage }}
  */
 export function useChat(conversationId) {
   const { user } = useAuth();
@@ -56,9 +56,11 @@ export function useChat(conversationId) {
 
   const sendMessage = useCallback(
     async (text, type = 'text', attachedContent = null) => {
-      if (!user?.uid || !conversationId || !text?.trim()) return;
+      if (!user?.uid || !conversationId) return;
+      // Permite texto vazio apenas para tipos que não são 'text'
+      if (type === 'text' && !text?.trim()) return;
       await chatService.sendMessage(conversationId, user.uid, user, {
-        text,
+        text: text || '',
         type,
         attachedContent,
       });
@@ -70,13 +72,13 @@ export function useChat(conversationId) {
 
   const handleTyping = useCallback(() => {
     if (!conversationId || !user?.uid) return;
-    chatService.setTyping(conversationId, user.uid, true);
+    chatService.setTyping(conversationId, user.uid, true, user?.displayName);
 
     clearTimeout(typingTimeout.current);
     typingTimeout.current = setTimeout(() => {
       chatService.setTyping(conversationId, user.uid, false);
     }, 2000);
-  }, [conversationId, user?.uid]);
+  }, [conversationId, user?.uid, user?.displayName]);
 
   const shareContent = useCallback(
     async (content) => {
@@ -90,6 +92,14 @@ export function useChat(conversationId) {
     if (!conversationId || !user?.uid) return;
     chatService.markAsRead(conversationId, user.uid);
   }, [conversationId, user?.uid]);
+
+  const deleteMessage = useCallback(
+    async (messageId) => {
+      if (!conversationId || !messageId) return;
+      await chatService.deleteMessage(conversationId, messageId);
+    },
+    [conversationId],
+  );
 
   // Cleanup typing timeout
   useEffect(() => {
@@ -105,5 +115,6 @@ export function useChat(conversationId) {
     handleTyping,
     shareContent,
     markAsRead,
+    deleteMessage,
   };
 }

@@ -2377,7 +2377,7 @@ export default function Atlas3D() {
               <p className="text-[10px]" style={{ color: 'var(--text-4)' }}>{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
             </div>
             {isMobile && (
-              <button onClick={closeMobileList} className="p-1.5 rounded-lg" style={{ color: 'var(--text-3)' }}>
+              <button onClick={closeMobileList} className="flex items-center justify-center p-1.5 rounded-lg" style={{ color: 'var(--text-3)' }}>
                 <X size={16} />
               </button>
             )}
@@ -2662,7 +2662,7 @@ export default function Atlas3D() {
                             >{selected.category}</span>
                           </div>
                         </div>
-                        <button onClick={() => setSelectedId(null)} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-3)' }}>
+                        <button onClick={() => setSelectedId(null)} className="flex items-center justify-center p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-3)' }}>
                           <X size={15} />
                         </button>
                       </div>
@@ -2720,7 +2720,7 @@ export default function Atlas3D() {
           <div className="atlas-bottom-sheet-handle" />
           <button
             onClick={closeMobileDetail}
-            className="absolute top-3 right-3 p-1.5 rounded-lg"
+            className="absolute top-3 right-3 flex items-center justify-center p-1.5 rounded-lg"
             style={{ color: 'var(--text-3)', zIndex: 5 }}
           >
             <X size={16} />
