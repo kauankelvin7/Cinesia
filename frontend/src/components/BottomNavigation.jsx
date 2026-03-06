@@ -218,6 +218,9 @@ const BottomNavigation = memo(() => {
   const { user } = useAuth();
   const { totalUnread, toggleChat } = useSocial();
 
+  // Detecta se o chat está ativo pela rota
+  const chatAtivo = location.pathname.startsWith('/chat');
+
   const isExtraActive = MORE_ITEMS.some(
     (item) => item.path && location.pathname === item.path,
   );
@@ -237,7 +240,7 @@ const BottomNavigation = memo(() => {
       <nav
         role="navigation"
         aria-label="Navegação principal"
-        className="fixed bottom-0 left-0 right-0 z-[60] flex items-stretch backdrop-blur-xl transition-colors"
+        className={`fixed bottom-0 left-0 right-0 z-10 flex items-stretch backdrop-blur-xl transition-colors`}
         style={{
           backgroundColor: 'color-mix(in srgb, var(--bg-surface) 95%, transparent)',
           borderTop: '1px solid var(--border)',

@@ -166,7 +166,7 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50 dark:bg-slate-950/50">
+    <div className="flex flex-col h-full relative chat-container">
       {/* Header */}
       <div className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
         <button
@@ -232,7 +232,7 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto px-3 py-2"
-        style={{ overscrollBehavior: 'contain' }}
+        style={{ overscrollBehavior: 'contain', paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}
         onScroll={handleScroll}
       >
         {loading ? (
@@ -308,7 +308,9 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
       </AnimatePresence>
 
       {/* Input */}
-      <ChatInput onSend={sendMessage} onTyping={handleTyping} />
+      <div style={{ position: 'relative', zIndex: 40 }}>
+        <ChatInput onSend={sendMessage} onTyping={handleTyping} />
+      </div>
     </div>
   );
 });
