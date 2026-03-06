@@ -118,49 +118,58 @@ export const challengeService = {
     }
 
     const questions = await Promise.all(selectedCards.map(async (card, idx) => {
-      const candidateDistractors = uniqueNonEmpty(
-        allCards
-          .filter((c) => c.id !== card.id)
-          .map((c) => c.back),
-      ).filter((ans) => ans !== card.back);
+      // Estratégia 1: IA Gemini
+      let distractors = await generateDistractorsWithGemini(
+        card.front,
+        card.back,
+        card.materia,
+        []
+      );
 
-      let distractors = shuffleArray(candidateDistractors).slice(0, 3);
+      // Estratégia 2: fallback inteligente
+      if (!distractors || distractors.length < 3) {
+        // Busca respostas de outros cards do mesmo deck, priorizando sub-tema
+        const candidatos = allCards
+          .filter(c => c.id !== card.id)
+          .filter(c => c.back && c.back.trim() !== '')
+          .filter(c => c.back.trim() !== card.back.trim());
 
-      if (distractors.length < 3) {
-        const aiDistractors = await generateDistractorsWithGemini(
-          card.front,
-          card.back,
-          card.materia,
-          distractors,
+        const palavrasChave = card.front
+          .toLowerCase()
+          .replace(/[?.,!]/g, '')
+          .split(' ')
+          .filter(p => p.length > 4);
+
+        const relacionados = candidatos.filter(c =>
+          palavrasChave.some(palavra =>
+            c.front.toLowerCase().includes(palavra) ||
+            c.back.toLowerCase().includes(palavra)
+          )
         );
-        distractors = uniqueNonEmpty([...distractors, ...aiDistractors]).slice(0, 3);
+
+        const pool = relacionados.length >= 3 ? relacionados : candidatos;
+
+        distractors = pool
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map(c => c.back.trim());
       }
 
-      // Último fallback: reaproveita respostas existentes para sempre ter 4 opções
-      if (distractors.length < 3) {
-        const extraPool = shuffleArray(candidateDistractors);
-        for (const value of extraPool) {
-          if (distractors.length >= 3) break;
-          distractors.push(value);
-        }
+      // Garantia final: preenche se ainda faltar
+      while (distractors.length < 3) {
+        distractors.push(`Opção ${distractors.length + 1}`);
       }
 
-      if (distractors.length < 3) {
-        const heuristic = generateHeuristicDistractors(card.back, card.materia);
-        distractors = uniqueNonEmpty([...distractors, ...heuristic]).slice(0, 3);
-      }
-
-      const safeDistractors = uniqueNonEmpty(distractors).slice(0, 3);
-      const optionSet = uniqueNonEmpty([card.back, ...safeDistractors]);
-      const options = shuffleArray(optionSet).slice(0, 4);
+      const opcoes = [card.back.trim(), ...distractors.slice(0, 3)]
+        .sort(() => Math.random() - 0.5);
 
       return {
         id: card.id || `q_${idx}`,
         front: card.front,
         back: card.back,
         materia: card.materia,
-        options,
-        correctIndex: options.indexOf(card.back),
+        options: opcoes,
+        correctIndex: opcoes.indexOf(card.back.trim()),
       };
     }));
 

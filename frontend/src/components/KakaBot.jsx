@@ -146,11 +146,10 @@ const MEMORY_MAX_MESSAGES = 20;
  * WARN: erros 429 (quota) não fazem fallback — disparam retry com backoff exponencial.
  */
 const GEMINI_MODELS = [
-  { name: 'gemini-2.5-flash', description: 'Rápido e eficiente' },
-  { name: 'gemini-2.5-flash-lite', description: 'Mais leve' },
-  { name: 'gemini-1.5-flash', description: 'Substituto' },
-  { name: 'gemini-1.5-pro', description: 'Tarefas complexas' },
-  { name: 'gemini-1.0-pro', description: 'Versão anterior' },
+  { name: 'gemini-1.5-flash', description: 'Estável e rápido' },
+  { name: 'gemini-1.5-pro', description: 'Mais capaz' },
+  { name: 'gemini-2.0-flash', description: 'Versão 2.0' },
+  { name: 'gemini-2.5-flash', description: 'Mais recente' },
 ];
 
 /* ── Labels de contexto por página (exibido no header) ── */
@@ -1098,35 +1097,69 @@ const KakaBot = () => {
   };
 
   const createChatWithPersona = (model, contextoHistorico = '') => {
+    const MAX_SYSTEM_PROMPT_CHARS = 12000;
     const pageContext = PAGE_CONTEXTS[location.pathname] || '';
-    const systemPrompt = buildSystemPrompt(memoriaUsuario, dadosSistema, pageContext) + contextoHistorico;
+    let systemPromptRaw = buildSystemPrompt(memoriaUsuario, dadosSistema, pageContext) + contextoHistorico;
+    // Sanitiza prompt: remove undefined/null, força string
+    systemPromptRaw = String(systemPromptRaw || '').replace(/undefined|null/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '').trim();
+    let systemPrompt = systemPromptRaw.length > MAX_SYSTEM_PROMPT_CHARS
+      ? systemPromptRaw.substring(0, MAX_SYSTEM_PROMPT_CHARS) + '\n\n[contexto truncado]'
+      : systemPromptRaw;
 
-    const history = [
-      {
-        role: 'user',
-        parts: [{ text: `Aja como o seguinte assistente em TODAS as suas respostas:\n\n${systemPrompt}` }],
-      },
-      {
-        role: 'model',
-        parts: [
-          {
-            text: 'Entendido. Sou o Kaka — parceiro de estudos de fisioterapia, não um chatbot genérico. Vou falar de forma natural, usar linguagem brasileira casual quando apropriado, e adaptar o tom ao contexto. Tenho acesso aos dados do sistema e posso executar ações reais quando pedido. Bora.',
-          },
-        ],
-      },
-    ];
-
+    // Sanitiza histórico: só mensagens válidas, sem undefined/null
     const remembered = (sessaoAtual?.mensagens || [])
       .filter((m) => !m.isSystem)
+      .filter((m) => typeof m.content === 'string' && m.content.trim() !== '' && m.content !== undefined && m.content !== null)
+      .map((m) => ({ ...m, content: String(m.content).replace(/undefined|null/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '').trim() }))
+      .filter((m) => m.content.length > 0)
       .slice(-(MAX_HISTORICO_GEMINI * 2));
+
+    const historyTurns = [];
     for (const msg of remembered) {
-      history.push({
-        role: msg.role === 'user' ? 'user' : 'model',
+      const role = msg.role === 'user' ? 'user' : 'model';
+      if (historyTurns.length > 0 && historyTurns[historyTurns.length - 1].role === role) {
+        continue;
+      }
+      historyTurns.push({
+        role,
         parts: [{ text: msg.content }],
       });
     }
 
-    return model.startChat({ history });
+    if (historyTurns.length > 0 && historyTurns[historyTurns.length - 1].role === 'user') {
+      historyTurns.pop();
+    }
+
+    // Truncar histórico se necessário para evitar erro 400
+    let maxHistory = 20;
+    let fullHistory = [
+      {
+        role: 'user',
+        parts: [{ text: `Aja como o seguinte assistente:\n\n${systemPrompt}` }],
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'Entendido. Sou o Kaka, parceiro de estudos de fisioterapia. Bora.' }],
+      },
+      ...historyTurns.slice(-maxHistory),
+    ];
+    // Se ainda der erro, tente truncar mais
+    while (JSON.stringify(fullHistory).length > 12000 && maxHistory > 2) {
+      maxHistory -= 2;
+      fullHistory = [
+        {
+          role: 'user',
+          parts: [{ text: `Aja como o seguinte assistente:\n\n${systemPrompt}` }],
+        },
+        {
+          role: 'model',
+          parts: [{ text: 'Entendido. Sou o Kaka, parceiro de estudos de fisioterapia. Bora.' }],
+        },
+        ...historyTurns.slice(-maxHistory),
+      ];
+    }
+
+    return model.startChat({ history: fullHistory });
   };
 
   /* ═══════════════════════════════════════════════════
@@ -1270,7 +1303,18 @@ const KakaBot = () => {
         ? `[CONTEXTO INTERNO - NÃO REPETIR]: ${instrucaoExtra}\n\nMensagem do usuário: ${userMessage}`
         : userMessage;
 
-      const result = await chatRef.current.sendMessage(mensagemComContexto);
+      // Sanitização
+      const mensagemLimpa = mensagemComContexto
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '')
+        .trim();
+
+      if (!mensagemLimpa) {
+        setIsLoading(false);
+        addSystemMessage('Mensagem inválida, tente novamente.', 'error');
+        return;
+      }
+
+      const result = await chatRef.current.sendMessage(mensagemLimpa);
       const response = await result.response;
       const textoCompleto = response.text();
 
@@ -1335,10 +1379,27 @@ const KakaBot = () => {
       }
     } catch (error) {
       setIsLoading(false);
-      if (error.message?.includes('429') || error.status === 429) {
-        addSystemMessage('😅 **Limite de requisições atingido**\n\nAguarde 1-2 minutos e tente novamente.', 'error');
+      const status = error?.status || error?.code;
+      const detail = error?.errorDetails?.[0]?.reason
+        || error?.message
+        || 'Erro desconhecido';
+
+      console.error('[KakaBot] Erro na API:', { status, detail, error });
+
+      if (status === 429 || error.message?.includes('429')) {
+        addSystemMessage('😅 Limite de requisições atingido. Aguarde 1-2 min.', 'error');
+      } else if (status === 400 || error.message?.includes('400')) {
+        // Histórico corrompido — reinicializa o chat do zero
+        console.warn('[KakaBot] Erro 400 — reinicializando sessão de chat...');
+        chatRef.current = null;
+        setConnectionStatus('disconnected');
+        addSystemMessage(
+          '⚠️ Houve um problema com o histórico da conversa. Reconectando automaticamente...',
+          'error'
+        );
+        setTimeout(() => initializeGemini(), 1000);
       } else {
-        addSystemMessage('😅 **Problema ao processar**\n\nNão consegui processar sua mensagem. Tente novamente em instantes.', 'error');
+        addSystemMessage('😅 Não consegui processar sua mensagem. Tente novamente.', 'error');
       }
     }
   };

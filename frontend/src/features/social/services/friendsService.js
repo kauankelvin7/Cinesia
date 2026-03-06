@@ -46,13 +46,21 @@ export const friendsService = {
       updatedAt: Timestamp.now(),
       user1Data: {
         uid: sortedUsers[0] === currentUser.uid ? currentUser.uid : targetUser.uid,
-        displayName: sortedUsers[0] === currentUser.uid ? currentUser.displayName : targetUser.displayName,
-        photoURL: sortedUsers[0] === currentUser.uid ? (currentUser.photoURL || null) : (targetUser.photoURL || null),
+        displayName: sortedUsers[0] === currentUser.uid
+          ? (currentUser.displayName || currentUser.email || '')
+          : (targetUser.displayName || targetUser.email || ''),
+        photoURL: sortedUsers[0] === currentUser.uid
+          ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
+          : (typeof targetUser.photoURL === 'string' ? targetUser.photoURL : null),
       },
       user2Data: {
         uid: sortedUsers[1] === currentUser.uid ? currentUser.uid : targetUser.uid,
-        displayName: sortedUsers[1] === currentUser.uid ? currentUser.displayName : targetUser.displayName,
-        photoURL: sortedUsers[1] === currentUser.uid ? (currentUser.photoURL || null) : (targetUser.photoURL || null),
+        displayName: sortedUsers[1] === currentUser.uid
+          ? (currentUser.displayName || currentUser.email || '')
+          : (targetUser.displayName || targetUser.email || ''),
+        photoURL: sortedUsers[1] === currentUser.uid
+          ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
+          : (typeof targetUser.photoURL === 'string' ? targetUser.photoURL : null),
       },
     });
 

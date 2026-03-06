@@ -91,10 +91,12 @@ const FriendSearch = memo(({ onSearch, onSendRequest, sentRequests = [], friends
             const status = getStatus(user.uid);
             const initials = getInitials(user.displayName);
             const avatarBg = getAvatarColor(user.displayName);
+            // Garante key única: uid || email || index
+            const key = user.uid || user.email || `${user.displayName}-${Math.random()}`;
 
             return (
               <div
-                key={user.uid}
+                key={key}
                 className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 {/* Avatar */}
