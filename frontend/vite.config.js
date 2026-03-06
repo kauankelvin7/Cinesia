@@ -39,13 +39,22 @@ export default defineConfig({
           }
         ]
       },
+
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+
         runtimeCaching: [
-          // Cache de fontes Google
+
+          // Sempre buscar página do servidor (evita versão antiga)
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkOnly'
+          },
+
+          // Cache Google Fonts CSS
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -53,14 +62,15 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
-          // Cache de arquivos de fonte
+
+          // Cache Google Fonts arquivos
           {
             urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
             handler: 'CacheFirst',
@@ -68,14 +78,15 @@ export default defineConfig({
               cacheName: 'gstatic-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 ano
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
-          // Cache de imagens (Cloudinary e outras)
+
+          // Cache imagens
           {
             urlPattern: /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i,
             handler: 'CacheFirst',
@@ -83,14 +94,15 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
-          // Cache de imagens do Cloudinary
+
+          // Cache Cloudinary
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/i,
             handler: 'CacheFirst',
@@ -98,14 +110,15 @@ export default defineConfig({
               cacheName: 'cloudinary-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 dias
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
-          // Cache de API (Stale-While-Revalidate para dados)
+
+          // Cache API com atualização rápida
           {
             urlPattern: /\/api\/.*/i,
             handler: 'StaleWhileRevalidate',
@@ -113,37 +126,23 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 24 horas
+                maxAgeSeconds: 60 * 5
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
-          },
-          // Cache de páginas navegadas (NetworkFirst para garantir dados frescos)
-          {
-            urlPattern: /^\/(?!api).*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages-cache',
-              expiration: {
-                maxEntries: 25,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dias
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              },
-              networkTimeoutSeconds: 3 // Fallback para cache após 3s
-            }
           }
+
         ]
       },
-      // Página offline personalizada
+
       devOptions: {
-        enabled: false // Desabilitar SW em dev para evitar problemas de cache
+        enabled: false
       }
     })
   ],
+
   server: {
     port: 3000,
     headers: {
@@ -157,32 +156,33 @@ export default defineConfig({
       }
     }
   },
+
   build: {
     emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'motion': ['framer-motion'],
-          'icons': ['lucide-react', 'react-icons'],
-          'editor': ['react-quill', 'quill'],
-          'charts': ['recharts'],
+          motion: ['framer-motion'],
+          icons: ['lucide-react', 'react-icons'],
+          editor: ['react-quill', 'quill'],
+          charts: ['recharts']
         }
       }
     },
-    // Alertar se chunk ultrapassar 500kb
     target: 'es2015',
     minify: 'esbuild',
     cssCodeSplit: true,
     sourcemap: false,
     chunkSizeWarningLimit: 500
   },
+
   optimizeDeps: {
     include: [
-      'firebase/app', 
-      'firebase/auth', 
-      'firebase/firestore', 
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore',
       'firebase/storage',
       'react',
       'react-dom',
@@ -190,11 +190,12 @@ export default defineConfig({
       'framer-motion'
     ]
   },
+
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',
     css: false,
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    include: ['src/**/*.{test,spec}.{js,jsx}']
   }
 });
