@@ -7,52 +7,162 @@
 import {
   collection, doc, setDoc, getDoc, updateDoc, onSnapshot, Timestamp,
 } from 'firebase/firestore';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { db } from '../../../config/firebase-config';
 import { handleFirestoreError } from '../../../utils/firestoreErrorHandler';
 import { chatService } from './chatService';
+
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+
+function shuffleArray(items) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function uniqueNonEmpty(items) {
+  return [...new Set((items || []).map((v) => String(v || '').trim()).filter(Boolean))];
+}
+
+function getCardFront(card) {
+  return card.front || card.frente || card.pergunta || '';
+}
+
+function getCardBack(card) {
+  return card.back || card.verso || card.resposta || '';
+}
+
+function generateHeuristicDistractors(correctAnswer, theme) {
+  const base = String(correctAnswer || '').trim();
+  if (!base) return [];
+
+  const t = theme || 'fisioterapia';
+  const variants = [
+    `Conduta focada apenas na fase aguda em ${t}`,
+    `Abordagem prioritariamente compensatória em ${t}`,
+    `Intervenção de suporte sem foco no mecanismo principal em ${t}`,
+  ];
+
+  // Se houver número na resposta, cria distrações numéricas plausíveis
+  const numMatch = base.match(/\d+/);
+  if (numMatch) {
+    const n = Number(numMatch[0]);
+    variants.push(base.replace(numMatch[0], String(Math.max(1, n - 1))));
+    variants.push(base.replace(numMatch[0], String(n + 1)));
+  }
+
+  return uniqueNonEmpty(variants).slice(0, 3);
+}
+
+async function generateDistractorsWithGemini(question, correctAnswer, theme, excluded = []) {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) return [];
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const prompt = `
+Você é um gerador de alternativas de múltipla escolha para fisioterapia.
+
+Pergunta: "${question}"
+Resposta correta: "${correctAnswer}"
+Tema: "${theme || 'fisioterapia'}"
+
+Gere EXATAMENTE 3 alternativas erradas, plausíveis e no mesmo formato da resposta correta.
+Não repita a resposta correta e não repita entre si.
+Responda APENAS com JSON válido:
+{"distractors": ["alt1", "alt2", "alt3"]}
+  `.trim();
+
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      const clean = text.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      const blocked = new Set(uniqueNonEmpty([correctAnswer, ...excluded]));
+      return uniqueNonEmpty(parsed?.distractors || []).filter((d) => !blocked.has(d)).slice(0, 3);
+    } catch {
+      // tenta o próximo modelo
+    }
+  }
+
+  return [];
+}
 
 export const challengeService = {
   /**
    * Cria um novo desafio de flashcards.
    * @returns {string} challengeId
    */
-  async createChallenge(inviter, inviteeId, deck, conversationId) {
+  async createChallenge(inviter, invitee, deck, conversationId) {
     const challengeRef = doc(collection(db, 'challenges'));
+    const inviteeId = typeof invitee === 'string' ? invitee : invitee?.uid;
+
+    if (!inviteeId) {
+      throw new Error('Convite inválido: usuário desafiado não encontrado.');
+    }
 
     // Snapshot das questões, embaralhadas e limitadas a 10
-    const allCards = [...deck.cards];
-    const selectedCards = [...allCards]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, Math.min(10, allCards.length));
+    const allCards = [...(deck.cards || [])]
+      .map((card, idx) => ({
+        id: card.id || `q_${idx}`,
+        front: getCardFront(card),
+        back: getCardBack(card),
+        materia: card.materia || deck.materia || deck.name || 'Geral',
+      }))
+      .filter((c) => c.front && c.back);
 
-    // Extrai todas as respostas (backs) disponíveis para usar como distratores
-    const allBacks = allCards
-      .map((c) => c.back || c.verso || c.resposta || '')
-      .filter(Boolean);
+    const selectedCards = shuffleArray(allCards).slice(0, Math.min(10, allCards.length));
 
-    const questions = selectedCards.map((card, idx) => {
-      const front = card.front || card.frente || card.pergunta || '';
-      const back = card.back || card.verso || card.resposta || '';
+    if (!selectedCards.length) {
+      throw new Error('Este deck não possui flashcards válidos com pergunta e resposta.');
+    }
 
-      // Distratores: respostas de outros cards do mesmo deck
-      const distractors = allBacks
-        .filter((b) => b !== back)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
+    const questions = await Promise.all(selectedCards.map(async (card, idx) => {
+      const candidateDistractors = uniqueNonEmpty(
+        allCards
+          .filter((c) => c.id !== card.id)
+          .map((c) => c.back),
+      ).filter((ans) => ans !== card.back);
 
-      // Monta as opções embaralhadas
-      const options = [back, ...distractors].sort(() => Math.random() - 0.5);
-      const correctIndex = options.indexOf(back);
+      let distractors = shuffleArray(candidateDistractors).slice(0, 3);
+
+      if (distractors.length < 3) {
+        const aiDistractors = await generateDistractorsWithGemini(
+          card.front,
+          card.back,
+          card.materia,
+          distractors,
+        );
+        distractors = uniqueNonEmpty([...distractors, ...aiDistractors]).slice(0, 3);
+      }
+
+      // Último fallback: reaproveita respostas existentes para sempre ter 4 opções
+      if (distractors.length < 3) {
+        const extraPool = shuffleArray(candidateDistractors);
+        for (const value of extraPool) {
+          if (distractors.length >= 3) break;
+          distractors.push(value);
+        }
+      }
+
+      if (distractors.length < 3) {
+        const heuristic = generateHeuristicDistractors(card.back, card.materia);
+        distractors = uniqueNonEmpty([...distractors, ...heuristic]).slice(0, 3);
+      }
+
+      const safeDistractors = uniqueNonEmpty(distractors).slice(0, 3);
+      const optionSet = uniqueNonEmpty([card.back, ...safeDistractors]);
+      const options = shuffleArray(optionSet).slice(0, 4);
 
       return {
         id: card.id || `q_${idx}`,
-        front,
-        back,
-        materia: card.materia || deck.materia || '',
+        front: card.front,
+        back: card.back,
+        materia: card.materia,
         options,
-        correctIndex,
+        correctIndex: options.indexOf(card.back),
       };
-    });
+    }));
 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
@@ -63,6 +173,10 @@ export const challengeService = {
       status: 'pending',
       inviterId: inviter.uid,
       inviteeId,
+      inviterName: inviter.displayName || 'Você',
+      inviterPhoto: inviter.photoURL || null,
+      inviteeName: (typeof invitee === 'object' ? invitee?.displayName : null) || 'Oponente',
+      inviteePhoto: (typeof invitee === 'object' ? invitee?.photoURL : null) || null,
       conversationId,
       deckId: deck.id,
       deckName: deck.name || deck.nome || 'Flashcards',
@@ -70,6 +184,8 @@ export const challengeService = {
       totalQuestions: questions.length,
       players: {
         [inviter.uid]: {
+          displayName: inviter.displayName || 'Você',
+          photoURL: inviter.photoURL || null,
           status: 'ready',
           currentQuestionIndex: 0,
           answers: [],
@@ -77,6 +193,8 @@ export const challengeService = {
           finishedAt: null,
         },
         [inviteeId]: {
+          displayName: (typeof invitee === 'object' ? invitee?.displayName : null) || 'Oponente',
+          photoURL: (typeof invitee === 'object' ? invitee?.photoURL : null) || null,
           status: 'waiting',
           currentQuestionIndex: 0,
           answers: [],

@@ -6,7 +6,7 @@
 
 import React, { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Swords, User } from 'lucide-react';
+import { Swords } from 'lucide-react';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
 import { calculateProgress } from '../../utils/challengeHelpers';
 
@@ -16,16 +16,26 @@ const ChallengeScoreboard = memo(({ challenge, currentUserId }) => {
 
     const totalQ = challenge.totalQuestions || challenge.questions?.length || 10;
 
-    return Object.entries(challenge.players).map(([uid, playerData]) => {
+    const ordered = [challenge.inviterId, challenge.inviteeId].filter(Boolean);
+
+    return ordered.map((uid) => {
+      const playerData = challenge.players[uid] || {};
       const answeredCount = playerData.answers?.length || 0;
       const correctCount = playerData.score || 0;
       const progress = calculateProgress(answeredCount, totalQ);
       const isYou = uid === currentUserId;
 
+      const fallbackName = uid === challenge.inviterId
+        ? challenge.inviterName
+        : challenge.inviteeName;
+      const fallbackPhoto = uid === challenge.inviterId
+        ? challenge.inviterPhoto
+        : challenge.inviteePhoto;
+
       return {
         uid,
-        name: isYou ? 'Você' : (uid === challenge.inviterId ? 'Jogador 1' : 'Jogador 2'),
-        photo: null,
+        name: playerData.displayName || fallbackName || (isYou ? 'Você' : 'Oponente'),
+        photo: playerData.photoURL || fallbackPhoto || null,
         correctCount,
         answeredCount,
         totalQ,

@@ -106,7 +106,7 @@ const Amigos = memo(() => {
         );
         const challengeId = await challengeService.createChallenge(
           user,
-          friend.uid,
+          friend,
           deck,
           convId,
         );

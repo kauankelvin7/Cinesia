@@ -69,10 +69,12 @@ const ChallengeQuestion = memo(({ question, questionIndex, totalQuestions, onAns
   const timerColor = timeLeft > 7 ? 'text-green-500' : timeLeft > 3 ? 'text-amber-500' : 'text-red-500';
   const barColor = timeLeft > 7 ? 'bg-green-500' : timeLeft > 3 ? 'bg-amber-500' : 'bg-red-500';
 
-  const options = question.options || [
-    question.front,
-    ...(question.distractors || []),
-  ];
+  const options = (question.options && question.options.length > 0)
+    ? question.options
+    : [
+      question.back || question.front,
+      ...(question.distractors || []),
+    ];
 
   const correctIndex = question.correctIndex ?? 0;
 

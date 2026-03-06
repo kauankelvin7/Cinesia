@@ -108,7 +108,7 @@ const ChallengeRoom = memo(({ challengeId, currentUserId, onClose }) => {
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
             Desafio enviado para{' '}
             <span className="font-medium text-slate-700 dark:text-slate-300">
-              {challenge.challengedName || 'oponente'}
+              {challenge.inviteeName || challenge.challengedName || 'oponente'}
             </span>
           </p>
           <button
