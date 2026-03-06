@@ -146,9 +146,9 @@ const MEMORY_MAX_MESSAGES = 20;
  * WARN: erros 429 (quota) não fazem fallback — disparam retry com backoff exponencial.
  */
 const GEMINI_MODELS = [
-  { name: 'gemini-1.5-pro', description: 'Mais capaz' },
-  { name: 'gemini-2.0-flash', description: 'Versão 2.0' },
   { name: 'gemini-2.5-flash', description: 'Mais recente' },
+  { name: 'gemini-2.0-flash', description: 'Versão 2.0' },
+  { name: 'gemini-1.5-pro', description: 'Mais capaz' },
 ];
 
 /* ── Labels de contexto por página (exibido no header) ── */
