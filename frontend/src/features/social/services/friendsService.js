@@ -173,17 +173,17 @@ export const friendsService = {
   },
 
   /**
-   * Busca usuários por displayName (prefix search).
+   * Busca usuários por displayName (prefix search, case-insensitive).
    */
   async searchUsers(searchTerm, currentUserId) {
     if (!searchTerm || searchTerm.trim().length < 2) return [];
 
-    const trimmed = searchTerm.trim();
+    const trimmed = searchTerm.trim().toLowerCase();
     const q = query(
       collection(db, 'users'),
-      where('displayName', '>=', trimmed),
-      where('displayName', '<=', trimmed + '\uf8ff'),
-      orderBy('displayName'),
+      where('displayNameLower', '>=', trimmed),
+      where('displayNameLower', '<=', trimmed + '\uf8ff'),
+      orderBy('displayNameLower'),
       limit(20),
     );
     const snap = await getDocs(q);
@@ -209,11 +209,13 @@ export const friendsService = {
     if (!user?.uid) return;
     const userRef = doc(db, 'users', user.uid);
     const snap = await getDoc(userRef);
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
 
     if (!snap.exists()) {
       await setDoc(userRef, {
         uid: user.uid,
-        displayName: user.displayName || user.email?.split('@')[0] || 'Usuário',
+        displayName,
+        displayNameLower: displayName.toLowerCase(),
         email: user.email || '',
         photoURL: user.photoURL || null,
         bio: '',
@@ -233,9 +235,11 @@ export const friendsService = {
         },
       });
     } else {
-      // Atualiza campos que podem ter mudado (nome, foto)
+      // Atualiza campos que podem ter mudado (nome, foto) e garante displayNameLower
+      const currentName = user.displayName || snap.data().displayName;
       await updateDoc(userRef, {
-        displayName: user.displayName || snap.data().displayName,
+        displayName: currentName,
+        displayNameLower: currentName.toLowerCase(),
         email: user.email || snap.data().email,
         photoURL: user.photoURL || snap.data().photoURL || null,
         lastActive: Timestamp.now(),
