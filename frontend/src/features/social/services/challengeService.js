@@ -20,15 +20,39 @@ export const challengeService = {
     const challengeRef = doc(collection(db, 'challenges'));
 
     // Snapshot das questões, embaralhadas e limitadas a 10
-    const questions = [...deck.cards]
+    const allCards = [...deck.cards];
+    const selectedCards = [...allCards]
       .sort(() => Math.random() - 0.5)
-      .slice(0, Math.min(10, deck.cards.length))
-      .map((card, idx) => ({
+      .slice(0, Math.min(10, allCards.length));
+
+    // Extrai todas as respostas (backs) disponíveis para usar como distratores
+    const allBacks = allCards
+      .map((c) => c.back || c.verso || c.resposta || '')
+      .filter(Boolean);
+
+    const questions = selectedCards.map((card, idx) => {
+      const front = card.front || card.frente || card.pergunta || '';
+      const back = card.back || card.verso || card.resposta || '';
+
+      // Distratores: respostas de outros cards do mesmo deck
+      const distractors = allBacks
+        .filter((b) => b !== back)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+
+      // Monta as opções embaralhadas
+      const options = [back, ...distractors].sort(() => Math.random() - 0.5);
+      const correctIndex = options.indexOf(back);
+
+      return {
         id: card.id || `q_${idx}`,
-        front: card.front || card.frente || card.pergunta || '',
-        back: card.back || card.verso || card.resposta || '',
+        front,
+        back,
         materia: card.materia || deck.materia || '',
-      }));
+        options,
+        correctIndex,
+      };
+    });
 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);

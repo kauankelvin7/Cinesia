@@ -108,7 +108,7 @@ const ChallengeQuestion = memo(({ question, questionIndex, totalQuestions, onAns
       {/* Question text */}
       <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 mb-4">
         <p className="text-base font-medium text-slate-800 dark:text-slate-200 leading-relaxed">
-          {question.back || question.question || 'Pergunta'}
+          {question.front || question.question || 'Pergunta'}
         </p>
       </div>
 
