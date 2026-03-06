@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 const LoadingScreen = () => {
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-colors"
+      className="fixed inset-0 z-80 flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-colors"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -23,7 +23,7 @@ const LoadingScreen = () => {
         animate={{ scale: [1, 1.04, 1] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
+        <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
           <svg viewBox="0 0 48 48" fill="none" className="w-7 h-7">
             {/* Stylized figure */}
             <circle cx="24" cy="12" r="4" fill="white"/>

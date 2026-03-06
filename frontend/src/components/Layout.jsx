@@ -45,6 +45,7 @@ class ErrorBoundary extends React.Component {
 
 const PomodoroTimer = lazy(() => import('./PomodoroTimer'));
 const KakaBot = lazy(() => import('./KakaBot'));
+const ChatPanel = lazy(() => import('../features/social/components/chat/ChatPanel'));
 
 /* ── Mobile Topbar with Avatar ── */
 const MobileTopbar = memo(({ onOpenDrawer }) => {
@@ -94,6 +95,7 @@ const MobileTopbar = memo(({ onOpenDrawer }) => {
           className="w-9 h-9 rounded-full object-cover shrink-0 cursor-pointer transition-transform hover:scale-105"
           style={{ border: '2px solid var(--primary)' }}
           onError={() => setImgError(true)}
+          referrerPolicy="no-referrer"
         />
       ) : (
         <div
@@ -192,7 +194,7 @@ const Layout = memo(({ children }) => {
       <div className="min-h-screen overflow-x-hidden flex flex-col transition-colors duration-200" style={{ backgroundColor: 'var(--bg-page)' }}>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[200] focus:bg-primary-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-200 focus:bg-primary-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
         >
           Pular para o conteúdo principal
         </a>
@@ -208,7 +210,7 @@ const Layout = memo(({ children }) => {
             <AnimatePresence>
               {mobileDrawerOpen && (
                 <motion.div
-                  className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm z-[190]"
+                  className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm z-190"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -220,7 +222,7 @@ const Layout = memo(({ children }) => {
             <AnimatePresence>
               {mobileDrawerOpen && (
                 <motion.div
-                  className="fixed left-0 top-0 bottom-0 z-[200] w-[280px] max-w-[85vw]"
+                  className="fixed left-0 top-0 bottom-0 z-200 w-70 max-w-[85vw]"
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%' }}
@@ -238,12 +240,12 @@ const Layout = memo(({ children }) => {
           <>
             <button
               className={`
-                fixed z-[55] p-2 rounded-lg
+                fixed z-40 p-2 rounded-lg
                 hover:bg-slate-50 dark:hover:bg-slate-700
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
                 transition-all duration-200 shadow-sm
                 top-1/2 -translate-y-1/2
-                ${sidebarVisible ? 'left-[252px]' : 'left-4'}
+                ${sidebarVisible ? 'left-63' : 'left-4'}
               `}
               style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
               onClick={toggleSidebar}
@@ -287,7 +289,7 @@ const Layout = memo(({ children }) => {
           id="main-content"
           className={`
             flex-1 min-h-0
-            transition-[margin] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]
+            transition-[margin] duration-200 ease-in-out
             ${!isDesktop && !focusMode ? 'mt-14 mb-16' : ''}
             ${isDesktop && sidebarVisible && !focusMode ? 'ml-64' : 'ml-0'}
             ${!isQuadroBranco ? (isDesktop ? 'pt-8 px-8' : 'px-4 pt-4') : ''}
@@ -306,21 +308,32 @@ const Layout = memo(({ children }) => {
 
         {/* Floating utilities */}
         {!isDesktop && !isQuadroBranco && !focusMode && (
-          <div className="fixed bottom-0 left-0 w-full pointer-events-none z-[60]">
-            <div className="absolute right-0 bottom-20 pointer-events-auto">
-              <Suspense fallback={null}>
-                <PomodoroTimer />
-                <KakaBot />
-              </Suspense>
-            </div>
-          </div>
+          <Suspense fallback={null}>
+            <PomodoroTimer />
+          </Suspense>
         )}
         {!isDesktop && !focusMode && <BottomNavigation />}
         {isDesktop && !isQuadroBranco && !focusMode && (
           <Suspense fallback={null}>
             <PomodoroTimer />
-            <KakaBot />
           </Suspense>
+        )}
+
+        {/* Botões flutuantes — canto inferior direito (Chat + IA) */}
+        {!focusMode && (
+          <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-center gap-3">
+            {/* Botão do Chat de Amigos — fica em cima */}
+            <Suspense fallback={null}>
+              <ChatPanel />
+            </Suspense>
+
+            {/* Botão do Agente IA — fica embaixo */}
+            {!isQuadroBranco && (
+              <Suspense fallback={null}>
+                <KakaBot />
+              </Suspense>
+            )}
+          </div>
         )}
 
         {/* Focus Mode exit button */}
@@ -331,7 +344,7 @@ const Layout = memo(({ children }) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={exitFocusMode}
-              className="fixed top-4 right-4 z-[200] px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-white/90 text-white dark:text-slate-900 text-xs font-medium backdrop-blur-sm shadow-lg hover:bg-slate-900 dark:hover:bg-white transition-colors flex items-center gap-1.5"
+              className="fixed top-4 right-4 z-200 px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-white/90 text-white dark:text-slate-900 text-xs font-medium backdrop-blur-sm shadow-lg hover:bg-slate-900 dark:hover:bg-white transition-colors flex items-center gap-1.5"
               title="Sair do Modo Foco (Esc)"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

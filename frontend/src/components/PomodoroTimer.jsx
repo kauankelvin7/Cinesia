@@ -63,6 +63,10 @@ const PomodoroTimer = memo(() => {
         setTotalMinutesToday(data.minutesStudied || 0);
       }
     } catch (error) {
+      if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
+        console.warn('[PomodoroTimer] Firestore temporariamente indisponível, usando dados locais');
+        return;
+      }
       console.error('Erro ao carregar dados do Pomodoro:', error);
     }
   };
@@ -153,6 +157,10 @@ const PomodoroTimer = memo(() => {
       }, { merge: true });
       
     } catch (error) {
+      if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
+        console.warn('[PomodoroTimer] Firestore indisponível, progresso será salvo depois');
+        return;
+      }
       console.error('Erro ao salvar progresso do Pomodoro:', error);
     }
   };

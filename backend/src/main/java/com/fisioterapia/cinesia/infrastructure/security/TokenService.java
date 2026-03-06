@@ -40,7 +40,6 @@ public class TokenService {
         Map<String, Object> payload = objectMapper.readValue(payloadJson, Map.class);
         
         // Extrai informações do payload
-        String uid = (String) payload.get("user_id");      // Firebase UID
         String email = (String) payload.get("email");      // Email do usuário
         String name = (String) payload.get("name");        // Nome (pode ser null)
         

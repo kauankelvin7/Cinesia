@@ -17,6 +17,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext-firebase';
 import { DashboardDataProvider, useDashboardData } from './contexts/DashboardDataContext';
 import { FocusModeProvider } from './contexts/FocusModeContext';
+import { SocialProvider } from './features/social/context/SocialContext';
 import Layout from './components/Layout';
 import LoadingScreen from './components/ui/LoadingScreen';
 import PWAInstallBanner from './components/PWAInstallBanner';
@@ -42,6 +43,37 @@ const MeuPerfil = lazy(() => import('./pages/MeuPerfil'));
 const HistoricoSimulados = lazy(() => import('./pages/HistoricoSimulados'));
 const Conquistas = lazy(() => import('./pages/Conquistas'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const Amigos = lazy(() => import('./pages/Amigos'));
+
+// ⚡ PREFETCH - Pré-carrega todos os chunks no idle para navegação instantânea
+const PAGE_IMPORTS = [
+  () => import('./pages/Home'),
+  () => import('./pages/Materias'),
+  () => import('./pages/Resumos'),
+  () => import('./pages/Flashcards'),
+  () => import('./pages/Simulado'),
+  () => import('./pages/ConsultaRapida'),
+  () => import('./pages/QuadroBranco'),
+  () => import('./pages/Atlas3D'),
+  () => import('./pages/Notificacoes'),
+  () => import('./pages/Configuracoes'),
+  () => import('./pages/MeuPerfil'),
+  () => import('./pages/HistoricoSimulados'),
+  () => import('./pages/Conquistas'),
+  () => import('./pages/Analytics'),
+  () => import('./pages/Amigos'),
+];
+
+function usePrefetchRoutes() {
+  useEffect(() => {
+    const run = () => PAGE_IMPORTS.forEach((fn) => fn().catch(() => {}));
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(run, { timeout: 3000 });
+    } else {
+      setTimeout(run, 1500);
+    }
+  }, []);
+}
 
 // FIX-003: Clear dashboard cache on logout to prevent cross-user data leaks
 function CacheCleaner() {
@@ -68,9 +100,21 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
+// Spinner leve para transições entre páginas (não bloqueia o layout)
+function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center w-full h-64">
+      <div className="w-8 h-8 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
 function AppContent() {
   const { isAuthenticated } = useAuth();
-  
+
+  // ⚡ Pré-carrega todos os chunks de rota no idle após o app montar
+  usePrefetchRoutes();
+
   // 🔍 Hook de Acessibilidade - Controle de tamanho de fonte
   // Inicializa o hook para aplicar font-size no <html> element
   useFontSize();
@@ -89,11 +133,12 @@ function AppContent() {
             <ProtectedRoute>
               <DashboardDataProvider>
               <FocusModeProvider>
+              <SocialProvider>
               <CacheCleaner />
               <OnboardingFlow />
               <Layout>
                 {/* Suspense interno para transições entre páginas protegidas */}
-                <Suspense fallback={<LoadingScreen />}>
+                <Suspense fallback={<PageSpinner />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/materias" element={<Materias />} />
@@ -109,10 +154,12 @@ function AppContent() {
                     <Route path="/historico-simulados" element={<HistoricoSimulados />} />
                     <Route path="/conquistas" element={<Conquistas />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/amigos" element={<Amigos />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>
               </Layout>
+              </SocialProvider>
               </FocusModeProvider>
               </DashboardDataProvider>
             </ProtectedRoute>

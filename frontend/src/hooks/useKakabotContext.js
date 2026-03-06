@@ -83,7 +83,11 @@ const useKakabotContext = (uid) => {
           longestStreak: streakStats?.longestStreak || 0,
         });
       } catch (err) {
-        console.warn('[useKakabotContext] Erro ao carregar contexto:', err?.message);
+        if (err?.message?.includes('INTERNAL ASSERTION FAILED')) {
+          console.warn('[useKakabotContext] Firestore temporariamente indisponível');
+        } else {
+          console.warn('[useKakabotContext] Erro ao carregar contexto:', err?.message);
+        }
       } finally {
         if (!cancelled) setIsLoadingContext(false);
       }

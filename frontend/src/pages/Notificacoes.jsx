@@ -126,7 +126,7 @@ function NotificationItem({ notification, userId, onMarkRead }) {
       )}
 
       {/* Icon */}
-      <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
+      <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center shrink-0`}>
         <Icon size={18} className={config.text} />
       </div>
 

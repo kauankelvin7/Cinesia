@@ -3,7 +3,6 @@ package com.fisioterapia.cinesia.infrastructure.security;
 import com.fisioterapia.cinesia.domain.entity.Usuario;
 import com.fisioterapia.cinesia.domain.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;

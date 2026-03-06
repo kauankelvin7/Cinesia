@@ -14,6 +14,7 @@ import React, { useState, useEffect, useMemo, Suspense, lazy, memo } from 'react
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import 'react-quill/dist/quill.snow.css';
 
 // Stagger animation variants
 const gridVariants = {
@@ -26,7 +27,6 @@ const cardItemVariants = {
 };
 
 const ReactQuill = lazy(() => import('react-quill'));
-import 'react-quill/dist/quill.snow.css';
 import { 
   Plus, 
   Edit2, 
@@ -729,7 +729,7 @@ function Resumos() {
         <AnimatePresence>
           {showModal && (
             <motion.div
-              className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+              className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={resetForm}
             >
@@ -823,7 +823,7 @@ function Resumos() {
                           >
                             <ZoomOut size={14} />
                           </button>
-                          <span className="text-xs text-slate-400 select-none px-1 min-w-[30px] text-center tabular-nums">
+                          <span className="text-xs text-slate-400 select-none px-1 min-w-7.5 text-center tabular-nums">
                             {Math.round(viewFontSize * 100)}%
                           </span>
                           <button
@@ -975,7 +975,7 @@ function Resumos() {
                         ) : (
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {formData.imagens.map((url, idx) => (
-                              <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 aspect-[4/3]">
+                              <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 aspect-4/3">
                                 <img src={url} alt={`Imagem ${idx + 1}`} className="w-full h-full object-cover" />
                                 <button
                                   type="button"
@@ -985,7 +985,7 @@ function Resumos() {
                                 >
                                   <X size={12} />
                                 </button>
-                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/50 to-transparent px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <span className="text-white text-xs">{idx + 1} / {formData.imagens.length}</span>
                                 </div>
                               </div>
@@ -995,7 +995,7 @@ function Resumos() {
                                 type="button"
                                 onClick={() => imageInputRef.current?.click()}
                                 disabled={uploadingImages}
-                                className="aspect-[4/3] rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:border-violet-400 hover:text-violet-500 transition-colors"
+                                className="aspect-4/3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-1.5 text-slate-400 hover:border-violet-400 hover:text-violet-500 transition-colors"
                               >
                                 <ImagePlus size={20} />
                                 <span className="text-xs">Mais</span>

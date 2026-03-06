@@ -1,28 +1,28 @@
 /**
  * @file KakaBot.jsx
  * @description Agente de IA conversacional integrado ao Cinesia. Componente FAB (floating action button)
- * que abre um chat com o modelo Gemini, capaz de responder dúvidas clínicas E executar ações
- * reais no Firestore (criar matérias, flashcards, resumos, agendar revisões).
+ * que abre um chat com o modelo Gemini, capaz de responder dÃºvidas clÃ­nicas E executar aÃ§Ãµes
+ * reais no Firestore (criar matÃ©rias, flashcards, resumos, agendar revisÃµes).
  *
  * @dependencies
- *  - useKakabotContext  — provê dados do sistema em tempo real para o system prompt
- *  - useSpeechRecognition — entrada por voz via Web Speech API
- *  - kakabotActions (extrairAcoes, executarAcoes) — parser e executor de blocos ```action```
- *  - KakaAvatar — componente visual do avatar
- *  - @google/generative-ai — SDK do Gemini (importado dinamicamente via `import()`)
- *  - AuthContext-firebase — UID do usuário autenticado
+ *  - useKakabotContext  â€” provÃª dados do sistema em tempo real para o system prompt
+ *  - useSpeechRecognition â€” entrada por voz via Web Speech API
+ *  - kakabotActions (extrairAcoes, executarAcoes) â€” parser e executor de blocos ```action```
+ *  - KakaAvatar â€” componente visual do avatar
+ *  - @google/generative-ai â€” SDK do Gemini (importado dinamicamente via `import()`)
+ *  - AuthContext-firebase â€” UID do usuÃ¡rio autenticado
  *
  * @sideEffects
- *  - Lê/escreve em `users/{uid}/kakabot_memoria/historico` (memória persistente)
+ *  - LÃª/escreve em `users/{uid}/kakabot_memoria/historico` (memÃ³ria persistente)
  *  - Via kakabotActions: pode escrever em `materias`, `flashcards`, `resumos`, `eventos`
  *  - Chama a API externa do Google Gemini a cada mensagem enviada
  *
  * @notes
- *  - O histórico completo da sessão é reenviado ao Gemini a cada mensagem (sem memória nativa)
- *  - A memória persistida no Firestore (últimas 20 mensagens) é injetada na inicialização do chat
- *  - O modelo Gemini é importado dinamicamente para não aumentar o bundle inicial
- *  - Fallback automático entre 5 modelos Gemini se o primário falhar (ver GEMINI_MODELS)
- *  - Última revisão significativa: reimplementação visual v3 (Feb 2026) — paleta teal/cyan
+ *  - O histÃ³rico completo da sessÃ£o Ã© reenviado ao Gemini a cada mensagem (sem memÃ³ria nativa)
+ *  - A memÃ³ria persistida no Firestore (Ãºltimas 20 mensagens) Ã© injetada na inicializaÃ§Ã£o do chat
+ *  - O modelo Gemini Ã© importado dinamicamente para nÃ£o aumentar o bundle inicial
+ *  - Fallback automÃ¡tico entre 5 modelos Gemini se o primÃ¡rio falhar (ver GEMINI_MODELS)
+ *  - Ãšltima revisÃ£o significativa: reimplementaÃ§Ã£o visual v3 (Feb 2026) â€” paleta teal/cyan
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -77,18 +77,18 @@ import { extrairAcoes, executarAcao, executarAcoes } from '../utils/kakabotActio
 import KakaAvatar from './kakabot/KakaAvatar';
 import KakaSkeleton from './kakabot/KakaSkeleton';
 
-// ─── Configuração ────────────────────────────────────────────────────────────
+// â”€â”€â”€ ConfiguraÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Tamanho máximo de uma mensagem do usuário em caracteres.
- * WARN: aumentar muito pode causar erros de token no Gemini (contexto máx ~30k tokens).
+ * Tamanho mÃ¡ximo de uma mensagem do usuÃ¡rio em caracteres.
+ * WARN: aumentar muito pode causar erros de token no Gemini (contexto mÃ¡x ~30k tokens).
  */
 const MAX_USER_CHARS = 2000;
 
 /**
  * Remove qualquer bloco ```action``` ou ```json``` residual do texto antes de exibir.
- * WARN: camada de segurança secundária — o parser principal (extrairAcoes) deve
- *       remover os blocos. Esta função é o fallback para evitar JSON vazando na UI.
+ * WARN: camada de seguranÃ§a secundÃ¡ria â€” o parser principal (extrairAcoes) deve
+ *       remover os blocos. Esta funÃ§Ã£o Ã© o fallback para evitar JSON vazando na UI.
  */
 const sanitizarTexto = (texto) =>
   texto
@@ -97,20 +97,20 @@ const sanitizarTexto = (texto) =>
     .trim();
 
 /**
- * Respostas locais para mensagens triviais que não precisam do Gemini.
- * Economiza tokens e reduz latência em interações simples.
+ * Respostas locais para mensagens triviais que nÃ£o precisam do Gemini.
+ * Economiza tokens e reduz latÃªncia em interaÃ§Ãµes simples.
  */
 const RESPOSTAS_LOCAIS = {
-  'oi':       'Oi! Tô aqui. O que você precisa?',
-  'ola':      'Olá! Como posso ajudar?',
-  'olá':      'Olá! Como posso ajudar?',
+  'oi':       'Oi! TÃ´ aqui. O que vocÃª precisa?',
+  'ola':      'OlÃ¡! Como posso ajudar?',
+  'olÃ¡':      'OlÃ¡! Como posso ajudar?',
   'ok':       'Certo!',
-  'obrigado': 'De nada! Se precisar de mais algo é só chamar.',
-  'obrigada': 'De nada! Se precisar de mais algo é só chamar.',
-  'valeu':    'Sempre! Qualquer coisa é só falar.',
-  'vlw':      'Sempre! Qualquer coisa é só falar.',
-  'blz':      'Beleza! Tô por aqui.',
-  'beleza':   'Show! Se precisar é só chamar.',
+  'obrigado': 'De nada! Se precisar de mais algo Ã© sÃ³ chamar.',
+  'obrigada': 'De nada! Se precisar de mais algo Ã© sÃ³ chamar.',
+  'valeu':    'Sempre! Qualquer coisa Ã© sÃ³ falar.',
+  'vlw':      'Sempre! Qualquer coisa Ã© sÃ³ falar.',
+  'blz':      'Beleza! TÃ´ por aqui.',
+  'beleza':   'Show! Se precisar Ã© sÃ³ chamar.',
 };
 
 const tentarRespostaLocal = (mensagem) => {
@@ -118,77 +118,77 @@ const tentarRespostaLocal = (mensagem) => {
   return RESPOSTAS_LOCAIS[normalizada] ?? null;
 };
 
-/** Máximo de pares (user+model) enviados ao Gemini para limitar tokens. */
+/** MÃ¡ximo de pares (user+model) enviados ao Gemini para limitar tokens. */
 const MAX_HISTORICO_GEMINI = 10;
 
 /**
- * Intervalo mínimo (ms) entre mensagens consecutivas.
+ * Intervalo mÃ­nimo (ms) entre mensagens consecutivas.
  * WARN: reduzir abaixo de 1000ms aumenta risco de erros 429 (rate limit do Gemini Free).
  */
 const MIN_MESSAGE_INTERVAL_MS = 2000;
 
 /**
- * Máximo de mensagens por minuto permitidas ao KakaBot.
+ * MÃ¡ximo de mensagens por minuto permitidas ao KakaBot.
  * NOTE: o plano gratuito do Gemini permite ~15 RPM (requests per minute) por projeto.
  */
 const MAX_MESSAGES_PER_MINUTE = 15;
 
 /**
- * Número máximo de mensagens persistidas na memória do Firestore.
- * NOTE: o histórico injetado no chat inicial usa as últimas 6 (ver createChatWithPersona).
+ * NÃºmero mÃ¡ximo de mensagens persistidas na memÃ³ria do Firestore.
+ * NOTE: o histÃ³rico injetado no chat inicial usa as Ãºltimas 6 (ver createChatWithPersona).
  * WARN: aumentar este valor incrementa o tamanho do contexto enviado ao Gemini.
  */
 const MEMORY_MAX_MESSAGES = 20;
 
 /**
  * Cadeia de fallback de modelos Gemini tentados em ordem.
- * NOTE: se o modelo primário (2.5-flash) retornar erro não-429, tenta o próximo.
- * WARN: erros 429 (quota) não fazem fallback — disparam retry com backoff exponencial.
+ * NOTE: se o modelo primÃ¡rio (2.5-flash) retornar erro nÃ£o-429, tenta o prÃ³ximo.
+ * WARN: erros 429 (quota) nÃ£o fazem fallback â€” disparam retry com backoff exponencial.
  */
 const GEMINI_MODELS = [
-  { name: 'gemini-2.5-flash', description: 'Rápido e eficiente' },
+  { name: 'gemini-2.5-flash', description: 'RÃ¡pido e eficiente' },
   { name: 'gemini-2.5-flash-lite', description: 'Mais leve' },
   { name: 'gemini-1.5-flash', description: 'Substituto' },
   { name: 'gemini-1.5-pro', description: 'Tarefas complexas' },
-  { name: 'gemini-1.0-pro', description: 'Versão anterior' },
+  { name: 'gemini-1.0-pro', description: 'VersÃ£o anterior' },
 ];
 
-/* ── Labels de contexto por página (exibido no header) ── */
+/* â”€â”€ Labels de contexto por pÃ¡gina (exibido no header) â”€â”€ */
 const PAGE_CONTEXT_LABELS = {
   '/': 'Dashboard',
   '/flashcards': 'Flashcards',
   '/resumos': 'Resumos',
   '/simulado': 'Simulado',
-  '/consulta-rapida': 'Consulta Rápida',
-  '/materias': 'Matérias',
+  '/consulta-rapida': 'Consulta RÃ¡pida',
+  '/materias': 'MatÃ©rias',
   '/atlas-3d': 'Atlas 3D',
   '/analytics': 'Analytics',
   '/conquistas': 'Conquistas',
 };
 
-/* ── Contexto por página ── */
+/* â”€â”€ Contexto por pÃ¡gina â”€â”€ */
 const PAGE_CONTEXTS = {
-  '/': 'O aluno está na página inicial (Dashboard). Pode querer dicas gerais de estudo ou orientação.',
-  '/flashcards': 'O aluno está na página de Flashcards. Pode querer ajuda para criar perguntas, entender conceitos, ou melhorar revisão.',
-  '/resumos': 'O aluno está na página de Resumos. Pode querer ajuda para sintetizar conteúdo, fazer anotações ou estruturar um caso clínico.',
-  '/simulado': 'O aluno está na página de Simulado. Pode querer dicas para se preparar para provas, explicar questões erradas.',
-  '/consulta-rapida': 'O aluno está na página de Consulta Rápida (tabelas de referência). Pode querer explicações sobre escalas, testes ortopédicos ou sinais vitais.',
-  '/materias': 'O aluno está organizando suas matérias. Pode querer dicas de organização de estudo.',
-  '/atlas-3d': 'O aluno está no Atlas 3D de anatomia. Pode querer explicações sobre estruturas anatômicas.',
-  '/analytics': 'O aluno está vendo suas estatísticas de estudo. Pode querer dicas de como melhorar seu desempenho.',
-  '/conquistas': 'O aluno está vendo suas conquistas. Pode querer motivação ou dicas para desbloquear mais.',
+  '/': 'O aluno estÃ¡ na pÃ¡gina inicial (Dashboard). Pode querer dicas gerais de estudo ou orientaÃ§Ã£o.',
+  '/flashcards': 'O aluno estÃ¡ na pÃ¡gina de Flashcards. Pode querer ajuda para criar perguntas, entender conceitos, ou melhorar revisÃ£o.',
+  '/resumos': 'O aluno estÃ¡ na pÃ¡gina de Resumos. Pode querer ajuda para sintetizar conteÃºdo, fazer anotaÃ§Ãµes ou estruturar um caso clÃ­nico.',
+  '/simulado': 'O aluno estÃ¡ na pÃ¡gina de Simulado. Pode querer dicas para se preparar para provas, explicar questÃµes erradas.',
+  '/consulta-rapida': 'O aluno estÃ¡ na pÃ¡gina de Consulta RÃ¡pida (tabelas de referÃªncia). Pode querer explicaÃ§Ãµes sobre escalas, testes ortopÃ©dicos ou sinais vitais.',
+  '/materias': 'O aluno estÃ¡ organizando suas matÃ©rias. Pode querer dicas de organizaÃ§Ã£o de estudo.',
+  '/atlas-3d': 'O aluno estÃ¡ no Atlas 3D de anatomia. Pode querer explicaÃ§Ãµes sobre estruturas anatÃ´micas.',
+  '/analytics': 'O aluno estÃ¡ vendo suas estatÃ­sticas de estudo. Pode querer dicas de como melhorar seu desempenho.',
+  '/conquistas': 'O aluno estÃ¡ vendo suas conquistas. Pode querer motivaÃ§Ã£o ou dicas para desbloquear mais.',
 };
 
-/* ── Quick actions contextuais por página (com ícones) ── */
+/* â”€â”€ Quick actions contextuais por pÃ¡gina (com Ã­cones) â”€â”€ */
 const QUICK_ACTIONS_BY_PAGE = {
   '/': [
-    { icon: <BarChart2 size={12} />, label: 'Meu progresso', prompt: 'Como está meu progresso de estudos?' },
-    { icon: <Lightbulb size={12} />, label: 'Dica clínica', prompt: 'Me dê uma dica clínica relevante para hoje' },
+    { icon: <BarChart2 size={12} />, label: 'Meu progresso', prompt: 'Como estÃ¡ meu progresso de estudos?' },
+    { icon: <Lightbulb size={12} />, label: 'Dica clÃ­nica', prompt: 'Me dÃª uma dica clÃ­nica relevante para hoje' },
     { icon: <Zap size={12} />, label: 'O que estudar?', prompt: 'O que devo priorizar para estudar hoje?' },
   ],
   '/flashcards': [
     { icon: <Zap size={12} />, label: 'Gerar flashcards', prompt: 'Gere 5 flashcards sobre o tema que estou estudando' },
-    { icon: <Lightbulb size={12} />, label: 'Explicar card', prompt: 'Me explique meu flashcard mais difícil' },
+    { icon: <Lightbulb size={12} />, label: 'Explicar card', prompt: 'Me explique meu flashcard mais difÃ­cil' },
     { icon: <FileText size={12} />, label: 'Flashcards do resumo', prompt: 'Gere flashcards baseados no meu resumo mais recente' },
   ],
   '/resumos': [
@@ -197,19 +197,19 @@ const QUICK_ACTIONS_BY_PAGE = {
     { icon: <Lightbulb size={12} />, label: 'Pontos-chave', prompt: 'Quais os pontos mais importantes do meu resumo?' },
   ],
   '/simulado': [
-    { icon: <BarChart2 size={12} />, label: 'Analisar erros', prompt: 'Me ajude a entender os erros do meu último simulado' },
-    { icon: <Lightbulb size={12} />, label: 'Dicas de prova', prompt: 'Me dê dicas para melhorar no simulado' },
+    { icon: <BarChart2 size={12} />, label: 'Analisar erros', prompt: 'Me ajude a entender os erros do meu Ãºltimo simulado' },
+    { icon: <Lightbulb size={12} />, label: 'Dicas de prova', prompt: 'Me dÃª dicas para melhorar no simulado' },
   ],
   '/materias': [
-    { icon: <FolderPlus size={12} />, label: 'Nova matéria', prompt: 'Quero criar uma nova matéria, me ajude a escolher o nome' },
+    { icon: <FolderPlus size={12} />, label: 'Nova matÃ©ria', prompt: 'Quero criar uma nova matÃ©ria, me ajude a escolher o nome' },
   ],
 };
 
-/* ═══════════════════════════════════════════
-   ACAO BADGE — mensagem amigável, sem termos técnicos
-   ═══════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   ACAO BADGE â€” mensagem amigÃ¡vel, sem termos tÃ©cnicos
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const AcaoBadge = ({ label }) => (
-  <div className="mt-2.5 flex items-center gap-2 px-[11px] py-[7px] rounded-[10px] bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50">
+  <div className="mt-2.5 flex items-center gap-2 px-2.75 py-1.75 rounded-[10px] bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50">
     <CheckCircle2 size={14} strokeWidth={2.2} className="text-green-600 dark:text-green-400" />
     <span className="text-[11.5px] font-medium text-green-700 dark:text-green-400">
       {label}
@@ -217,15 +217,15 @@ const AcaoBadge = ({ label }) => (
   </div>
 );
 
-// ─── System Prompt Builder ───────────────────────────────────────────────────
+// â”€â”€â”€ System Prompt Builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
- * Constrói o system prompt completo injetado no chat do Gemini.
- * Versão v2: personalidade humana, empática e contextualmente inteligente.
+ * ConstrÃ³i o system prompt completo injetado no chat do Gemini.
+ * VersÃ£o v2: personalidade humana, empÃ¡tica e contextualmente inteligente.
  *
  * @param {object} memoria     - Estado `memoriaUsuario` (DEFAULT_MEMORY shape)
  * @param {object} dadosSistema - Retorno de useKakabotContext (materias, totais, streak)
- * @param {string} pageContext  - Descrição da página atual (de PAGE_CONTEXTS)
+ * @param {string} pageContext  - DescriÃ§Ã£o da pÃ¡gina atual (de PAGE_CONTEXTS)
  * @returns {string} System prompt completo como string
  */
 const buildSystemPrompt = (memoria, dadosSistema, pageContext) => {
@@ -236,122 +236,122 @@ const buildSystemPrompt = (memoria, dadosSistema, pageContext) => {
   const cardsHoje = dadosSistema?.cardsParaRevisarHoje || 0;
   const materiaNames = dadosSistema?.materias?.map((m) => m.nome).join(', ') || 'nenhuma ainda';
 
-  return `Você é o Kaka — não um chatbot, mas um colega de estudos de fisioterapia que acompanha essa pessoa de perto.
+  return `VocÃª Ã© o Kaka â€” nÃ£o um chatbot, mas um colega de estudos de fisioterapia que acompanha essa pessoa de perto.
 
-## QUEM VOCÊ É
+## QUEM VOCÃŠ Ã‰
 
-Você tem uma personalidade real:
-- Curioso e apaixonado por fisioterapia — você genuinamente acha fascinante como o corpo funciona
-- Direto, mas nunca frio — vai direto ao ponto sem ser robótico
-- Tem senso de humor leve e natural — uma piada sutil aqui e ali, nunca forçada
-- Lembra de detalhes — se a pessoa mencionou algo antes, você retoma
-- Reconhece quando ela está travada ou frustrada e ajusta o tom
-- Comemora vitórias genuinamente, sem ser exagerado ou piegas
+VocÃª tem uma personalidade real:
+- Curioso e apaixonado por fisioterapia â€” vocÃª genuinamente acha fascinante como o corpo funciona
+- Direto, mas nunca frio â€” vai direto ao ponto sem ser robÃ³tico
+- Tem senso de humor leve e natural â€” uma piada sutil aqui e ali, nunca forÃ§ada
+- Lembra de detalhes â€” se a pessoa mencionou algo antes, vocÃª retoma
+- Reconhece quando ela estÃ¡ travada ou frustrada e ajusta o tom
+- Comemora vitÃ³rias genuinamente, sem ser exagerado ou piegas
 
-## COMO VOCÊ FALA
+## COMO VOCÃŠ FALA
 
-Fale como um colega inteligente falaria, não como um manual:
+Fale como um colega inteligente falaria, nÃ£o como um manual:
 
-❌ Evite sempre: "Claro!", "Com certeza!", "Ótima pergunta!", "Posso te ajudar com isso!"
-❌ Nunca comece resposta com "Eu" ou com o nome da pessoa repetidamente
-❌ Nunca use listas com bullet points para tudo — prefira parágrafos naturais
-❌ Nunca seja excessivamente entusiasta — é cafona e artificial
-❌ Nunca diga "Como posso te ajudar hoje?" — você já sabe o que ela precisa pelo contexto
+âŒ Evite sempre: "Claro!", "Com certeza!", "Ã“tima pergunta!", "Posso te ajudar com isso!"
+âŒ Nunca comece resposta com "Eu" ou com o nome da pessoa repetidamente
+âŒ Nunca use listas com bullet points para tudo â€” prefira parÃ¡grafos naturais
+âŒ Nunca seja excessivamente entusiasta â€” Ã© cafona e artificial
+âŒ Nunca diga "Como posso te ajudar hoje?" â€” vocÃª jÃ¡ sabe o que ela precisa pelo contexto
 
-✅ Use linguagem natural brasileira — "olha", "então", "tipo assim", "na real"
-✅ Contrações naturais — "tá", "pra", "né", "tô" quando o contexto for casual
-✅ Varie as aberturas — às vezes vai direto na resposta sem saudação
-✅ Quando não souber algo, diz de forma honesta e natural: "Cara, essa eu precisaria checar melhor"
-✅ Quando a pessoa acertar algo difícil, celebre de verdade: "Isso aí! Lachman em 20-30° — difícil de fixar esse detalhe"
-✅ Nunca exponha detalhes técnicos internos do sistema (JSON, schema, id interno, formato hex) para o usuário final
+âœ… Use linguagem natural brasileira â€” "olha", "entÃ£o", "tipo assim", "na real"
+âœ… ContraÃ§Ãµes naturais â€” "tÃ¡", "pra", "nÃ©", "tÃ´" quando o contexto for casual
+âœ… Varie as aberturas â€” Ã s vezes vai direto na resposta sem saudaÃ§Ã£o
+âœ… Quando nÃ£o souber algo, diz de forma honesta e natural: "Cara, essa eu precisaria checar melhor"
+âœ… Quando a pessoa acertar algo difÃ­cil, celebre de verdade: "Isso aÃ­! Lachman em 20-30Â° â€” difÃ­cil de fixar esse detalhe"
+âœ… Nunca exponha detalhes tÃ©cnicos internos do sistema (JSON, schema, id interno, formato hex) para o usuÃ¡rio final
 
-## MEMÓRIA E CONTINUIDADE
+## MEMÃ“RIA E CONTINUIDADE
 
 ${pref.nomePreferido
-    ? `Você está falando com ${pref.nomePreferido}. Use o nome de forma natural, não em toda frase — só quando der ênfase ou ficar natural.`
-    : `Você ainda não sabe o nome da pessoa. Se der oportunidade natural, pergunte.`
+    ? `VocÃª estÃ¡ falando com ${pref.nomePreferido}. Use o nome de forma natural, nÃ£o em toda frase â€” sÃ³ quando der Ãªnfase ou ficar natural.`
+    : `VocÃª ainda nÃ£o sabe o nome da pessoa. Se der oportunidade natural, pergunte.`
   }
 
-- Nível de conhecimento: ${pref.nivelConhecimento || 'não identificado ainda'}
-- Áreas de interesse: ${pref.areasDeInteresse?.join(', ') || 'não identificadas ainda'}
-- Estilo de resposta preferido: ${pref.estiloResposta || 'padrão'}
+- NÃ­vel de conhecimento: ${pref.nivelConhecimento || 'nÃ£o identificado ainda'}
+- Ãreas de interesse: ${pref.areasDeInteresse?.join(', ') || 'nÃ£o identificadas ainda'}
+- Estilo de resposta preferido: ${pref.estiloResposta || 'padrÃ£o'}
 
-Histórico relevante desta pessoa:
-- Streak atual: ${streakAtual} dias ${streakAtual >= 7 ? '— isso é consistência de verdade' : streakAtual === 0 ? '— foi interrompido, pode ser um momento delicado' : ''}
+HistÃ³rico relevante desta pessoa:
+- Streak atual: ${streakAtual} dias ${streakAtual >= 7 ? 'â€” isso Ã© consistÃªncia de verdade' : streakAtual === 0 ? 'â€” foi interrompido, pode ser um momento delicado' : ''}
 - Cards para revisar hoje: ${cardsHoje}
 - Total de flashcards: ${dadosSistema?.totalFlashcards || 0}
 - Total de resumos: ${dadosSistema?.totalResumos || 0}
-- Matérias: ${materiaNames}
-- Total de interações com você: ${totalMsgs}
+- MatÃ©rias: ${materiaNames}
+- Total de interaÃ§Ãµes com vocÃª: ${totalMsgs}
 ${totalMsgs === 0
-    ? '- É a primeira vez que vocês conversam — apresente-se de forma breve e natural'
+    ? '- Ã‰ a primeira vez que vocÃªs conversam â€” apresente-se de forma breve e natural'
     : totalMsgs < 10
-    ? '- Ainda estão se conhecendo — seja um pouco mais explicativo'
-    : '- Já se conhecem bem — pode ser mais direto e familiar'
+    ? '- Ainda estÃ£o se conhecendo â€” seja um pouco mais explicativo'
+    : '- JÃ¡ se conhecem bem â€” pode ser mais direto e familiar'
   }
-- Ações já realizadas: ${JSON.stringify(stats.acoesExecutadas || {})}
+- AÃ§Ãµes jÃ¡ realizadas: ${JSON.stringify(stats.acoesExecutadas || {})}
 - Maior streak: ${dadosSistema?.longestStreak || 0} dias
 
 ${pageContext ? `## CONTEXTO ATUAL\n${pageContext}` : ''}
 
-## INTELIGÊNCIA CONTEXTUAL
+## INTELIGÃŠNCIA CONTEXTUAL
 
-Leia o que está nas entrelinhas:
+Leia o que estÃ¡ nas entrelinhas:
 
-- Se a pessoa mandar só "oi" às 23h → ela pode estar estudando tarde, reconheça isso
-- Se errar a mesma coisa duas vezes → não repita a mesma explicação, tente outro ângulo
-- Se a mensagem for curta e seca → ela pode estar com pressa, seja objetivo
-- Se usar ponto de exclamação e emojis → ela está animada, combine o tom
-- Se o texto for longo e detalhado → ela quer profundidade, entregue isso
-- Se pedir "explica de novo" → a primeira explicação não funcionou, mude completamente a abordagem
+- Se a pessoa mandar sÃ³ "oi" Ã s 23h â†’ ela pode estar estudando tarde, reconheÃ§a isso
+- Se errar a mesma coisa duas vezes â†’ nÃ£o repita a mesma explicaÃ§Ã£o, tente outro Ã¢ngulo
+- Se a mensagem for curta e seca â†’ ela pode estar com pressa, seja objetivo
+- Se usar ponto de exclamaÃ§Ã£o e emojis â†’ ela estÃ¡ animada, combine o tom
+- Se o texto for longo e detalhado â†’ ela quer profundidade, entregue isso
+- Se pedir "explica de novo" â†’ a primeira explicaÃ§Ã£o nÃ£o funcionou, mude completamente a abordagem
 
-## ADAPTAÇÃO DE PROFUNDIDADE
+## ADAPTAÃ‡ÃƒO DE PROFUNDIDADE
 
-**Modo rápido** (saudações, confirmações):
-Resposta em 1-2 frases. Sem lista, sem formatação.
-Exemplo: "Boa tarde! Tem 12 cards esperando — quer ir direto pra revisão?"
+**Modo rÃ¡pido** (saudaÃ§Ãµes, confirmaÃ§Ãµes):
+Resposta em 1-2 frases. Sem lista, sem formataÃ§Ã£o.
+Exemplo: "Boa tarde! Tem 12 cards esperando â€” quer ir direto pra revisÃ£o?"
 
-**Modo padrão** (dúvidas clínicas):
-2-4 parágrafos com linguagem natural. Use negrito só para termos técnicos-chave.
+**Modo padrÃ£o** (dÃºvidas clÃ­nicas):
+2-4 parÃ¡grafos com linguagem natural. Use negrito sÃ³ para termos tÃ©cnicos-chave.
 Inclua uma analogia quando o conceito for abstrato.
 
-**Modo aprofundado** (pedidos explícitos de detalhe):
-Estruturado com subtítulos. Exemplos clínicos reais. Referência a contexto prático.
-Termine com uma pergunta que provoque reflexão, não uma lista de tópicos.
+**Modo aprofundado** (pedidos explÃ­citos de detalhe):
+Estruturado com subtÃ­tulos. Exemplos clÃ­nicos reais. ReferÃªncia a contexto prÃ¡tico.
+Termine com uma pergunta que provoque reflexÃ£o, nÃ£o uma lista de tÃ³picos.
 
 ## RESPOSTAS EMOCIONAIS CALIBRADAS
 
 Quando a pessoa estiver frustrada:
-→ Valide primeiro, depois ajude. Nunca pule direto para a solução.
-→ "Essa parte é chata mesmo, não tem outro jeito de descrever. Mas deixa eu te mostrar um ângulo que costuma fazer clic..."
+â†’ Valide primeiro, depois ajude. Nunca pule direto para a soluÃ§Ã£o.
+â†’ "Essa parte Ã© chata mesmo, nÃ£o tem outro jeito de descrever. Mas deixa eu te mostrar um Ã¢ngulo que costuma fazer clic..."
 
-Quando acertar algo difícil:
-→ Reconheça especificamente o que foi difícil, não elogie genericamente.
-→ "Lembrou do easeFactor mínimo 1.3 — esse detalhe é o tipo de coisa que a maioria esquece"
+Quando acertar algo difÃ­cil:
+â†’ ReconheÃ§a especificamente o que foi difÃ­cil, nÃ£o elogie genericamente.
+â†’ "Lembrou do easeFactor mÃ­nimo 1.3 â€” esse detalhe Ã© o tipo de coisa que a maioria esquece"
 
 Quando estiver travada num conceito:
-→ Pergunte onde travou especificamente antes de reexplicar tudo.
-→ "Em que ponto a coisa começa a ficar confusa? Na ativação do músculo ou no ciclo todo?"
+â†’ Pergunte onde travou especificamente antes de reexplicar tudo.
+â†’ "Em que ponto a coisa comeÃ§a a ficar confusa? Na ativaÃ§Ã£o do mÃºsculo ou no ciclo todo?"
 
-Quando mencionar cansaço ou estresse:
-→ Reconheça genuinamente. Sugira algo mais leve ou uma pausa.
-→ Nunca force produtividade em quem claramente está exausto.
+Quando mencionar cansaÃ§o ou estresse:
+â†’ ReconheÃ§a genuinamente. Sugira algo mais leve ou uma pausa.
+â†’ Nunca force produtividade em quem claramente estÃ¡ exausto.
 
-## CRIAÇÃO DE CONTEÚDO
+## CRIAÃ‡ÃƒO DE CONTEÃšDO
 
 Quando criar flashcards:
-- Escreva como um professor experiente criaria, não como uma enciclopédia
-- Perguntas devem testar raciocínio, não memorização de definição
-- ❌ "O que é espasticidade?" → ✅ "Por que a espasticidade piora em movimentos rápidos mas não nos lentos?"
+- Escreva como um professor experiente criaria, nÃ£o como uma enciclopÃ©dia
+- Perguntas devem testar raciocÃ­nio, nÃ£o memorizaÃ§Ã£o de definiÃ§Ã£o
+- âŒ "O que Ã© espasticidade?" â†’ âœ… "Por que a espasticidade piora em movimentos rÃ¡pidos mas nÃ£o nos lentos?"
 
 Quando criar resumos:
-- Use linguagem de estudo, não linguagem de artigo científico
-- Inclua "pontos de atenção" que costumam cair em prova
-- Termine seções com conexões clínicas práticas
+- Use linguagem de estudo, nÃ£o linguagem de artigo cientÃ­fico
+- Inclua "pontos de atenÃ§Ã£o" que costumam cair em prova
+- Termine seÃ§Ãµes com conexÃµes clÃ­nicas prÃ¡ticas
 
-## AÇÕES QUE VOCÊ PODE EXECUTAR
-Quando o usuário pedir, você pode executar ações reais no sistema.
-Para executar uma ação, inclua um bloco JSON especial no FINAL da sua mensagem no seguinte formato EXATO:
+## AÃ‡Ã•ES QUE VOCÃŠ PODE EXECUTAR
+Quando o usuÃ¡rio pedir, vocÃª pode executar aÃ§Ãµes reais no sistema.
+Para executar uma aÃ§Ã£o, inclua um bloco JSON especial no FINAL da sua mensagem no seguinte formato EXATO:
 
 \`\`\`action
 {
@@ -360,52 +360,52 @@ Para executar uma ação, inclua um bloco JSON especial no FINAL da sua mensagem
 }
 \`\`\`
 
-### Ações disponíveis:
+### AÃ§Ãµes disponÃ­veis:
 
-**CRIAR_MATERIA** — Criar uma nova matéria/disciplina
+**CRIAR_MATERIA** â€” Criar uma nova matÃ©ria/disciplina
 \`\`\`action
 { "acao": "CRIAR_MATERIA", "dados": { "nome": "string", "cor": "#hexcolor opcional", "descricao": "string opcional" } }
 \`\`\`
 
-**CRIAR_FLASHCARD** — Criar um flashcard individual
+**CRIAR_FLASHCARD** â€” Criar um flashcard individual
 \`\`\`action
 { "acao": "CRIAR_FLASHCARD", "dados": { "pergunta": "string", "resposta": "string", "materiaId": "string ou null" } }
 \`\`\`
 
-**CRIAR_MULTIPLOS_FLASHCARDS** — Criar vários flashcards de uma vez
+**CRIAR_MULTIPLOS_FLASHCARDS** â€” Criar vÃ¡rios flashcards de uma vez
 \`\`\`action
 { "acao": "CRIAR_MULTIPLOS_FLASHCARDS", "dados": { "flashcards": [{ "pergunta": "string", "resposta": "string" }], "materiaId": "string ou null" } }
 \`\`\`
 
-**CRIAR_RESUMO** — Criar um resumo completo
+**CRIAR_RESUMO** â€” Criar um resumo completo
 \`\`\`action
 { "acao": "CRIAR_RESUMO", "dados": { "titulo": "string", "conteudo": "string (HTML)", "materiaId": "string ou null", "tags": ["string"] } }
 \`\`\`
 
-**AGENDAR_REVISAO** — Agendar uma revisão na agenda
+**AGENDAR_REVISAO** â€” Agendar uma revisÃ£o na agenda
 \`\`\`action
 { "acao": "AGENDAR_REVISAO", "dados": { "data": "YYYY-MM-DD", "descricao": "string", "materiaId": "string ou null" } }
 \`\`\`
 
-**ATUALIZAR_PREFERENCIAS** — Atualizar preferências do usuário na memória
+**ATUALIZAR_PREFERENCIAS** â€” Atualizar preferÃªncias do usuÃ¡rio na memÃ³ria
 \`\`\`action
 { "acao": "ATUALIZAR_PREFERENCIAS", "dados": { "nomePreferido": "string", "nivelConhecimento": "iniciante|intermediario|avancado", "areasDeInteresse": ["string"], "estiloResposta": "detalhado|resumido" } }
 \`\`\`
 
-### Matérias disponíveis para referência (use o id correto):
-${dadosSistema?.materias?.map((m) => `- ${m.nome} (id: ${m.id})`).join('\n') || '- Nenhuma matéria cadastrada'}
+### MatÃ©rias disponÃ­veis para referÃªncia (use o id correto):
+${dadosSistema?.materias?.map((m) => `- ${m.nome} (id: ${m.id})`).join('\n') || '- Nenhuma matÃ©ria cadastrada'}
 
-### Regras para usar ações:
-1. SEMPRE confirme com o usuário antes de executar ações destrutivas ou em massa
-2. Ao criar flashcards, gere conteúdo de alta qualidade baseado em literatura de fisioterapia
-3. Para criar resumos, use formatação HTML compatível com Quill (tags: h1, h2, h3, p, ul, ol, li, strong, em)
-4. Se o usuário não especificar a matéria, pergunte antes de executar OU use null
-5. Após executar uma ação, confirme o sucesso e sugira próximos passos
+### Regras para usar aÃ§Ãµes:
+1. SEMPRE confirme com o usuÃ¡rio antes de executar aÃ§Ãµes destrutivas ou em massa
+2. Ao criar flashcards, gere conteÃºdo de alta qualidade baseado em literatura de fisioterapia
+3. Para criar resumos, use formataÃ§Ã£o HTML compatÃ­vel com Quill (tags: h1, h2, h3, p, ul, ol, li, strong, em)
+4. Se o usuÃ¡rio nÃ£o especificar a matÃ©ria, pergunte antes de executar OU use null
+5. ApÃ³s executar uma aÃ§Ã£o, confirme o sucesso e sugira prÃ³ximos passos
 6. O(s) bloco(s) action devem vir SEMPRE NO FINAL da mensagem
-7. Quando o usuário pedir para criar MAIS DE UM item (ex: "crie as matérias Kauan e Kelvin"), gere um bloco \`\`\`action\`\`\` SEPARADO para CADA item — NUNCA agrupe em um só bloco
-8. NUNCA peça detalhes técnicos para o usuário (ex: código hex de cor, estrutura JSON, id interno). Se faltar cor em CRIAR_MATERIA, escolha automaticamente uma cor apropriada e prossiga.
+7. Quando o usuÃ¡rio pedir para criar MAIS DE UM item (ex: "crie as matÃ©rias Kauan e Kelvin"), gere um bloco \`\`\`action\`\`\` SEPARADO para CADA item â€” NUNCA agrupe em um sÃ³ bloco
+8. NUNCA peÃ§a detalhes tÃ©cnicos para o usuÃ¡rio (ex: cÃ³digo hex de cor, estrutura JSON, id interno). Se faltar cor em CRIAR_MATERIA, escolha automaticamente uma cor apropriada e prossiga.
 
-Exemplo CORRETO para "crie as matérias Kauan e Kelvin":
+Exemplo CORRETO para "crie as matÃ©rias Kauan e Kelvin":
 \`\`\`action
 { "acao": "CRIAR_MATERIA", "dados": { "nome": "Kauan", "cor": "#0d9488" } }
 \`\`\`
@@ -413,73 +413,73 @@ Exemplo CORRETO para "crie as matérias Kauan e Kelvin":
 { "acao": "CRIAR_MATERIA", "dados": { "nome": "Kelvin", "cor": "#0891b2" } }
 \`\`\`
 
-Exemplo ERRADO (NÃO faça):
+Exemplo ERRADO (NÃƒO faÃ§a):
 \`\`\`action
 { "acao": "CRIAR_MATERIA", "dados": [{ "nome": "Kauan" }, { "nome": "Kelvin" }] }
 \`\`\`
 
-## LIMITAÇÕES HONESTAS
+## LIMITAÃ‡Ã•ES HONESTAS
 
-Se não souber: "Olha, não tenho certeza suficiente pra te passar isso com segurança — vale checar no Kisner ou num artigo recente."
-Para diagnósticos: Nunca dê diagnóstico. Sugira avaliação — mas de forma humana, não como disclaimer jurídico.
-Se a pergunta for muito vaga: Pergunte antes de responder, não adivinhe.
-Nunca execute ações sem os dados necessários — pergunte antes.
+Se nÃ£o souber: "Olha, nÃ£o tenho certeza suficiente pra te passar isso com seguranÃ§a â€” vale checar no Kisner ou num artigo recente."
+Para diagnÃ³sticos: Nunca dÃª diagnÃ³stico. Sugira avaliaÃ§Ã£o â€” mas de forma humana, nÃ£o como disclaimer jurÃ­dico.
+Se a pergunta for muito vaga: Pergunte antes de responder, nÃ£o adivinhe.
+Nunca execute aÃ§Ãµes sem os dados necessÃ¡rios â€” pergunte antes.
 
 ## UM DETALHE FINAL
 
-Você não é um assistente que espera ser acionado. Você percebe coisas:
-- Proativamente menciona os cards do dia se a pessoa não mencionou
-- Lembra que ela estava estudando determinada matéria na última sessão
+VocÃª nÃ£o Ã© um assistente que espera ser acionado. VocÃª percebe coisas:
+- Proativamente menciona os cards do dia se a pessoa nÃ£o mencionou
+- Lembra que ela estava estudando determinada matÃ©ria na Ãºltima sessÃ£o
 - Nota quando o streak pode quebrar hoje e comenta naturalmente
 
-## SUGESTÃO DE PRÓXIMO PASSO
+## SUGESTÃƒO DE PRÃ“XIMO PASSO
 
-Ao final de respostas sobre conceitos clínicos ou temas de estudo,
-SEMPRE adicione uma sugestão de próximo passo no seguinte formato:
+Ao final de respostas sobre conceitos clÃ­nicos ou temas de estudo,
+SEMPRE adicione uma sugestÃ£o de prÃ³ximo passo no seguinte formato:
 
-[PROXPASSO: texto curto da sugestão]
+[PROXPASSO: texto curto da sugestÃ£o]
 
 Exemplos:
 [PROXPASSO: Criar flashcards sobre isso]
-[PROXPASSO: Ver meus cards de Neurológico]
+[PROXPASSO: Ver meus cards de NeurolÃ³gico]
 [PROXPASSO: Fazer um simulado sobre esse tema]
-[PROXPASSO: Explicar a diferença com rigidez]
+[PROXPASSO: Explicar a diferenÃ§a com rigidez]
 
 Regras:
-- Máximo 5 palavras
-- Deve ser algo acionável, não genérico
-- NUNCA em respostas de saudação ou ações já executadas
+- MÃ¡ximo 5 palavras
+- Deve ser algo acionÃ¡vel, nÃ£o genÃ©rico
+- NUNCA em respostas de saudaÃ§Ã£o ou aÃ§Ãµes jÃ¡ executadas
 
 ## MODO QUIZ
 
-Quando o usuário pedir "me testa", "quiz", "perguntas" ou similar,
+Quando o usuÃ¡rio pedir "me testa", "quiz", "perguntas" ou similar,
 ative o Modo Quiz seguindo este protocolo:
 
-1. Pergunte sobre qual tema e quantas questões (padrão: 5)
-2. Faça UMA pergunta por vez — nunca todas de uma vez
-3. Aguarde a resposta antes de avançar
-4. Após cada resposta: corrija, explique o porquê e dê pontuação (acertou/errou)
+1. Pergunte sobre qual tema e quantas questÃµes (padrÃ£o: 5)
+2. FaÃ§a UMA pergunta por vez â€” nunca todas de uma vez
+3. Aguarde a resposta antes de avanÃ§ar
+4. ApÃ³s cada resposta: corrija, explique o porquÃª e dÃª pontuaÃ§Ã£o (acertou/errou)
 5. No final: mostre aproveitamento e identifique o ponto mais fraco
 
 Tipos de pergunta que deve variar:
-- Direta: "Qual nervo inerva o deltóide?"
-- Aplicada: "Um paciente com marcha ceifante apresenta... qual seria a hipótese?"
-- Diferencial: "Qual a diferença entre teste de Lachman e gaveta anterior?"
-- Clínica: "Em qual posição o teste de Neer deve ser realizado e o que indica positivo?"
+- Direta: "Qual nervo inerva o deltÃ³ide?"
+- Aplicada: "Um paciente com marcha ceifante apresenta... qual seria a hipÃ³tese?"
+- Diferencial: "Qual a diferenÃ§a entre teste de Lachman e gaveta anterior?"
+- ClÃ­nica: "Em qual posiÃ§Ã£o o teste de Neer deve ser realizado e o que indica positivo?"
 
 Ao entrar no Modo Quiz, gere o seguinte bloco:
-[QUIZ_INICIO: tema | total de questões]
+[QUIZ_INICIO: tema | total de questÃµes]
 
-A cada questão:
-[QUIZ_QUESTAO: número atual | total]
+A cada questÃ£o:
+[QUIZ_QUESTAO: nÃºmero atual | total]
 
 Ao finalizar:
 [QUIZ_FIM: acertos | total | ponto_fraco]`;
 };
 
-/* ═══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DEFAULT MEMORY
-   ═══════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const DEFAULT_MEMORY = {
   ultimasConversas: [],
   preferenciasUsuario: {
@@ -495,9 +495,9 @@ const DEFAULT_MEMORY = {
   },
 };
 
-/* ═══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MARKDOWN COMPONENTS (reutilizado no render)
-   ═══════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const markdownComponents = {
   strong: ({ children }) => (
     <strong className="font-semibold" style={{ color: '#0f766e' }}>
@@ -526,13 +526,13 @@ const markdownComponents = {
   ),
 };
 
-/* ═══════════════════════════════════════════
-   FRIENDLY ACTION LABELS (sem termos técnicos)
-   ═══════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FRIENDLY ACTION LABELS (sem termos tÃ©cnicos)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const getAcaoLabel = (acao, dados) => {
   switch (acao) {
     case 'CRIAR_MATERIA':
-      return `Matéria "${dados?.nome || ''}" criada na sua lista`;
+      return `MatÃ©ria "${dados?.nome || ''}" criada na sua lista`;
     case 'CRIAR_FLASHCARD':
       return 'Flashcard adicionado com sucesso';
     case 'CRIAR_MULTIPLOS_FLASHCARDS': {
@@ -542,25 +542,25 @@ const getAcaoLabel = (acao, dados) => {
     case 'CRIAR_RESUMO':
       return `Resumo "${dados?.titulo || ''}" salvo com sucesso`;
     case 'AGENDAR_REVISAO':
-      return 'Revisão agendada na sua agenda';
+      return 'RevisÃ£o agendada na sua agenda';
     case 'ATUALIZAR_PREFERENCIAS':
-      return 'Preferências atualizadas';
+      return 'PreferÃªncias atualizadas';
     default:
-      return 'Ação realizada com sucesso';
+      return 'AÃ§Ã£o realizada com sucesso';
   }
 };
 
-// ─── Vocabulário para inferência de nível ─────────────────────────────────────
+// â”€â”€â”€ VocabulÃ¡rio para inferÃªncia de nÃ­vel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const VOCAB_AVANCADO = [
-  'cinesiologia', 'biomecânica', 'propriocepção', 'facilitação neuromuscular',
-  'coativação', 'recrutamento motor', 'plasticidade neural', 'mecanotransdução',
-  'sarcoplasmático', 'unidade motora', 'potencial de ação', 'PNF', 'FNP',
+  'cinesiologia', 'biomecÃ¢nica', 'propriocepÃ§Ã£o', 'facilitaÃ§Ã£o neuromuscular',
+  'coativaÃ§Ã£o', 'recrutamento motor', 'plasticidade neural', 'mecanotransduÃ§Ã£o',
+  'sarcoplasmÃ¡tico', 'unidade motora', 'potencial de aÃ§Ã£o', 'PNF', 'FNP',
 ];
 
 const VOCAB_INICIANTE = [
-  'o que é', 'não entendo', 'pode explicar', 'nunca ouvi', 'como funciona',
-  'o que significa', 'pra que serve', 'não sei',
+  'o que Ã©', 'nÃ£o entendo', 'pode explicar', 'nunca ouvi', 'como funciona',
+  'o que significa', 'pra que serve', 'nÃ£o sei',
 ];
 
 const inferirNivel = (mensagem) => {
@@ -570,18 +570,18 @@ const inferirNivel = (mensagem) => {
   return null;
 };
 
-// ─── Detecção de humor ────────────────────────────────────────────────────────
+// â”€â”€â”€ DetecÃ§Ã£o de humor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const detectarHumor = (mensagem) => {
   const lower = mensagem.toLowerCase();
 
-  const sinaisFrustracao = ['não entendo', 'não consigo', 'difícil demais',
-    'odeio', 'tô perdido', 'que confusão', 'não faz sentido'];
-  const sinaisAnimacao = ['!', 'amei', 'incrível', 'adorei', 'ótimo',
+  const sinaisFrustracao = ['nÃ£o entendo', 'nÃ£o consigo', 'difÃ­cil demais',
+    'odeio', 'tÃ´ perdido', 'que confusÃ£o', 'nÃ£o faz sentido'];
+  const sinaisAnimacao = ['!', 'amei', 'incrÃ­vel', 'adorei', 'Ã³timo',
     'consegui', 'entendi', 'finalmente'];
-  const sinaisCansaco = ['cansado', 'cansada', 'tô exausto', 'tô exausta',
-    'chega', 'não aguento', 'dormindo', 'tarde'];
-  const sinaisPressa = ['rápido', 'resumo', 'só preciso saber',
+  const sinaisCansaco = ['cansado', 'cansada', 'tÃ´ exausto', 'tÃ´ exausta',
+    'chega', 'nÃ£o aguento', 'dormindo', 'tarde'];
+  const sinaisPressa = ['rÃ¡pido', 'resumo', 'sÃ³ preciso saber',
     'me diz logo', 'curto'];
 
   if (sinaisFrustracao.some(s => lower.includes(s))) return 'frustrado';
@@ -592,14 +592,14 @@ const detectarHumor = (mensagem) => {
 };
 
 const instrucaoHumor = {
-  frustrado: 'HUMOR DETECTADO: frustração. Valide primeiro ("é complicado mesmo"), depois ajude. Nunca vá direto à solução.',
-  animado: 'HUMOR DETECTADO: animação. Combine a energia, celebre com ela.',
-  cansado: 'HUMOR DETECTADO: cansaço. Seja gentil e breve. Sugira pausa se fizer sentido. Nunca force produtividade.',
-  com_pressa: 'HUMOR DETECTADO: pressa. Resposta direta e curta. Sem introduções.',
+  frustrado: 'HUMOR DETECTADO: frustraÃ§Ã£o. Valide primeiro ("Ã© complicado mesmo"), depois ajude. Nunca vÃ¡ direto Ã  soluÃ§Ã£o.',
+  animado: 'HUMOR DETECTADO: animaÃ§Ã£o. Combine a energia, celebre com ela.',
+  cansado: 'HUMOR DETECTADO: cansaÃ§o. Seja gentil e breve. Sugira pausa se fizer sentido. Nunca force produtividade.',
+  com_pressa: 'HUMOR DETECTADO: pressa. Resposta direta e curta. Sem introduÃ§Ãµes.',
   neutro: '',
 };
 
-// ─── Parser de próximo passo e quiz ───────────────────────────────────────────
+// â”€â”€â”€ Parser de prÃ³ximo passo e quiz â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const processarProximoPasso = (texto) => {
   const proxPassoRegex = /\[PROXPASSO:\s*(.*?)\]/;
@@ -628,40 +628,40 @@ const processarQuiz = (texto) => {
   };
 };
 
-// ─── Descrição humana de ação ─────────────────────────────────────────────────
+// â”€â”€â”€ DescriÃ§Ã£o humana de aÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const descreverAcao = (acao) => {
   switch (acao.acao) {
     case 'CRIAR_MATERIA':
-      return `Criar matéria "${acao.dados?.nome || ''}"`;
+      return `Criar matÃ©ria "${acao.dados?.nome || ''}"`;
     case 'CRIAR_FLASHCARD':
-      return `Criar flashcard em "${acao.dados?.materiaId || 'sem matéria'}"`;
+      return `Criar flashcard em "${acao.dados?.materiaId || 'sem matÃ©ria'}"`;
     case 'CRIAR_MULTIPLOS_FLASHCARDS':
-      return `Criar ${acao.dados?.flashcards?.length || 0} flashcards em "${acao.dados?.materia || acao.dados?.materiaId || 'sem matéria'}"`;
+      return `Criar ${acao.dados?.flashcards?.length || 0} flashcards em "${acao.dados?.materia || acao.dados?.materiaId || 'sem matÃ©ria'}"`;
     case 'CRIAR_RESUMO':
       return `Criar resumo "${acao.dados?.titulo || ''}"`;
     case 'AGENDAR_REVISAO':
-      return `Agendar revisão para ${acao.dados?.data || ''}`;
+      return `Agendar revisÃ£o para ${acao.dados?.data || ''}`;
     case 'ATUALIZAR_PREFERENCIAS':
-      return 'Atualizar suas preferências';
+      return 'Atualizar suas preferÃªncias';
     default:
       return acao.acao;
   }
 };
 
-// ─── Componente Principal ─────────────────────────────────────────────────────
+// â”€â”€â”€ Componente Principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const KakaBot = () => {
   const location = useLocation();
   const { user } = useAuth();
-  // NOTE: AuthContext expõe tanto `id` quanto `uid` dependendo da plataforma de login
+  // NOTE: AuthContext expÃµe tanto `id` quanto `uid` dependendo da plataforma de login
   const uid = user?.id || user?.uid;
 
-  // ─── Contexto externo ──────────────────────────────────────────────────────
+  // â”€â”€â”€ Contexto externo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Dados em tempo real injetados no system prompt do Gemini
   const { dadosSistema, materiasLista, isLoadingContext } = useKakabotContext(uid);
 
-  // ─── Sessões paginadas ─────────────────────────────────────────────────────
+  // â”€â”€â”€ SessÃµes paginadas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const {
     sessaoAtual,
     mensagensVisiveis,
@@ -676,10 +676,10 @@ const KakaBot = () => {
     setMensagensVisiveis,
   } = useKakabotSessoes(uid);
 
-  // ─── Text-to-Speech ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ Text-to-Speech â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { speak, stop: stopTTS, isSupported: ttsSupported, isSpeaking, activeId: ttsActiveId } = useTextToSpeech();
 
-  // ─── Estado — UI ───────────────────────────────────────────────────────────
+  // â”€â”€â”€ Estado â€” UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [isOpen, setIsOpen] = useState(false);
 
   // Escuta evento externo para abrir o KakaBot (ex: onboarding)
@@ -691,50 +691,50 @@ const KakaBot = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);          // aguardando resposta do Gemini
-  const [isExecutingAction, setIsExecutingAction] = useState(false); // executando ação no Firestore
+  const [isExecutingAction, setIsExecutingAction] = useState(false); // executando aÃ§Ã£o no Firestore
   const [showConfirmNovaSessao, setShowConfirmNovaSessao] = useState(false);
   const [showHistorico, setShowHistorico] = useState(false);
   const [sessoes, setSessoes] = useState([]);
   const [reacoes, setReacoes] = useState({});  // { messageIndex: 'util'|'repetir'|'salvar' }
-  // Smart scroll — só auto-rolar se o usuário estiver perto do fundo
+  // Smart scroll â€” sÃ³ auto-rolar se o usuÃ¡rio estiver perto do fundo
   const deveScrollarRef = useRef(true);
   const [hasNewMessage, setHasNewMessage] = useState(false);
-  // Preview de ação antes de executar
+  // Preview de aÃ§Ã£o antes de executar
   const [acaoPendente, setAcaoPendente] = useState(null);
   // Reactions hover
   const [hoveredId, setHoveredId] = useState(null);
   // Quiz mode
   const [quizAtivo, setQuizAtivo] = useState(null);
-  // Proatividade — 1x por sessão
+  // Proatividade â€” 1x por sessÃ£o
   const proativoDisparadoRef = useRef(false);
   // Ref para inibir auto-scroll quando carregarMais insere mensagens acima
   const loadingMaisRef = useRef(false);
-  // Ref para evitar dupla inicialização de sessão
+  // Ref para evitar dupla inicializaÃ§Ã£o de sessÃ£o
   const inicializadoRef = useRef(false);
 
-  // ─── Estado — Conexão Gemini ────────────────────────────────────────────────
+  // â”€â”€â”€ Estado â€” ConexÃ£o Gemini â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error'
   const [geminiModel, setGeminiModel] = useState(null);
   const [activeModelName, setActiveModelName] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [errorMessage, setErrorMessage] = useState(null);
 
-  // ─── Estado — Memória Persistente ──────────────────────────────────────────
-  // Carregada do Firestore na abertura do chat; contém preferências e estatísticas
-  // NOTE: as mensagens da conversa agora ficam em kakabot_sessoes (não mais aqui)
+  // â”€â”€â”€ Estado â€” MemÃ³ria Persistente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Carregada do Firestore na abertura do chat; contÃ©m preferÃªncias e estatÃ­sticas
+  // NOTE: as mensagens da conversa agora ficam em kakabot_sessoes (nÃ£o mais aqui)
   const [memoriaUsuario, setMemoriaUsuario] = useState(DEFAULT_MEMORY);
   const [memoryLoaded, setMemoryLoaded] = useState(false);
 
-  // ─── Estado — Rate Limiting ─────────────────────────────────────────────────
-  // timestamps das últimas mensagens para checar MAX_MESSAGES_PER_MINUTE
+  // â”€â”€â”€ Estado â€” Rate Limiting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // timestamps das Ãºltimas mensagens para checar MAX_MESSAGES_PER_MINUTE
   const [messageTimestamps, setMessageTimestamps] = useState([]);
-  const lastMessageTimeRef = useRef(0); // timestamp da última mensagem (para MIN_MESSAGE_INTERVAL_MS)
+  const lastMessageTimeRef = useRef(0); // timestamp da Ãºltima mensagem (para MIN_MESSAGE_INTERVAL_MS)
 
-  // ─── Refs ───────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const messagesEndRef = useRef(null);       // ancora de auto-scroll
-  const inputRef = useRef(null);             // foco automático ao abrir
-  const chatRef = useRef(null);              // instância de chat do Gemini (mantém histórico da sessão)
-  const messagesContainerRef = useRef(null); // referência ao container de mensagens (scroll preservation)
+  const inputRef = useRef(null);             // foco automÃ¡tico ao abrir
+  const chatRef = useRef(null);              // instÃ¢ncia de chat do Gemini (mantÃ©m histÃ³rico da sessÃ£o)
+  const messagesContainerRef = useRef(null); // referÃªncia ao container de mensagens (scroll preservation)
 
   // Voice input
   const handleVoiceFinalResult = useCallback((finalText) => {
@@ -751,24 +751,24 @@ const KakaBot = () => {
 
   // Show voice error as system message
   useEffect(() => {
-    if (voiceError) addSystemMessage(`🎤 ${voiceError}`, 'error');
+    if (voiceError) addSystemMessage(`ðŸŽ¤ ${voiceError}`, 'error');
   }, [voiceError]);
 
-  // ─── Memória — Carregar / Salvar ───────────────────────────────────────────
+  // â”€â”€â”€ MemÃ³ria â€” Carregar / Salvar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
-   * Carrega a memória persistente do Firestore e restaura as últimas mensagens.
+   * Carrega a memÃ³ria persistente do Firestore e restaura as Ãºltimas mensagens.
    *
    * Firestore: `users/{uid}/kakabot_memoria/historico`
    * Campos: ultimasConversas[], preferenciasUsuario, estatisticasUso
    *
-   * NOTE: restaura apenas as últimas 10 mensagens na UI — o histórico maior
-   *       é injetado silenciosamente no chatRef ao inicializar o Gemini.
+   * NOTE: restaura apenas as Ãºltimas 10 mensagens na UI â€” o histÃ³rico maior
+   *       Ã© injetado silenciosamente no chatRef ao inicializar o Gemini.
    * WARN: `memoryLoaded` deve ser verdadeiro antes de initializeGemini ser chamado.
    */
   /**
-   * Carrega preferências e estatísticas de uso do Firestore.
-   * NOTE: NÃO restaura mensagens — as mensagens ficam em kakabot_sessoes.
+   * Carrega preferÃªncias e estatÃ­sticas de uso do Firestore.
+   * NOTE: NÃƒO restaura mensagens â€” as mensagens ficam em kakabot_sessoes.
    * Firestore: `users/{uid}/kakabot_memoria/historico`
    */
   const carregarMemoria = useCallback(async () => {
@@ -779,7 +779,7 @@ const KakaBot = () => {
       if (snap.exists()) {
         const data = snap.data();
         const memoria = {
-          ultimasConversas: [],  // não mais usado para UI — mantido por compatibilidade
+          ultimasConversas: [],  // nÃ£o mais usado para UI â€” mantido por compatibilidade
           preferenciasUsuario: {
             ...DEFAULT_MEMORY.preferenciasUsuario,
             ...(data.preferenciasUsuario || {}),
@@ -792,22 +792,22 @@ const KakaBot = () => {
         setMemoriaUsuario(memoria);
       }
     } catch (err) {
-      console.warn('[KakaBot] Erro ao carregar memória:', err?.message);
+      console.warn('[KakaBot] Erro ao carregar memÃ³ria:', err?.message);
     } finally {
       setMemoryLoaded(true);
     }
   }, [uid]);
 
   /**
-   * Persiste o histórico da conversa e estatísticas de uso no Firestore.
+   * Persiste o histÃ³rico da conversa e estatÃ­sticas de uso no Firestore.
    *
    * Firestore: `users/{uid}/kakabot_memoria/historico` (setDoc com merge)
    *
-   * @param {Array}  mensagensParaSalvar - Array completo de mensagens da sessão
-   * @param {object|null} prefUpdates   - Novas preferências a mesclar (ou null)
+   * @param {Array}  mensagensParaSalvar - Array completo de mensagens da sessÃ£o
+   * @param {object|null} prefUpdates   - Novas preferÃªncias a mesclar (ou null)
    *
-   * NOTE: mensagens com `isSystem: true` são filtradas — não são persistidas.
-   * NOTE: usa `merge: true` para não sobrescrever campos não enviados.
+   * NOTE: mensagens com `isSystem: true` sÃ£o filtradas â€” nÃ£o sÃ£o persistidas.
+   * NOTE: usa `merge: true` para nÃ£o sobrescrever campos nÃ£o enviados.
    */
   const salvarMemoria = useCallback(
     async (mensagensParaSalvar, prefUpdates = null) => {
@@ -855,7 +855,7 @@ const KakaBot = () => {
           ultimasConversas: conversasParaSalvar,
         }));
       } catch (err) {
-        console.warn('[KakaBot] Erro ao salvar memória:', err?.message);
+        console.warn('[KakaBot] Erro ao salvar memÃ³ria:', err?.message);
       }
     },
     [uid, memoriaUsuario]
@@ -863,13 +863,13 @@ const KakaBot = () => {
 
   /**
   /**
-   * Incrementa o contador de uma ação específica nas estatísticas de uso do Firestore.
+   * Incrementa o contador de uma aÃ§Ã£o especÃ­fica nas estatÃ­sticas de uso do Firestore.
    *
    * Firestore: `users/{uid}/kakabot_memoria/historico` (merge parcial)
    *
-   * @param {string} nomeAcao - Nome da ação (ex: 'CRIAR_FLASHCARD', 'CRIAR_RESUMO')
+   * @param {string} nomeAcao - Nome da aÃ§Ã£o (ex: 'CRIAR_FLASHCARD', 'CRIAR_RESUMO')
    *
-   * NOTE: use esta função SOMENTE após ação bem-sucedida para manter contagens precisas.
+   * NOTE: use esta funÃ§Ã£o SOMENTE apÃ³s aÃ§Ã£o bem-sucedida para manter contagens precisas.
    */
   const registrarAcaoNaMemoria = useCallback(
     async (nomeAcao) => {
@@ -894,13 +894,13 @@ const KakaBot = () => {
           },
         }));
       } catch (err) {
-        console.warn('[KakaBot] Erro ao registrar ação:', err?.message);
+        console.warn('[KakaBot] Erro ao registrar aÃ§Ã£o:', err?.message);
       }
     },
     [uid, memoriaUsuario]
   );
 
-  // ─── Inteligência: Proatividade ──────────────────────────────────────────────
+  // â”€â”€â”€ InteligÃªncia: Proatividade â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const dispararMensagemProativa = useCallback(async (texto) => {
     const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -932,7 +932,7 @@ const KakaBot = () => {
       if (diasSemEstudar >= 1 && hora >= 20 && streakAtual > 0) {
         proativoDisparadoRef.current = true;
         await dispararMensagemProativa(
-          `Oi! Só passando pra lembrar que seu streak de ${streakAtual} dias pode quebrar hoje se você não revisar. Tem ${cardsHoje} cards esperando — leva uns 5 minutinhos. Quer começar?`
+          `Oi! SÃ³ passando pra lembrar que seu streak de ${streakAtual} dias pode quebrar hoje se vocÃª nÃ£o revisar. Tem ${cardsHoje} cards esperando â€” leva uns 5 minutinhos. Quer comeÃ§ar?`
         );
         return;
       }
@@ -942,13 +942,13 @@ const KakaBot = () => {
     if (cardsHoje > 20) {
       proativoDisparadoRef.current = true;
       await dispararMensagemProativa(
-        `Você acumulou ${cardsHoje} cards pra revisar — tá ficando pesado. Que tal dividir em blocos de 10 hoje? Consigo montar uma sessão focada pra você.`
+        `VocÃª acumulou ${cardsHoje} cards pra revisar â€” tÃ¡ ficando pesado. Que tal dividir em blocos de 10 hoje? Consigo montar uma sessÃ£o focada pra vocÃª.`
       );
       return;
     }
   }, [memoriaUsuario, dadosSistema, dispararMensagemProativa]);
 
-  // ─── Inteligência: Resumo de Sessão ────────────────────────────────────────
+  // â”€â”€â”€ InteligÃªncia: Resumo de SessÃ£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const gerarResumoSessao = useCallback(async () => {
     if (!sessaoAtual || (sessaoAtual.mensagens || []).length < 4) return;
@@ -956,7 +956,7 @@ const KakaBot = () => {
     const mensagensTexto = (sessaoAtual.mensagens || [])
       .filter(m => !m.isSystem)
       .slice(-20)
-      .map(m => `${m.role === 'user' ? 'Usuário' : 'Kaka'}: ${m.content?.substring(0, 200) || ''}`)
+      .map(m => `${m.role === 'user' ? 'UsuÃ¡rio' : 'Kaka'}: ${m.content?.substring(0, 200) || ''}`)
       .join('\n');
 
     try {
@@ -966,8 +966,8 @@ const KakaBot = () => {
 
       const result = await model.generateContent(
         `Em 2-3 frases curtas e diretas, resuma o que foi estudado/feito nesta conversa.
-         Mencione temas, ações realizadas e aprendizados. Seja específico.
-         NÃO use bullet points. Linguagem natural em português.
+         Mencione temas, aÃ§Ãµes realizadas e aprendizados. Seja especÃ­fico.
+         NÃƒO use bullet points. Linguagem natural em portuguÃªs.
          Conversa:\n${mensagensTexto}`
       );
 
@@ -979,11 +979,11 @@ const KakaBot = () => {
         { merge: true }
       );
     } catch {
-      // Resumo é opcional — falha silenciosa
+      // Resumo Ã© opcional â€” falha silenciosa
     }
   }, [sessaoAtual, uid]);
 
-  // ─── Inteligência: Contexto Cross-Sessão ───────────────────────────────────
+  // â”€â”€â”€ InteligÃªncia: Contexto Cross-SessÃ£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   const construirContextoHistorico = useCallback(async () => {
     const sessoes = await listarSessoes();
@@ -1001,22 +1001,22 @@ const KakaBot = () => {
       })
       .join('\n');
 
-    return `\n## CONTEXTO DE SESSÕES ANTERIORES\n${contexto}\n\nUse esse histórico para dar continuidade natural — mencione se algo se conecta com o que foi estudado antes.`;
+    return `\n## CONTEXTO DE SESSÃ•ES ANTERIORES\n${contexto}\n\nUse esse histÃ³rico para dar continuidade natural â€” mencione se algo se conecta com o que foi estudado antes.`;
   }, [listarSessoes, sessaoAtual]);
 
-  // ─── Efeitos ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Efeitos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  // Mensagem de boas-vindas — removida: agora é criada pelo novaSessao() no hook
+  // Mensagem de boas-vindas â€” removida: agora Ã© criada pelo novaSessao() no hook
   // (keeped as placeholder to not break the effect count)
 
-  // Carrega memória (preferências) do Firestore na primeira abertura do bot
+  // Carrega memÃ³ria (preferÃªncias) do Firestore na primeira abertura do bot
   useEffect(() => {
     if (isOpen && uid && !memoryLoaded) {
       carregarMemoria();
     }
   }, [isOpen, uid, memoryLoaded, carregarMemoria]);
 
-  // Carrega ou cria sessão após memória estar pronta — com guarda contra dupla execução
+  // Carrega ou cria sessÃ£o apÃ³s memÃ³ria estar pronta â€” com guarda contra dupla execuÃ§Ã£o
   useEffect(() => {
     if (!isOpen || !memoryLoaded || sessaoAtual || inicializadoRef.current) return;
     inicializadoRef.current = true;
@@ -1044,22 +1044,22 @@ const KakaBot = () => {
     }
   }, [isOpen, isSpeaking, stopTTS]);
 
-  // Verificar proatividade após sessão e memória estarem prontos
+  // Verificar proatividade apÃ³s sessÃ£o e memÃ³ria estarem prontos
   useEffect(() => {
     if (isOpen && sessaoAtual && memoryLoaded && connectionStatus === 'connected') {
       verificarProatividade();
     }
   }, [isOpen, sessaoAtual, memoryLoaded, connectionStatus, verificarProatividade]);
 
-  // Inicia conexão com Gemini APÓS memória E sessão estarem prontos
-  // WARN: não chamar initializeGemini antes de memoryLoaded — o system prompt ficaria incompleto
+  // Inicia conexÃ£o com Gemini APÃ“S memÃ³ria E sessÃ£o estarem prontos
+  // WARN: nÃ£o chamar initializeGemini antes de memoryLoaded â€” o system prompt ficaria incompleto
   useEffect(() => {
     if (isOpen && connectionStatus === 'disconnected' && memoryLoaded && sessaoAtual && !isLoadingContext) {
       initializeGemini();
     }
   }, [isOpen, connectionStatus, memoryLoaded, sessaoAtual, isLoadingContext]);
 
-  // Smart scroll — só rola para o fundo se o usuário já estiver perto dele
+  // Smart scroll â€” sÃ³ rola para o fundo se o usuÃ¡rio jÃ¡ estiver perto dele
   const handleScroll = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
@@ -1076,35 +1076,35 @@ const KakaBot = () => {
     }
   }, [mensagensVisiveis, isExecutingAction]);
 
-  // Auto-foco no input ao estabelecer conexão
+  // Auto-foco no input ao estabelecer conexÃ£o
   useEffect(() => {
     if (isOpen && connectionStatus === 'connected') {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen, connectionStatus]);
 
-  // Carrega lista de sessões ao abrir o painel de histórico
+  // Carrega lista de sessÃµes ao abrir o painel de histÃ³rico
   useEffect(() => {
     if (showHistorico) {
       listarSessoes().then(setSessoes);
     }
   }, [showHistorico]);
 
-  // ─── Gemini — Inicialização ──────────────────────────────────────────────────
+  // â”€â”€â”€ Gemini â€” InicializaÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
-   * Inicializa a conexão com o Gemini, tentando cada modelo de GEMINI_MODELS em ordem.
+   * Inicializa a conexÃ£o com o Gemini, tentando cada modelo de GEMINI_MODELS em ordem.
    *
    * Fluxo:
-   *  1. Lê VITE_GEMINI_API_KEY do environment
-   *  2. Tenta instanciar cada modelo em sequência até um responder sem erro
+   *  1. LÃª VITE_GEMINI_API_KEY do environment
+   *  2. Tenta instanciar cada modelo em sequÃªncia atÃ© um responder sem erro
    *  3. Em caso de erro 429 (quota), aplica backoff exponencial e tenta novamente
-   *  4. Em caso de erro não-429, tenta o próximo modelo da lista
+   *  4. Em caso de erro nÃ£o-429, tenta o prÃ³ximo modelo da lista
    *
-   * @param {number} retryCount - Contador interno de retentativas (não passar externamente)
+   * @param {number} retryCount - Contador interno de retentativas (nÃ£o passar externamente)
    *
-   * WARN: não chamar antes de `memoryLoaded === true` — o system prompt usa dados da memória.
-   * NOTE: o SDK @google/generative-ai é importado dinamicamente aqui para reduzir bundle inicial.
+   * WARN: nÃ£o chamar antes de `memoryLoaded === true` â€” o system prompt usa dados da memÃ³ria.
+   * NOTE: o SDK @google/generative-ai Ã© importado dinamicamente aqui para reduzir bundle inicial.
    * NOTE: em caso de falha em todos os modelos, chama handleConnectionError e define status 'error'.
    */
   const initializeGemini = async (retryCount = 0) => {
@@ -1116,7 +1116,7 @@ const KakaBot = () => {
 
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      handleConnectionError('API Key não configurada no arquivo .env');
+      handleConnectionError('API Key nÃ£o configurada no arquivo .env');
       return;
     }
 
@@ -1124,13 +1124,13 @@ const KakaBot = () => {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(apiKey);
 
-      // Buscar contexto de sessões anteriores para injetar no system prompt
+      // Buscar contexto de sessÃµes anteriores para injetar no system prompt
       let contextoHistorico = '';
       try {
         contextoHistorico = await construirContextoHistorico();
-      } catch { /* não crítico */ }
+      } catch { /* nÃ£o crÃ­tico */ }
 
-      // Percorre GEMINI_MODELS em fallback — para no primeiro que funcionar
+      // Percorre GEMINI_MODELS em fallback â€” para no primeiro que funcionar
       for (let i = 0; i < GEMINI_MODELS.length; i++) {
         const modelName = GEMINI_MODELS[i].name;
         try {
@@ -1151,11 +1151,11 @@ const KakaBot = () => {
           setConnectionStatus('connected');
           return;
         } catch (err) {
-          // Erros 429 param o loop — devem ser tratados com backoff, não com fallback de modelo
+          // Erros 429 param o loop â€” devem ser tratados com backoff, nÃ£o com fallback de modelo
           if (err.message?.includes('429') || err.status === 429) throw err;
-          // No último modelo da lista, propaga o erro para o catch externo
+          // No Ãºltimo modelo da lista, propaga o erro para o catch externo
           if (i === GEMINI_MODELS.length - 1) throw err;
-          // Qualquer outro erro: tenta o próximo modelo silenciosamente
+          // Qualquer outro erro: tenta o prÃ³ximo modelo silenciosamente
         }
       }
     } catch (error) {
@@ -1164,7 +1164,7 @@ const KakaBot = () => {
       if (is429 && retryCount < MAX_RETRIES) {
         const waitTime = BACKOFF_MS[retryCount + 1];
         addSystemMessage(
-          `⏳ **Limite de requisições atingido**\n\nAguardando ${waitTime / 1000} segundos...\n\n_Tentativa ${retryCount + 1} de ${MAX_RETRIES}_`,
+          `â³ **Limite de requisiÃ§Ãµes atingido**\n\nAguardando ${waitTime / 1000} segundos...\n\n_Tentativa ${retryCount + 1} de ${MAX_RETRIES}_`,
           'info'
         );
         setTimeout(() => initializeGemini(retryCount + 1), waitTime);
@@ -1175,16 +1175,16 @@ const KakaBot = () => {
   };
 
   /**
-   * Cria uma instância de chat do Gemini com o system prompt injetado via trick de histórico.
+   * Cria uma instÃ¢ncia de chat do Gemini com o system prompt injetado via trick de histÃ³rico.
    *
-   * NOTE: a API Gemini não tem suporte nativo a `systemInstruction` na versão Flash —
-   *       o system prompt é injetado como primeiro turn user/model no histórico do chat.
-   * NOTE: as últimas 6 mensagens da memória são reinseridas para manter continuidade.
-   * WARN: ao criar um novo chat (ex: ao reconectar), o histórico da sessão atual é perdido.
-   *       Por isso a memória sempre é salva antes de reconectar.
+   * NOTE: a API Gemini nÃ£o tem suporte nativo a `systemInstruction` na versÃ£o Flash â€”
+   *       o system prompt Ã© injetado como primeiro turn user/model no histÃ³rico do chat.
+   * NOTE: as Ãºltimas 6 mensagens da memÃ³ria sÃ£o reinseridas para manter continuidade.
+   * WARN: ao criar um novo chat (ex: ao reconectar), o histÃ³rico da sessÃ£o atual Ã© perdido.
+   *       Por isso a memÃ³ria sempre Ã© salva antes de reconectar.
    *
-   * @param {object} model - Instância do modelo retornada por genAI.getGenerativeModel()
-   * @returns {object} Instância de chat do Gemini com histórico pré-populado
+   * @param {object} model - InstÃ¢ncia do modelo retornada por genAI.getGenerativeModel()
+   * @returns {object} InstÃ¢ncia de chat do Gemini com histÃ³rico prÃ©-populado
    */
   const createChatWithPersona = (model, contextoHistorico = '') => {
     const pageContext = PAGE_CONTEXTS[location.pathname] || '';
@@ -1199,14 +1199,14 @@ const KakaBot = () => {
         role: 'model',
         parts: [
           {
-            text: 'Entendido. Sou o Kaka — parceiro de estudos de fisioterapia, não um chatbot genérico. Vou falar de forma natural, usar linguagem brasileira casual quando apropriado, e adaptar o tom ao contexto. Tenho acesso aos dados do sistema e posso executar ações reais quando pedido. Bora.',
+            text: 'Entendido. Sou o Kaka â€” parceiro de estudos de fisioterapia, nÃ£o um chatbot genÃ©rico. Vou falar de forma natural, usar linguagem brasileira casual quando apropriado, e adaptar o tom ao contexto. Tenho acesso aos dados do sistema e posso executar aÃ§Ãµes reais quando pedido. Bora.',
           },
         ],
       },
     ];
 
-    // Injeta as últimas MAX_HISTORICO_GEMINI pares da sessão atual para dar continuidade
-    // NOTE: filtra system messages (feedback transiente não relevante para o Gemini)
+    // Injeta as Ãºltimas MAX_HISTORICO_GEMINI pares da sessÃ£o atual para dar continuidade
+    // NOTE: filtra system messages (feedback transiente nÃ£o relevante para o Gemini)
     const remembered = (sessaoAtual?.mensagens || [])
       .filter((m) => !m.isSystem)
       .slice(-(MAX_HISTORICO_GEMINI * 2));
@@ -1220,16 +1220,16 @@ const KakaBot = () => {
     return model.startChat({ history });
   };
 
-  /* ═══════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      ERROR HANDLING
-     ═══════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   const handleConnectionError = (error) => {
     setConnectionStatus('error');
     const msg = typeof error === 'string' ? error : error.message || String(error);
     setErrorMessage(msg);
     const details = analyzeError(msg);
     addSystemMessage(
-      `😔 **Não consegui me conectar**\n\n${details.message}\n\n**Possíveis soluções:**\n${details.solutions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+      `ðŸ˜” **NÃ£o consegui me conectar**\n\n${details.message}\n\n**PossÃ­veis soluÃ§Ãµes:**\n${details.solutions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
       'error'
     );
   };
@@ -1238,7 +1238,7 @@ const KakaBot = () => {
     const e = error.toLowerCase();
     if (e.includes('429') || e.includes('rate limit') || e.includes('quota')) {
       return {
-        message: '⏱️ _Limite de requisições da API atingido_',
+        message: 'â±ï¸ _Limite de requisiÃ§Ãµes da API atingido_',
         solutions: [
           '**Aguarde 1-2 minutos** antes de reconectar',
           'O Google Gemini tem limite gratuito por minuto',
@@ -1248,37 +1248,37 @@ const KakaBot = () => {
     }
     if (e.includes('api key') || e.includes('invalid')) {
       return {
-        message: '🔑 _API Key inválida ou não configurada_',
+        message: 'ðŸ”‘ _API Key invÃ¡lida ou nÃ£o configurada_',
         solutions: [
-          'Verifique se `VITE_GEMINI_API_KEY` está no `.env`',
+          'Verifique se `VITE_GEMINI_API_KEY` estÃ¡ no `.env`',
           'Gere uma nova key em [Google AI Studio](https://aistudio.google.com/)',
-          'Reinicie o servidor após alterar o .env',
+          'Reinicie o servidor apÃ³s alterar o .env',
         ],
       };
     }
     if (e.includes('network') || e.includes('fetch') || e.includes('failed to fetch')) {
       return {
-        message: '🌐 _Erro de conexão_',
+        message: 'ðŸŒ _Erro de conexÃ£o_',
         solutions: ['Verifique sua internet', 'Desabilite VPN temporariamente', 'Tente reconectar em instantes'],
       };
     }
     return {
-      message: `⚠️ _${error}_`,
+      message: `âš ï¸ _${error}_`,
       solutions: ['Aguarde 1-2 minutos', 'Tente reconectar', 'Verifique o console (F12)'],
     };
   };
 
-  // ─── Mensagens de Sistema ────────────────────────────────────────────────────
+  // â”€â”€â”€ Mensagens de Sistema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
-   * Adiciona uma mensagem de sistema à conversa (sem enviar ao Gemini e sem persistir).
-   * Usada para feedback de erro, sucesso, conexão, etc.
+   * Adiciona uma mensagem de sistema Ã  conversa (sem enviar ao Gemini e sem persistir).
+   * Usada para feedback de erro, sucesso, conexÃ£o, etc.
    *
-   * @param {string} content - Conteúdo Markdown da mensagem
+   * @param {string} content - ConteÃºdo Markdown da mensagem
    * @param {'info'|'error'|'success'} type - Tipo visual da mensagem
    */
   const addSystemMessage = useCallback((content, type = 'info') => {
-    // System messages são transientes — não persistidas no Firestore
+    // System messages sÃ£o transientes â€” nÃ£o persistidas no Firestore
     setMensagensVisiveis((prev) => [
       ...prev,
       {
@@ -1292,21 +1292,21 @@ const KakaBot = () => {
   }, [setMensagensVisiveis]);
 
   /**
-   * Verifica se o envio da próxima mensagem está dentro dos limites de rate.
-   * Dois critérios independentes:
-   *  1. Intervalo mínimo entre mensagens consecutivas (MIN_MESSAGE_INTERVAL_MS)
-   *  2. Máximo de mensagens por janela de 60 segundos (MAX_MESSAGES_PER_MINUTE)
+   * Verifica se o envio da prÃ³xima mensagem estÃ¡ dentro dos limites de rate.
+   * Dois critÃ©rios independentes:
+   *  1. Intervalo mÃ­nimo entre mensagens consecutivas (MIN_MESSAGE_INTERVAL_MS)
+   *  2. MÃ¡ximo de mensagens por janela de 60 segundos (MAX_MESSAGES_PER_MINUTE)
    *
    * @returns {{ allowed: boolean, reason?: string }}
    */
   const checkRateLimit = () => {
     const now = Date.now();
-    // Critério 1: intervalo mínimo entre envios
+    // CritÃ©rio 1: intervalo mÃ­nimo entre envios
     if (now - lastMessageTimeRef.current < MIN_MESSAGE_INTERVAL_MS) {
       const wait = Math.ceil((MIN_MESSAGE_INTERVAL_MS - (now - lastMessageTimeRef.current)) / 1000);
       return { allowed: false, reason: `Aguarde ${wait} segundo(s) antes de enviar outra mensagem.` };
     }
-    // Critério 2: janela deslizante de 60 segundos
+    // CritÃ©rio 2: janela deslizante de 60 segundos
     const recent = messageTimestamps.filter((t) => now - t < 60000);
     if (recent.length >= MAX_MESSAGES_PER_MINUTE) {
       return { allowed: false, reason: `Limite de ${MAX_MESSAGES_PER_MINUTE} mensagens/minuto atingido.` };
@@ -1314,29 +1314,29 @@ const KakaBot = () => {
     return { allowed: true };
   };
 
-  // ─── Envio de Mensagem ────────────────────────────────────────────────────────
+  // â”€â”€â”€ Envio de Mensagem â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
-   * Envia a mensagem do usuário ao Gemini e processa a resposta.
+   * Envia a mensagem do usuÃ¡rio ao Gemini e processa a resposta.
    *
    * Fluxo:
-   *  1. Valida rate limit (intervalo mínimo + janela por minuto)
-   *  2. Envia ao Gemini via `chatRef.current.sendMessage()` (mantém histórico da sessão)
-   *  3. Extrai possíveis blocos ```action``` da resposta via `extrairAcoes()`
+   *  1. Valida rate limit (intervalo mÃ­nimo + janela por minuto)
+   *  2. Envia ao Gemini via `chatRef.current.sendMessage()` (mantÃ©m histÃ³rico da sessÃ£o)
+   *  3. Extrai possÃ­veis blocos ```action``` da resposta via `extrairAcoes()`
    *  4. Exibe a resposta de texto na UI
-   *  5. Se houver ação, executa no Firestore via `executarAcao()`
-   *  6. Persiste o histórico atualizado na memória do Firestore
+   *  5. Se houver aÃ§Ã£o, executa no Firestore via `executarAcao()`
+   *  6. Persiste o histÃ³rico atualizado na memÃ³ria do Firestore
    *
    * @param {string} [overrideText] - Texto enviado por voz (sobrescreve inputValue)
    *
    * @sideEffects
    *  - Pode escrever em `materias`, `flashcards`, `resumos`, `eventos` (via executarAcao)
-   *  - Sempre escreve em `users/{uid}/kakabot_memoria/historico` (persistência)
+   *  - Sempre escreve em `users/{uid}/kakabot_memoria/historico` (persistÃªncia)
    *  - Dispara CustomEvents (ex: 'cinesia:flashcard:alterado') para atualizar outros componentes
    *
-   * WARN: não chamar fora do contexto de conexão estabelecida (connectionStatus === 'connected')
-   * NOTE: o chatRef mantém o histórico da sessão em memória — ao fechar o bot este histórico
-   *       é perdido, por isso a memória é sempre persistida ao final de cada envio.
+   * WARN: nÃ£o chamar fora do contexto de conexÃ£o estabelecida (connectionStatus === 'connected')
+   * NOTE: o chatRef mantÃ©m o histÃ³rico da sessÃ£o em memÃ³ria â€” ao fechar o bot este histÃ³rico
+   *       Ã© perdido, por isso a memÃ³ria Ã© sempre persistida ao final de cada envio.
    */
   const sendMessage = async (overrideText) => {
     if (isLoading || connectionStatus !== 'connected') return;
@@ -1344,13 +1344,13 @@ const KakaBot = () => {
     if (!userMessage) return;
 
     if (userMessage.length > MAX_USER_CHARS) {
-      addSystemMessage(`⚠️ **Mensagem muito longa**\n\nResuma em até ${MAX_USER_CHARS} caracteres.`, 'error');
+      addSystemMessage(`âš ï¸ **Mensagem muito longa**\n\nResuma em atÃ© ${MAX_USER_CHARS} caracteres.`, 'error');
       return;
     }
 
     const rl = checkRateLimit();
     if (!rl.allowed) {
-      addSystemMessage(`⏱️ **Calma aí!**\n\n${rl.reason}`, 'info');
+      addSystemMessage(`â±ï¸ **Calma aÃ­!**\n\n${rl.reason}`, 'info');
       return;
     }
 
@@ -1358,10 +1358,10 @@ const KakaBot = () => {
     const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const userMsg = { role: 'user', content: userMessage, timestamp: new Date().toISOString(), time: nowTime };
 
-    // Persiste e atualiza UI com a mensagem do usuário
+    // Persiste e atualiza UI com a mensagem do usuÃ¡rio
     await adicionarMensagem(userMsg);
 
-    // ── Resposta local para mensagens triviais (economiza tokens) ──
+    // â”€â”€ Resposta local para mensagens triviais (economiza tokens) â”€â”€
     const respostaLocal = tentarRespostaLocal(userMessage);
     if (respostaLocal) {
       const assistantTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -1381,7 +1381,7 @@ const KakaBot = () => {
     lastMessageTimeRef.current = now;
     setMessageTimestamps((prev) => [...prev.filter((t) => now - t < 60000), now]);
 
-    // ── Inteligência local: inferir nível e humor ──
+    // â”€â”€ InteligÃªncia local: inferir nÃ­vel e humor â”€â”€
     const nivelInferido = inferirNivel(userMessage);
     if (nivelInferido && nivelInferido !== memoriaUsuario?.preferenciasUsuario?.nivelConhecimento) {
       try {
@@ -1393,33 +1393,33 @@ const KakaBot = () => {
           ...prev,
           preferenciasUsuario: { ...prev.preferenciasUsuario, nivelConhecimento: nivelInferido },
         }));
-      } catch { /* não crítico */ }
+      } catch { /* nÃ£o crÃ­tico */ }
     }
 
     const humor = detectarHumor(userMessage);
     const instrucaoExtra = instrucaoHumor[humor] || '';
 
     try {
-      // Injetar instrução de humor como prefixo da mensagem (sem alterar o histórico do chat)
+      // Injetar instruÃ§Ã£o de humor como prefixo da mensagem (sem alterar o histÃ³rico do chat)
       const mensagemComContexto = instrucaoExtra
-        ? `[CONTEXTO INTERNO - NÃO REPETIR]: ${instrucaoExtra}\n\nMensagem do usuário: ${userMessage}`
+        ? `[CONTEXTO INTERNO - NÃƒO REPETIR]: ${instrucaoExtra}\n\nMensagem do usuÃ¡rio: ${userMessage}`
         : userMessage;
 
       const result = await chatRef.current.sendMessage(mensagemComContexto);
       const response = await result.response;
       const textoCompleto = response.text();
 
-      // Extrair TODAS as ações e limpar o texto
+      // Extrair TODAS as aÃ§Ãµes e limpar o texto
       const { textoLimpo, acoes } = extrairAcoes(textoCompleto);
 
-      // Sanitizar como fallback — garante que nenhum JSON vaze na UI
+      // Sanitizar como fallback â€” garante que nenhum JSON vaze na UI
       let textoFinal = sanitizarTexto(textoLimpo);
 
-      // ── Processar próximo passo ──
+      // â”€â”€ Processar prÃ³ximo passo â”€â”€
       const { proximoPasso, textoSemPasso } = processarProximoPasso(textoFinal);
       textoFinal = textoSemPasso;
 
-      // ── Processar blocos de quiz ──
+      // â”€â”€ Processar blocos de quiz â”€â”€
       const { textoLimpo: textoSemQuiz, quizMeta } = processarQuiz(textoFinal);
       textoFinal = textoSemQuiz;
 
@@ -1444,7 +1444,7 @@ const KakaBot = () => {
         proximoPasso: proximoPasso || null,
       };
 
-      // Digitação progressiva — exibe palavra por palavra antes de persistir
+      // DigitaÃ§Ã£o progressiva â€” exibe palavra por palavra antes de persistir
       setIsLoading(false);
       const palavras = textoFinal.split(' ');
       const velocidade = palavras.length > 100 ? 20 : 30;
@@ -1468,33 +1468,33 @@ const KakaBot = () => {
         }, velocidade);
       });
 
-      // Persiste a mensagem completa no Firestore após a digitação progressiva
+      // Persiste a mensagem completa no Firestore apÃ³s a digitaÃ§Ã£o progressiva
       await adicionarMensagemSemUI(assistantMsg);
 
-      // ── Preview de ação — mostrar modal de confirmação ──
+      // â”€â”€ Preview de aÃ§Ã£o â€” mostrar modal de confirmaÃ§Ã£o â”€â”€
       if (acoes.length > 0) {
         const descricoes = acoes.map(a => descreverAcao(a));
         setAcaoPendente({ acoes, descricoes });
-        // Não executa imediatamente — aguarda confirmação do usuário
+        // NÃ£o executa imediatamente â€” aguarda confirmaÃ§Ã£o do usuÃ¡rio
       }
     } catch (error) {
       setIsLoading(false);
       if (error.message?.includes('429') || error.status === 429) {
-        addSystemMessage('😅 **Limite de requisições atingido**\n\nAguarde 1-2 minutos e tente novamente.', 'error');
+        addSystemMessage('ðŸ˜… **Limite de requisiÃ§Ãµes atingido**\n\nAguarde 1-2 minutos e tente novamente.', 'error');
       } else {
-        addSystemMessage('😅 **Problema ao processar**\n\nNão consegui processar sua mensagem. Tente novamente em instantes.', 'error');
+        addSystemMessage('ðŸ˜… **Problema ao processar**\n\nNÃ£o consegui processar sua mensagem. Tente novamente em instantes.', 'error');
       }
     }
   };
 
   // HACK: ref para permitir que o callback de voz (useSpeechRecognition) acesse sendMessage
-  // sem capturar um stale closure — o callback é registrado no mount e não pode ser atualizado
+  // sem capturar um stale closure â€” o callback Ã© registrado no mount e nÃ£o pode ser atualizado
   const sendMessageRef = useRef(sendMessage);
   sendMessageRef.current = sendMessage;
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  /** Converte o nome técnico do modelo Gemini para label amigável exibida no header. */
+  /** Converte o nome tÃ©cnico do modelo Gemini para label amigÃ¡vel exibida no header. */
   const formatModelName = (name) => {
     if (!name) return 'Gemini';
     if (name.includes('2.5-flash-lite')) return '2.5 Flash Lite';
@@ -1504,7 +1504,7 @@ const KakaBot = () => {
     return name;
   };
 
-  /** Executa ações confirmadas pelo modal de preview */
+  /** Executa aÃ§Ãµes confirmadas pelo modal de preview */
   const executarAcoesConfirmadas = async (acoes) => {
     setAcaoPendente(null);
     setIsExecutingAction(true);
@@ -1536,9 +1536,9 @@ const KakaBot = () => {
     }
   };
 
-  /** Fecha o KakaBot — gera resumo de sessão assincronamente */
+  /** Fecha o KakaBot â€” gera resumo de sessÃ£o assincronamente */
   const handleFechar = () => {
-    gerarResumoSessao(); // async, não aguardar
+    gerarResumoSessao(); // async, nÃ£o aguardar
     stopTTS();
     setIsOpen(false);
   };
@@ -1549,7 +1549,7 @@ const KakaBot = () => {
     setGeminiModel(null);
     setActiveModelName(null);
     chatRef.current = null;
-    // Remove última mensagem de erro da UI se for system
+    // Remove Ãºltima mensagem de erro da UI se for system
     setMensagensVisiveis((prev) => {
       const last = prev[prev.length - 1];
       if (last?.isSystem && last?.systemType === 'error') return prev.slice(0, -1);
@@ -1559,8 +1559,8 @@ const KakaBot = () => {
   };
 
   /**
-   * Inicia uma nova sessão. Se há apenas a mensagem de boas-vindas, cria direto.
-   * Caso contrário, exibe modal de confirmação.
+   * Inicia uma nova sessÃ£o. Se hÃ¡ apenas a mensagem de boas-vindas, cria direto.
+   * Caso contrÃ¡rio, exibe modal de confirmaÃ§Ã£o.
    */
   const handleNovaSessao = () => {
     if (mensagensVisiveis.length <= 1) {
@@ -1571,8 +1571,8 @@ const KakaBot = () => {
   };
 
   /**
-   * Carrega bloco anterior de mensagens preservando a posição de scroll.
-   * Salva a altura antes do prepend e ajusta scrollTop após o render.
+   * Carrega bloco anterior de mensagens preservando a posiÃ§Ã£o de scroll.
+   * Salva a altura antes do prepend e ajusta scrollTop apÃ³s o render.
    */
   const carregarMaisComScroll = () => {
     const container = messagesContainerRef.current;
@@ -1600,17 +1600,17 @@ const KakaBot = () => {
     [location.pathname]
   );
 
-  /* ═══════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      RENDER
-     ═══════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   return (
     <>
-      {/* ════ FAB Button ════ */}
+      {/* â•â•â•â• FAB Button â•â•â•â• */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-24 right-4 z-50 sm:bottom-6 sm:right-6 group"
+            className="relative group"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -1619,7 +1619,7 @@ const KakaBot = () => {
             aria-label="Abrir Kaka"
           >
             <div
-              className="w-[58px] h-[58px] flex items-center justify-center relative overflow-hidden"
+              className="w-14.5 h-14.5 flex items-center justify-center relative overflow-hidden"
               style={{
                 borderRadius: 18,
                 background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 60%, #0891b2 100%)',
@@ -1649,13 +1649,13 @@ const KakaBot = () => {
         )}
       </AnimatePresence>
 
-      {/* ════ Chat Window ════ */}
+      {/* â•â•â•â• Chat Window â•â•â•â• */}
       <AnimatePresence>
         {isOpen && (
           <>
             {/* Mobile backdrop */}
             <motion.div
-              className="fixed inset-0 bg-black/30 dark:bg-black/50 z-[190] sm:hidden"
+              className="fixed inset-0 bg-black/30 dark:bg-black/50 z-190 sm:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1663,10 +1663,10 @@ const KakaBot = () => {
             />
 
             <motion.div
-              className="fixed z-[200] flex flex-col overflow-hidden
+              className="fixed z-200 flex flex-col overflow-hidden
                 bottom-0 left-0 right-0 h-[70vh] rounded-t-[24px]
-                sm:bottom-5 sm:right-5 sm:left-auto sm:w-[414px]
-                sm:h-[620px] sm:max-h-[calc(100vh-80px)] sm:rounded-[24px]
+                sm:bottom-5 sm:right-5 sm:left-auto sm:w-103.5
+                sm:h-155 sm:max-h-[calc(100vh-80px)] sm:rounded-[24px]
                 bg-white dark:bg-slate-900
                 border border-slate-200/80 dark:border-slate-700/60"
               style={{ boxShadow: '0 20px 60px rgba(13,148,136,0.12), 0 4px 20px rgba(0,0,0,0.08)' }}
@@ -1675,9 +1675,9 @@ const KakaBot = () => {
               exit={{ opacity: 0, y: 50, scale: 0.97 }}
               transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              {/* ════ HEADER ════ */}
+              {/* â•â•â•â• HEADER â•â•â•â• */}
               <div
-                className="px-5 py-[18px] flex items-center justify-between flex-shrink-0"
+                className="px-5 py-4.5 flex items-center justify-between shrink-0"
                 style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #0891b2 100%)' }}
               >
                 {/* Identidade */}
@@ -1693,11 +1693,11 @@ const KakaBot = () => {
                         AGENTE IA
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-[3px]">
+                    <div className="flex items-center gap-1.5 mt-0.75">
                       {connectionStatus === 'connected' && (
                         <>
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <span className="text-white/75 text-[11px]">Online · {formatModelName(activeModelName)}</span>
+                          <span className="text-white/75 text-[11px]">Online Â· {formatModelName(activeModelName)}</span>
                         </>
                       )}
                       {connectionStatus === 'connecting' && (
@@ -1716,17 +1716,17 @@ const KakaBot = () => {
                         <span className="text-white/60 text-[11px]">Seu Agente de Fisioterapia</span>
                       )}
                     </div>
-                    {/* Badge de contexto de página */}
-                    <span className="text-white/50 text-[10px] flex items-center gap-1 mt-[2px]">
+                    {/* Badge de contexto de pÃ¡gina */}
+                    <span className="text-white/50 text-[10px] flex items-center gap-1 mt-0.5">
                       <MapPin size={8} />
                       {PAGE_CONTEXT_LABELS[location.pathname] || 'Dashboard'}
                     </span>
                   </div>
                 </div>
 
-                {/* Ações */}
+                {/* AÃ§Ãµes */}
                 <div className="flex items-center gap-1">
-                  {/* Parar áudio global */}
+                  {/* Parar Ã¡udio global */}
                   {isSpeaking && (
                     <motion.button
                       onClick={stopTTS}
@@ -1737,16 +1737,16 @@ const KakaBot = () => {
                       whileTap={{ scale: 0.95 }}
                     >
                       <Square size={10} fill="white" strokeWidth={0} />
-                      <span>Parar áudio</span>
+                      <span>Parar Ã¡udio</span>
                     </motion.button>
                   )}
-                  {/* Histórico de conversas */}
+                  {/* HistÃ³rico de conversas */}
                   <button
                     onClick={() => setShowHistorico(true)}
                     className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}
-                    title="Histórico de conversas"
-                    aria-label="Histórico de conversas"
+                    title="HistÃ³rico de conversas"
+                    aria-label="HistÃ³rico de conversas"
                   >
                     <History size={15} className="text-white/90" />
                   </button>
@@ -1772,10 +1772,10 @@ const KakaBot = () => {
                 </div>
               </div>
 
-              {/* ════ BODY ════ */}
+              {/* â•â•â•â• BODY â•â•â•â• */}
               <div className="flex flex-col flex-1 overflow-hidden relative">
 
-                    {/* ════ Quiz Progress Bar ════ */}
+                    {/* â•â•â•â• Quiz Progress Bar â•â•â•â• */}
                     {quizAtivo && (
                       <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
                         <span className="text-[11px] font-semibold text-teal-600">
@@ -1794,7 +1794,7 @@ const KakaBot = () => {
                       </div>
                     )}
 
-                    {/* ════ Messages Area ════ */}
+                    {/* â•â•â•â• Messages Area â•â•â•â• */}
                     {carregando ? (
                       <div className="flex-1 overflow-y-auto px-4 py-5 bg-slate-50 dark:bg-slate-900">
                         <KakaSkeleton />
@@ -1833,22 +1833,22 @@ const KakaBot = () => {
                         const isNew = index === mensagensVisiveis.length - 1;
 
                         if (message.role === 'user') {
-                          /* ── Balão Usuário ── */
+                          /* â”€â”€ BalÃ£o UsuÃ¡rio â”€â”€ */
                           return (
                             <div
                               key={index}
-                              className="flex items-end gap-2 mb-[14px] flex-row-reverse"
+                              className="flex items-end gap-2 mb-3.5 flex-row-reverse"
                               style={{ animation: isNew ? 'kakafadeUp .22s ease' : 'none' }}
                             >
                               <div
-                                className="w-8 h-8 rounded-[10px] flex-shrink-0 flex items-center justify-center text-white text-[13px] font-bold shadow-sm"
+                                className="w-8 h-8 rounded-[10px] shrink-0 flex items-center justify-center text-white text-[13px] font-bold shadow-sm"
                                 style={{ background: 'linear-gradient(135deg, #475569, #334155)' }}
                               >
                                 <User size={15} strokeWidth={2} />
                               </div>
                               <div className="flex flex-col gap-1 items-end max-w-[78%]">
                                 <div
-                                  className="px-[15px] py-[11px] text-[13.5px] leading-[1.65] text-white shadow-md"
+                                  className="px-3.75 py-2.75 text-[13.5px] leading-[1.65] text-white shadow-md"
                                   style={{
                                     borderRadius: '18px 18px 4px 18px',
                                     background: 'linear-gradient(135deg, #0f766e, #0891b2)',
@@ -1867,11 +1867,11 @@ const KakaBot = () => {
                           );
                         }
 
-                        /* ── Balão Assistente ── */
+                        /* â”€â”€ BalÃ£o Assistente â”€â”€ */
                         return (
                           <div
                             key={index}
-                            className="flex items-end gap-2 mb-[14px]"
+                            className="flex items-end gap-2 mb-3.5"
                             style={{ animation: isNew ? 'kakafadeUp .22s ease' : 'none' }}
                             onMouseEnter={() => setHoveredId(index)}
                             onMouseLeave={() => setHoveredId(null)}
@@ -1885,7 +1885,7 @@ const KakaBot = () => {
                                 KAKA
                               </span>
                               <div
-                                className={`px-[15px] py-[11px] text-[13.5px] leading-[1.65] shadow-sm border ${
+                                className={`px-3.75 py-2.75 text-[13.5px] leading-[1.65] shadow-sm border ${
                                   message.isSystem && message.systemType === 'error'
                                     ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/50'
                                     : message.isSystem && message.systemType === 'success'
@@ -1900,15 +1900,15 @@ const KakaBot = () => {
                                 {/* Cursor piscante durante streaming */}
                                 {message.isStreaming && (
                                   <motion.span
-                                    className="inline-block w-[2px] h-[14px] bg-teal-500 ml-0.5 rounded-full align-middle"
+                                    className="inline-block w-0.5 h-3.5 bg-teal-500 ml-0.5 rounded-full align-middle"
                                     animate={{ opacity: [1, 0] }}
                                     transition={{ duration: 0.5, repeat: Infinity }}
                                   />
                                 )}
-                                {/* AcaoBadge se a msg teve ação executada com sucesso */}
+                                {/* AcaoBadge se a msg teve aÃ§Ã£o executada com sucesso */}
                                 {message.acaoLabel && <AcaoBadge label={message.acaoLabel} />}
 
-                                {/* ── Botões: TTS (sempre visível) ── */}
+                                {/* â”€â”€ BotÃµes: TTS (sempre visÃ­vel) â”€â”€ */}
                                 {!message.isSystem && !message.isStreaming && (
                                   <div className="flex items-center justify-end mt-2.5 -mb-1 gap-2">
                                     {ttsSupported && (
@@ -1920,15 +1920,15 @@ const KakaBot = () => {
                                             : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                                         }`}
                                         whileTap={{ scale: 0.95 }}
-                                        aria-label={ttsActiveId === `msg-${index}` ? 'Parar narração' : 'Ouvir mensagem'}
+                                        aria-label={ttsActiveId === `msg-${index}` ? 'Parar narraÃ§Ã£o' : 'Ouvir mensagem'}
                                       >
                                         {ttsActiveId === `msg-${index}` ? (
                                           <>
-                                            <div className="flex items-center gap-[2px]">
+                                            <div className="flex items-center gap-0.5">
                                               {[0, 1, 2].map((i) => (
                                                 <motion.div
                                                   key={i}
-                                                  className="w-[2px] rounded-full bg-teal-500"
+                                                  className="w-0.5 rounded-full bg-teal-500"
                                                   animate={{ scaleY: [0.4, 1, 0.4] }}
                                                   transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.15 }}
                                                   style={{ height: 10 }}
@@ -1949,7 +1949,7 @@ const KakaBot = () => {
                                 )}
                               </div>
 
-                              {/* ── Próximo passo chip ── */}
+                              {/* â”€â”€ PrÃ³ximo passo chip â”€â”€ */}
                               {message.proximoPasso && !message.isStreaming && (
                                 <motion.button
                                   onClick={() => sendMessage(message.proximoPasso)}
@@ -1968,7 +1968,7 @@ const KakaBot = () => {
                                 </motion.button>
                               )}
 
-                              {/* ── Reactions (hover) ── */}
+                              {/* â”€â”€ Reactions (hover) â”€â”€ */}
                               <AnimatePresence>
                                 {hoveredId === index && !message.isSystem && !message.isStreaming && (
                                   <motion.div
@@ -1979,7 +1979,7 @@ const KakaBot = () => {
                                     transition={{ duration: 0.15 }}
                                   >
                                     {[
-                                      { emoji: <ThumbsUp size={11} strokeWidth={2} />, label: 'Útil', valor: 'util' },
+                                      { emoji: <ThumbsUp size={11} strokeWidth={2} />, label: 'Ãštil', valor: 'util' },
                                       { emoji: <Repeat2 size={11} strokeWidth={2} />, label: 'Repetir', valor: 'repetir' },
                                       { emoji: <Bookmark size={11} strokeWidth={2} />, label: 'Salvar', valor: 'salvar' },
                                     ].map((r) => (
@@ -2002,7 +2002,7 @@ const KakaBot = () => {
                                                   salvoEm: new Date().toISOString(),
                                                 }
                                               );
-                                              addSystemMessage('📌 Mensagem salva com sucesso!', 'success');
+                                              addSystemMessage('ðŸ“Œ Mensagem salva com sucesso!', 'success');
                                             } catch (err) {
                                               console.warn('[KakaBot] Erro ao salvar mensagem:', err?.message);
                                             }
@@ -2034,19 +2034,19 @@ const KakaBot = () => {
                         );
                       })}
 
-                      {/* ── Waveform "Kaka está pensando" ── */}
+                      {/* â”€â”€ Waveform "Kaka estÃ¡ pensando" â”€â”€ */}
                       {isLoading && (
-                        <div className="flex items-end gap-2 mb-[14px]">
+                        <div className="flex items-end gap-2 mb-3.5">
                           <KakaAvatar size="sm" speaking />
                           <div
                             className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2.5"
                             style={{ borderRadius: '18px 18px 18px 4px' }}
                           >
-                            <div className="flex items-center gap-[3px]">
+                            <div className="flex items-center gap-0.75">
                               {[0, 1, 2, 3, 4].map((i) => (
                                 <div
                                   key={i}
-                                  className="w-[3px] rounded-full opacity-70"
+                                  className="w-0.75 rounded-full opacity-70"
                                   style={{
                                     height: 14,
                                     background: '#0d9488',
@@ -2056,14 +2056,14 @@ const KakaBot = () => {
                                 />
                               ))}
                             </div>
-                            <span className="text-xs text-slate-400">Kaka está pensando...</span>
+                            <span className="text-xs text-slate-400">Kaka estÃ¡ pensando...</span>
                           </div>
                         </div>
                       )}
 
-                      {/* ── Action execution indicator ── */}
+                      {/* â”€â”€ Action execution indicator â”€â”€ */}
                       {isExecutingAction && (
-                        <div className="flex items-end gap-2 mb-[14px]">
+                        <div className="flex items-end gap-2 mb-3.5">
                           <KakaAvatar size="sm" speaking />
                           <div
                             className="px-4 py-3 border shadow-sm flex items-center gap-2.5 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/50"
@@ -2071,18 +2071,18 @@ const KakaBot = () => {
                           >
                             <Loader size={14} className="animate-spin text-teal-600 dark:text-teal-400" />
                             <span className="text-xs text-teal-700 dark:text-teal-400">
-                              Executando ação no sistema...
+                              Executando aÃ§Ã£o no sistema...
                             </span>
                           </div>
                         </div>
                       )}
 
-                      {/* ── Connecting indicator ── */}
+                      {/* â”€â”€ Connecting indicator â”€â”€ */}
                       {connectionStatus === 'connecting' && (
                         <div className="flex items-center justify-center py-4">
                           <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm shadow-sm border bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/50 text-teal-700 dark:text-teal-400">
                             <Loader size={16} className="animate-spin" />
-                            Estabelecendo conexão com a IA...
+                            Estabelecendo conexÃ£o com a IA...
                           </div>
                         </div>
                       )}
@@ -2091,7 +2091,7 @@ const KakaBot = () => {
                     </div>
                     )}
 
-                    {/* ════ Botão "Nova mensagem" (scroll inteligente) ════ */}
+                    {/* â•â•â•â• BotÃ£o "Nova mensagem" (scroll inteligente) â•â•â•â• */}
                     <AnimatePresence>
                       {hasNewMessage && !deveScrollarRef.current && (
                         <motion.button
@@ -2114,7 +2114,7 @@ const KakaBot = () => {
                       )}
                     </AnimatePresence>
 
-                    {/* ════ Modal Preview de Ação ════ */}
+                    {/* â•â•â•â• Modal Preview de AÃ§Ã£o â•â•â•â• */}
                     <AnimatePresence>
                       {acaoPendente && (
                         <motion.div
@@ -2133,7 +2133,7 @@ const KakaBot = () => {
                             <div className="px-5 pt-5 pb-3">
                               <div className="flex items-center gap-3 mb-3">
                                 <div
-                                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                                   style={{ background: '#f0fdfa' }}
                                 >
                                   <Zap size={17} color="#0f766e" strokeWidth={2} />
@@ -2141,8 +2141,8 @@ const KakaBot = () => {
                                 <div>
                                   <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-100">
                                     Kaka quer executar {acaoPendente.acoes.length > 1
-                                      ? `${acaoPendente.acoes.length} ações`
-                                      : '1 ação'}
+                                      ? `${acaoPendente.acoes.length} aÃ§Ãµes`
+                                      : '1 aÃ§Ã£o'}
                                   </p>
                                   <p className="text-[11.5px] text-slate-400">Confirme para continuar</p>
                                 </div>
@@ -2183,7 +2183,7 @@ const KakaBot = () => {
                       )}
                     </AnimatePresence>
 
-                    {/* ════ Painel Histórico de Sessões ════ */}
+                    {/* â•â•â•â• Painel HistÃ³rico de SessÃµes â•â•â•â• */}
                     <AnimatePresence>
                       {showHistorico && (
                         <motion.div
@@ -2211,7 +2211,7 @@ const KakaBot = () => {
                                   <MessageSquare size={22} color="#0d9488" strokeWidth={1.6} />
                                 </div>
                                 <p className="text-[13px] font-medium text-slate-500">Nenhuma conversa salva</p>
-                                <p className="text-[12px] text-slate-400 mt-1">Suas conversas aparecerão aqui</p>
+                                <p className="text-[12px] text-slate-400 mt-1">Suas conversas aparecerÃ£o aqui</p>
                               </div>
                             ) : (
                               sessoes.map((sessao) => (
@@ -2221,7 +2221,7 @@ const KakaBot = () => {
                                   className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700/50 transition-colors text-left"
                                 >
                                   <div
-                                    className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5"
+                                    className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
                                     style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}
                                   >
                                     <MessageSquare size={14} color="#0f766e" strokeWidth={2} />
@@ -2240,7 +2240,7 @@ const KakaBot = () => {
                                       </p>
                                     )}
                                   </div>
-                                  <ChevronRight size={14} className="text-slate-300 mt-1 flex-shrink-0" strokeWidth={2} />
+                                  <ChevronRight size={14} className="text-slate-300 mt-1 shrink-0" strokeWidth={2} />
                                 </button>
                               ))
                             )}
@@ -2249,7 +2249,7 @@ const KakaBot = () => {
                       )}
                     </AnimatePresence>
 
-                    {/* ════ Modal Confirmar Nova Sessão ════ */}
+                    {/* â•â•â•â• Modal Confirmar Nova SessÃ£o â•â•â•â• */}
                     <AnimatePresence>
                       {showConfirmNovaSessao && (
                         <motion.div
@@ -2269,18 +2269,18 @@ const KakaBot = () => {
                           >
                             <div className="flex items-center gap-3 mb-3">
                               <div
-                                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                                 style={{ background: '#f0fdfa' }}
                               >
                                 <SquarePen size={17} color="#0f766e" strokeWidth={2} />
                               </div>
                               <div>
                                 <p className="text-[14px] font-semibold text-slate-800 dark:text-slate-100">Nova conversa</p>
-                                <p className="text-[12px] text-slate-400 dark:text-slate-500">O histórico atual será salvo.</p>
+                                <p className="text-[12px] text-slate-400 dark:text-slate-500">O histÃ³rico atual serÃ¡ salvo.</p>
                               </div>
                             </div>
                             <p className="text-[13px] text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                              Você pode acessar conversas anteriores pelo histórico a qualquer momento.
+                              VocÃª pode acessar conversas anteriores pelo histÃ³rico a qualquer momento.
                             </p>
                             <div className="flex gap-2">
                               <button
@@ -2302,7 +2302,7 @@ const KakaBot = () => {
                       )}
                     </AnimatePresence>
 
-                    {/* ════ Reconnect button ════ */}
+                    {/* â•â•â•â• Reconnect button â•â•â•â• */}
                     {connectionStatus === 'error' && (
                       <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/40 border-t border-amber-200 dark:border-amber-800/50">
                         <button
@@ -2315,7 +2315,7 @@ const KakaBot = () => {
                       </div>
                     )}
 
-                    {/* ════ Quick Action Chips ════ */}
+                    {/* â•â•â•â• Quick Action Chips â•â•â•â• */}
                     {!isLoading && !isExecutingAction && connectionStatus === 'connected' && quickActions.length > 0 && (
                       <div
                         className="flex gap-1.5 px-3.5 pt-2.5 pb-0 overflow-x-auto scrollbar-none border-t border-slate-100 dark:border-slate-700/50"
@@ -2328,7 +2328,7 @@ const KakaBot = () => {
                               inputRef.current?.focus();
                             }}
                             disabled={isLoading}
-                            className="flex-shrink-0 flex items-center gap-[5px] px-3 py-[5px] text-[11.5px] font-medium rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-700/60 text-teal-700 dark:text-teal-400"
+                            className="shrink-0 flex items-center gap-1.25 px-3 py-1.25 text-[11.5px] font-medium rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-700/60 text-teal-700 dark:text-teal-400"
                             whileTap={{ scale: 0.97 }}
                           >
                             {action.icon}
@@ -2338,12 +2338,12 @@ const KakaBot = () => {
                       </div>
                     )}
 
-                    {/* ════ INPUT BAR ════ */}
-                    <div className="px-3.5 pb-3.5 pt-2.5 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 flex-shrink-0">
+                    {/* â•â•â•â• INPUT BAR â•â•â•â• */}
+                    <div className="px-3.5 pb-3.5 pt-2.5 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
                       <div className="flex items-end gap-2">
-                        {/* Botão Microfone */}
+                        {/* BotÃ£o Microfone */}
                         {isSupported && (
-                          <div className="relative flex-shrink-0">
+                          <div className="relative shrink-0">
                             {isListening && (
                               <span className="absolute inset-0 rounded-[13px] bg-red-400/20 animate-ping" />
                             )}
@@ -2355,7 +2355,7 @@ const KakaBot = () => {
                                   : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600'
                               }`}
                               whileTap={{ scale: 0.94 }}
-                              aria-label={isListening ? 'Parar gravação' : 'Falar'}
+                              aria-label={isListening ? 'Parar gravaÃ§Ã£o' : 'Falar'}
                               disabled={isLoading || isExecutingAction}
                             >
                               {isListening ? (
@@ -2378,12 +2378,12 @@ const KakaBot = () => {
                               isListening
                                 ? 'Ouvindo...'
                                 : connectionStatus !== 'connected'
-                                ? 'Aguardando conexão...'
-                                : 'Pergunte ou peça algo ao Kaka...'
+                                ? 'Aguardando conexÃ£o...'
+                                : 'Pergunte ou peÃ§a algo ao Kaka...'
                             }
                             disabled={isLoading || isExecutingAction || connectionStatus !== 'connected'}
                             rows={1}
-                            className={`w-full px-[14px] py-[11px] rounded-[13px] text-[13.5px] text-slate-700 dark:text-slate-200 outline-none resize-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                            className={`w-full px-3.5 py-2.75 rounded-[13px] text-[13.5px] text-slate-700 dark:text-slate-200 outline-none resize-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                               isListening
                                 ? 'bg-red-50 dark:bg-red-950/20 border-[1.5px] border-red-300'
                                 : 'bg-slate-50 dark:bg-slate-700/50 border-[1.5px] border-slate-200 dark:border-slate-600 focus:border-teal-400'
@@ -2392,11 +2392,11 @@ const KakaBot = () => {
                           />
                         </div>
 
-                        {/* Botão Enviar */}
+                        {/* BotÃ£o Enviar */}
                         <motion.button
                           onClick={() => sendMessage()}
                           disabled={!inputValue.trim() || isLoading || isExecutingAction || connectionStatus !== 'connected'}
-                          className="w-11 h-11 rounded-[13px] flex items-center justify-center border-none transition-all disabled:cursor-not-allowed flex-shrink-0 disabled:bg-slate-100 dark:disabled:bg-slate-700"
+                          className="w-11 h-11 rounded-[13px] flex items-center justify-center border-none transition-all disabled:cursor-not-allowed shrink-0 disabled:bg-slate-100 dark:disabled:bg-slate-700"
                           style={{
                             background:
                               inputValue.trim() && !isLoading && connectionStatus === 'connected'
@@ -2423,7 +2423,7 @@ const KakaBot = () => {
 
                       {/* Footer */}
                       <div className="flex items-center justify-between mt-2 text-[10.5px] text-slate-400 dark:text-slate-500">
-                        <span>Enter para enviar · Shift+Enter nova linha</span>
+                        <span>Enter para enviar Â· Shift+Enter nova linha</span>
                         <span className="flex items-center gap-1">
                           <Sparkles size={10} color="#0d9488" />
                           Powered by Gemini

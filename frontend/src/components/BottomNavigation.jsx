@@ -19,7 +19,7 @@ const NavAvatar = ({ user }) => {
     );
   }
   return (
-    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 text-white font-semibold text-[11px]">
+    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-linear-to-br from-primary-500 to-secondary-500 text-white font-semibold text-[11px]">
       {initial}
     </span>
   );
@@ -67,7 +67,7 @@ const BottomNavigation = memo(() => {
       <AnimatePresence>
         {showMore && (
           <motion.div
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-xl shadow-float p-2 z-50 min-w-[240px]"
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 rounded-xl shadow-float p-2 z-50 min-w-60"
             style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
             initial={{ y: 12, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -110,7 +110,7 @@ const BottomNavigation = memo(() => {
             end={item.path === '/'}
             aria-label={item.label}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] ${
+              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-14 ${
                 isActive
                   ? 'text-primary-600 dark:text-primary-400'
                   : 'text-slate-400 dark:text-slate-500 active:text-slate-600 dark:active:text-slate-300'
@@ -131,7 +131,7 @@ const BottomNavigation = memo(() => {
         <button
           onClick={() => setIsProfileOpen(true)}
           aria-label="Abrir perfil"
-          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] text-slate-400 dark:text-slate-500"
+          className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-14 text-slate-400 dark:text-slate-500"
         >
           <NavAvatar user={user} />
           <span className="text-[10px] font-medium whitespace-nowrap">Perfil</span>
@@ -141,7 +141,7 @@ const BottomNavigation = memo(() => {
           onClick={() => setShowMore(!showMore)}
           aria-label={showMore ? 'Fechar menu extra' : 'Abrir menu extra'}
           aria-expanded={showMore}
-          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-[56px] ${
+          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg relative transition-colors duration-150 min-w-14 ${
             showMore || isExtraActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 dark:text-slate-500'
           }`}
         >

@@ -189,5 +189,12 @@ export default defineConfig({
       'react-router-dom',
       'framer-motion'
     ]
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    css: false,
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
   }
 });

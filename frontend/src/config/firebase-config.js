@@ -19,8 +19,9 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, terminate } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getDatabase } from 'firebase/database';
 import { getAnalytics } from 'firebase/analytics';
 
 // Configuração do Firebase — valores via variáveis de ambiente Vite (prefixo VITE_)
@@ -57,6 +58,9 @@ export const db = getFirestore(app);
  */
 export const storage = getStorage(app);
 
+/** Instância do Firebase Realtime Database — usado para sistema de presença (online/offline) */
+export const rtdb = getDatabase(app);
+
 export { analytics };
 
 // Configura a seleção de conta ao fazer login com Google
@@ -66,3 +70,16 @@ googleProvider.setCustomParameters({
 });
 
 export default app;
+
+/**
+ * Função de emergência: encerra o Firestore e recarrega a página.
+ * Usada pelo firestoreErrorHandler quando detecta INTERNAL ASSERTION FAILED.
+ */
+export async function restartFirestore() {
+  try {
+    await terminate(db);
+    window.location.reload();
+  } catch {
+    window.location.reload();
+  }
+}

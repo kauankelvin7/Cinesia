@@ -19,15 +19,19 @@ import {
   Trophy,
   BarChart3,
   History,
+  Users,
 } from 'lucide-react';
 import Logo from './Logo';
 import ProfileModal from './ProfileModal';
 import UserMenu from './UserMenu';
 import { useAuth } from '../contexts/AuthContext-firebase';
+import { useSocial } from '../features/social/context/SocialContext';
 
 const Sidebar = memo(() => {
   const { user, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const social = useSocial?.() || {};
+  const pendingCount = social.pendingRequestsCount || 0;
 
   const links = [
     { to: '/', icon: Home, label: 'Home' },
@@ -41,6 +45,7 @@ const Sidebar = memo(() => {
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/conquistas', icon: Trophy, label: 'Conquistas' },
     { to: '/historico-simulados', icon: History, label: 'Histórico' },
+    { to: '/amigos', icon: Users, label: 'Amigos', badge: pendingCount },
   ];
 
   return (
@@ -70,7 +75,12 @@ const Sidebar = memo(() => {
                 <>
                   <link.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className="shrink-0" />
                   <span>{link.label}</span>
-                  {isActive && (
+                  {link.badge > 0 && (
+                    <span className="ml-auto w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {link.badge > 9 ? '9+' : link.badge}
+                    </span>
+                  )}
+                  {isActive && !link.badge && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-500" />
                   )}
                 </>
