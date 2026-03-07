@@ -11,7 +11,7 @@
 
 import React, { useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Edit2, Trash2, RotateCcw } from 'lucide-react';
+import { Edit2, Trash2, RotateCcw, ChevronLeft } from 'lucide-react';
 import OptimizedImage from './ui/OptimizedImage';
 
 // Helper para criar fundo translúcido a partir de um HEX

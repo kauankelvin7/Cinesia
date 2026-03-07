@@ -225,9 +225,9 @@ const PomodoroTimer = memo(() => {
         <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAgAj9teleAgAMbS0rVwLxsdaK/k4pdmGwBAt9fQpE8EDkOE0+nGjT4AAIzL5tCMRQAAZqbl57aHMAAA" />
       </audio>
 
-      {/* Widget Flutuante — acima da bottom nav bar no mobile (bottom-[148px] = 80px tab bar + 12px gap + ~56px KakaBot) */}
+      {/* Widget Flutuante — posicionado externamente pelo FABStack */}
       <motion.div
-        className="fixed bottom-[148px] right-4 z-[50] sm:bottom-6 sm:right-24 lg:bottom-6 lg:right-28"
+        className="relative"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}

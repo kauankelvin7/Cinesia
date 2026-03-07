@@ -65,7 +65,7 @@ const ChatPanel = memo(({ showButton = true }) => {
           animate={{ scale: 1, opacity: 1 }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className={`fixed bottom-6 right-6 z-[100] w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all ${
+          className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all ${
             isChatOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
           } bg-gradient-to-br from-indigo-600 via-indigo-500 to-teal-500 text-white`}
           aria-label="Abrir mensagens"

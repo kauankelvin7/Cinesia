@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Logo from './Logo';
 import Sidebar from './Sidebar';
 import BottomNavigation from './BottomNavigation';
+import FABStack from './FABStack';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useFocusMode } from '../contexts/FocusModeContext';
 import { useSocial } from '../features/social/context/SocialContext';
@@ -225,18 +226,18 @@ const Layout = memo(({ children }) => {
 
         {/* Widgets Flutuantes */}
         <Suspense fallback={null}>
-          {!focusMode && <PomodoroTimer />}
           {!isDesktop && !focusMode && <BottomNavigation />}
         </Suspense>
 
         {/* Floating Actions (Bottom-Right) */}
         {!focusMode && (
-          <div className="fixed bottom-[90px] right-4 md:bottom-8 md:right-8 z-[55] flex flex-col items-end gap-6">
-            <Suspense fallback={null}>
+          <Suspense fallback={null}>
+            <FABStack>
+              <PomodoroTimer />
               <ChatPanel showButton={isDesktop} />
               {!isQuadroBranco && <KakaBot />}
-            </Suspense>
-          </div>
+            </FABStack>
+          </Suspense>
         )}
 
         {/* Focus Mode Overlay */}

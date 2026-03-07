@@ -11,9 +11,6 @@ import { motion } from 'framer-motion';
 import Logo from '../Logo';
 
 const LoadingScreen = () => {
-  // DEBUG: rastreia renderizações da tela de loading de auth
-  // eslint-disable-next-line no-console
-  console.log('[SPLASH] LoadingScreen renderizando (auth/loading global ativo)');
   return (
     <motion.div
       className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-500"

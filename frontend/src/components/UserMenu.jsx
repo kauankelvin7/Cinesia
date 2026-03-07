@@ -160,48 +160,49 @@ const UserMenu = ({ onOpenProfile, className = '' }) => {
       {/* Dropdown Menu */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            ref={menuRef}
-            className="absolute bottom-full left-0 right-0 mb-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-[24px] shadow-2xl z-[200] overflow-hidden"
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ type: "spring", damping: 25, stiffness: 400 }}
-          >
-            {/* User Info Header */}
-            <div className="px-5 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2 mb-0.5">
-                <Sparkles size={12} className="text-amber-500" fill="currentColor" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Conta Ativa</span>
+          <div ref={menuRef}>
+            <motion.div
+              className="absolute bottom-full left-0 right-0 mb-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/60 rounded-[24px] shadow-2xl z-[200] overflow-hidden"
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+            >
+              {/* User Info Header */}
+              <div className="px-5 py-4 bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Sparkles size={12} className="text-amber-500" fill="currentColor" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Conta Ativa</span>
+                </div>
+                <p className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {user?.displayName || 'Usuário'}
+                </p>
+                <p className="text-[11px] font-medium text-slate-500 truncate">
+                  {user?.email}
+                </p>
               </div>
-              <p className="text-sm font-black text-slate-900 dark:text-white truncate">
-                {user?.displayName || 'Usuário'}
-              </p>
-              <p className="text-[11px] font-medium text-slate-500 truncate">
-                {user?.email}
-              </p>
-            </div>
 
-            <div className="p-2 space-y-0.5">
-              <MenuItem icon={User} label="Meu Perfil" onClick={() => { setOpen(false); onOpenProfile(); }} />
-              <MenuItem icon={Settings} label="Configurações" onClick={() => { setOpen(false); navigate('/configuracoes'); }} />
-              <MenuItem icon={Bell} label="Notificações" onClick={() => { setOpen(false); navigate('/notificacoes'); }} />
-            </div>
+              <div className="p-2 space-y-0.5">
+                <MenuItem icon={User} label="Meu Perfil" onClick={() => { setOpen(false); onOpenProfile(); }} />
+                <MenuItem icon={Settings} label="Configurações" onClick={() => { setOpen(false); navigate('/configuracoes'); }} />
+                <MenuItem icon={Bell} label="Notificações" onClick={() => { setOpen(false); navigate('/notificacoes'); }} />
+              </div>
 
-            <Divider />
+              <Divider />
 
-            {/* Appearance Section */}
-            <div className="px-5 pt-2 pb-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Personalizar</span>
-            </div>
-            <ThemeSegmented />
+              {/* Appearance Section */}
+              <div className="px-5 pt-2 pb-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Personalizar</span>
+              </div>
+              <ThemeSegmented />
 
-            <Divider />
+              <Divider />
 
-            <div className="p-2">
-              <MenuItem icon={LogOut} label="Sair do Sistema" danger onClick={() => { setOpen(false); logout(); }} />
-            </div>
-          </motion.div>
+              <div className="p-2">
+                <MenuItem icon={LogOut} label="Sair do Sistema" danger onClick={() => { setOpen(false); logout(); }} />
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

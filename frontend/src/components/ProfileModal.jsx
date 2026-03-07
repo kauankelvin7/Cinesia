@@ -1,7 +1,3 @@
-  const handleDragLeave = useCallback((e) => {
-    e.preventDefault();
-    setDragOver(false);
-  }, []);
 /**
  * 👤 PROFILE MODAL - Edição de Perfil do Usuário Premium
  * * Modal premium com seções organizadas e Glassmorphism.
@@ -114,6 +110,11 @@ const ProfileModal = ({ isOpen, onClose }) => {
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
     setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setDragOver(false);
   }, []);
 
   const handleRemovePhoto = () => {
