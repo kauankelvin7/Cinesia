@@ -19,7 +19,9 @@ root.render(
     <App />
   </React.StrictMode>
 );
-removeSplash();
+
+// Remove splash after React mounts
+setTimeout(removeSplash, 0);
 
 // Remove App Shell Splash Screen
 function removeSplash() {
