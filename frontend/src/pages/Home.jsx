@@ -90,8 +90,6 @@ const parseSafeDate = (value) => {
   }
 };
 
-
-
 /* ═══════════════════════════════════════════
    ANIMATION VARIANTS
    ═══════════════════════════════════════════ */
@@ -204,7 +202,7 @@ Avatar.displayName = 'Avatar';
 const KPI_VARIANTS = {
   materias:  { color: '#60a5fa', Icon: BookOpen,   label: 'Matérias',   sublabel: 'cadastradas',    path: '/materias'  },
   flashcard: { color: '#fb923c', Icon: CreditCard, label: 'Flashcards', sublabel: 'para revisão',   path: '/flashcards' },
-  resumos:   { color: '#34d399', Icon: FileText,   label: 'Resumos',    sublabel: 'salvos',          path: '/resumos'   },
+  resumos:   { color: '#34d399', Icon: FileText,   label: 'Resumos',    sublabel: 'salvos',         path: '/resumos'   },
 };
 
 const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDarkMode = true }) => {
@@ -215,57 +213,69 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
       onClick={() => nav(path)}
       className="relative overflow-hidden cursor-pointer"
       style={{
-        background: 'rgba(255,255,255,0.06)',
-        border: '1px solid rgba(255,255,255,0.10)',
-        borderRadius: '14px',
-        padding: '14px 12px 12px',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: '16px',
+        padding: '16px 14px',
+        boxShadow: isDarkMode 
+          ? '0 4px 20px rgba(0,0,0,0.3)' 
+          : '0 4px 20px rgba(37,99,235,0.05)',
       }}
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay }}
+      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
       whileHover={{
-        background: 'rgba(255,255,255,0.10)',
-        borderColor: 'rgba(255,255,255,0.20)',
-        y: -2,
+        y: -4,
+        borderColor: color,
+        boxShadow: `0 8px 24px ${color}20`,
       }}
       whileTap={{ y: 0 }}
     >
       {/* Top color line */}
-      <div className="absolute pointer-events-none" style={{ top: 0, left: '14px', right: '14px', height: '2px', borderRadius: '0 0 2px 2px', background: color, opacity: 0.85 }} />
+      <div 
+        className="absolute pointer-events-none" 
+        style={{ top: 0, left: '16px', right: '16px', height: '3px', borderRadius: '0 0 4px 4px', background: color, opacity: 0.9 }} 
+      />
 
       {/* Icon + label row */}
-      <div className="flex items-center gap-1.5 mb-1.5">
-        {Icon && <Icon size={13} style={{ color, opacity: 0.9 }} />}
-        <span className="uppercase font-bold" style={{ fontSize: '9px', letterSpacing: '0.06em', color: isDarkMode ? 'rgba(199,210,254,0.6)' : 'rgba(255,255,255,0.85)' }}>{label}</span>
+      <div className="flex items-center gap-2 mb-2">
+        {Icon && (
+          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${color}15` }}>
+            <Icon size={14} style={{ color }} />
+          </div>
+        )}
+        <span 
+          className="uppercase font-bold" 
+          style={{ fontSize: '10px', letterSpacing: '0.05em', color: 'var(--text-2)' }}
+        >
+          {label}
+        </span>
       </div>
 
       {/* Value */}
       {loading ? (
-        <div className="animate-pulse rounded-md" style={{ height: '32px', width: '55%', backgroundColor: 'rgba(255,255,255,0.08)' }} />
+        <div 
+          className="animate-pulse rounded-md mt-1" 
+          style={{ height: '32px', width: '55%', backgroundColor: 'var(--bg-elevated)' }} 
+        />
       ) : (
         <AnimatedNumber
           value={value}
           duration={1.5}
-          className=""
+          className="mt-1"
           style={{
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
             fontSize: 'clamp(24px, 3.5vw, 32px)',
-            fontWeight: 700,
+            fontWeight: 800,
             lineHeight: 1,
             letterSpacing: '-0.03em',
-            background: `linear-gradient(135deg, #ffffff 0%, ${color} 110%)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            display: 'block',
+            color: 'var(--text-1)'
           }}
         />
       )}
 
       {/* Sub-label */}
-      <span style={{ fontSize: '10px', color: isDarkMode ? 'rgba(148,163,184,0.7)' : 'rgba(255,255,255,0.75)', marginTop: '3px', display: 'block', lineHeight: 1 }}>
+      <span style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px', display: 'block', lineHeight: 1 }}>
         {sublabel}
       </span>
     </motion.div>
@@ -334,11 +344,11 @@ const SectionCard = memo(({ children, className = '', hover = true, onClick }) =
         border: '1px solid var(--border)',
         borderRadius: '16px',
         boxShadow: isDarkMode
-          ? '0 1px 3px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.3)'
-          : '0 1px 3px rgba(37,99,235,0.06), 0 4px 16px rgba(37,99,235,0.08)',
+          ? '0 2px 8px rgba(0,0,0,0.2)'
+          : '0 2px 12px rgba(37,99,235,0.03)',
       }}
       onClick={onClick}
-      whileHover={hover && onClick ? { y: -2 } : undefined}
+      whileHover={hover && onClick ? { y: -2, borderColor: 'var(--border-strong)' } : undefined}
     >
       {children}
     </motion.div>
@@ -490,16 +500,14 @@ const Home = () => {
       .slice(0, 4);
   }, [dashboardData]);
 
-  /* recentActivity removed — replaced by real monthly stats */
-
   /* ── Quick actions with distinct colors ── */
   const quickActions = [
-    { Icon: FileText,   label: 'Novo Resumo', path: '/resumos',         onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
-    { Icon: CreditCard,  label: 'Flashcards',                  path: '/flashcards',     onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
-    { Icon: Target,      label: 'Simulados',                   path: '/simulado',       onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
-    { Icon: Search,      label: 'Consulta',                    path: '/consulta-rapida',onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
-    { Icon: Layers,      label: 'Atlas 3D',                    path: '/atlas-3d',       onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
-    { Icon: PenLine,     label: 'Quadro',                      path: '/quadro-branco',  onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
+    { Icon: FileText,   label: 'Novo Resumo', path: '/resumos',        onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
+    { Icon: CreditCard, label: 'Flashcards',  path: '/flashcards',     onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
+    { Icon: Target,     label: 'Simulados',   path: '/simulado',       onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
+    { Icon: Search,     label: 'Consulta',    path: '/consulta-rapida',onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
+    { Icon: Layers,     label: 'Atlas 3D',    path: '/atlas-3d',       onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
+    { Icon: PenLine,    label: 'Quadro',      path: '/quadro-branco',  onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
   ];
 
   /* ═══════════════════════════════════════════
@@ -509,11 +517,11 @@ const Home = () => {
     <motion.div className="min-h-screen pb-32" initial="hidden" animate="show" variants={staggerContainer}>
 
       {/* ═══════════════════════════════════════════
-          ① HERO HEADER — dark gradient + dot grid + ring avatar
-          ═══════════════════════════════════════════ */}
+         ① HERO HEADER — dark gradient + dot grid + ring avatar
+         ═══════════════════════════════════════════ */}
       <motion.div
         variants={fadeUp}
-        className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4"
+        className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4 pb-16 sm:pb-20"
         style={{
           borderRadius: '20px',
           backgroundImage: isDarkMode ? [
@@ -523,31 +531,59 @@ const Home = () => {
             'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.12) 0%, transparent 60%)',
             'linear-gradient(135deg, #1e3a8a 0%, #1e40af 35%, #0e7490 65%, #0f766e 100%)',
           ].join(', '),
-          padding: 'clamp(20px, 4vw, 28px) clamp(20px, 4vw, 28px) clamp(16px, 3.5vw, 24px)',
+          paddingTop: 'clamp(24px, 4vw, 32px)',
+          paddingLeft: 'clamp(24px, 4vw, 32px)',
+          paddingRight: 'clamp(24px, 4vw, 32px)',
         }}
       >
         {/* Decorative glow — teal, top-right */}
-        <div className="absolute pointer-events-none" style={{ top: '-80px', right: '-80px', width: '260px', height: '260px', background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.25) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.35) 0%, transparent 70%)' }} />
+        <div 
+          className="absolute pointer-events-none" 
+          style={{ 
+            top: '-80px', 
+            right: '-80px', 
+            width: '260px', 
+            height: '260px', 
+            background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.25) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.35) 0%, transparent 70%)' 
+          }} 
+        />
         {/* Bright bottom border line */}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.4), rgba(96,165,250,0.3), transparent)' }} />
+        <div 
+          className="absolute bottom-0 left-0 right-0 pointer-events-none" 
+          style={{ 
+            height: '1px', 
+            background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.4), rgba(96,165,250,0.3), transparent)' 
+          }} 
+        />
 
         {/* Avatar + Greeting row */}
-        <div className="relative z-10 flex items-center gap-4 sm:gap-5">
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
-            <Avatar src={user?.photoURL} name={user?.displayName || user?.email} size={56} ring />
+        <div className="relative z-10 flex items-center gap-4 sm:gap-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Avatar 
+              src={user?.photoURL} 
+              name={user?.displayName || user?.email} 
+              size={64} 
+              ring 
+            />
           </motion.div>
 
           <div className="flex-1 min-w-0">
             <motion.h1
               className="font-display tracking-tight leading-tight truncate"
               style={{
-                fontSize: 'clamp(20px, 4vw, 26px)',
+                fontSize: 'clamp(22px, 4.5vw, 30px)',
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
                 color: '#FFFFFF',
                 WebkitTextFillColor: '#FFFFFF',
               }}
-              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+              initial={{ opacity: 0, x: -10 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ delay: 0.2 }}
             >
               {greeting.text}, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}
               {' '}
@@ -556,187 +592,179 @@ const Home = () => {
                 animate={{ rotate: [0, 12, -8, 0] }}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
               >
-                <greeting.Icon size={22} style={{ color: greeting.color }} />
+                <greeting.Icon size={26} style={{ color: greeting.color }} />
               </motion.span>
             </motion.h1>
 
             <motion.p
-              className="italic mt-1 line-clamp-2 hidden sm:block"
-              style={{ fontSize: '13px', color: isDarkMode ? 'rgba(199,210,254,0.7)' : 'rgba(219,234,254,0.9)' }}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+              className="italic mt-1.5 line-clamp-2 hidden sm:block font-medium"
+              style={{ fontSize: '14px', color: isDarkMode ? 'rgba(199,210,254,0.8)' : 'rgba(219,234,254,0.9)' }}
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.3 }}
             >
               &ldquo;{motivational}&rdquo;
             </motion.p>
 
             {/* Streak badge */}
-            <motion.div className="mt-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-              <span className="inline-flex items-center gap-1.5 rounded-full font-bold" style={{ background: 'rgba(251,146,60,0.18)', border: '1px solid rgba(251,146,60,0.35)', color: '#FB923C', padding: '4px 10px', fontSize: '12px' }}>
-                <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}>🔥</motion.span>
-                <span className="font-mono tabular-nums">{isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}</span>
-                <span style={{ color: 'rgba(251,146,60,0.7)', fontSize: '11px' }}>
+            <motion.div 
+              className="mt-3" 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.4 }}
+            >
+              <span 
+                className="inline-flex items-center gap-2 rounded-full font-bold" 
+                style={{ 
+                  background: 'rgba(0,0,0,0.25)', 
+                  border: '1px solid rgba(255,255,255,0.1)', 
+                  color: '#FFFFFF', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  backdropFilter: 'blur(4px)' 
+                }}
+              >
+                <motion.span 
+                  animate={{ scale: [1, 1.15, 1] }} 
+                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  🔥
+                </motion.span>
+                <span className="font-mono tabular-nums text-orange-400">
+                  {isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 'normal' }}>
                   {(dashboardData?.offensiveStreak || 0) === 0 ? 'Comece hoje!' : 'dias consecutivos'}
                 </span>
               </span>
             </motion.div>
           </div>
         </div>
-
-        {/* KPI Cards */}
-        <div className="relative z-10 grid grid-cols-3 gap-2 sm:gap-2.5 mt-5" role="list">
-          <KpiCard variant="materias"  value={dashboardData?.totalMaterias   || 0} loading={isLoading} navigate={navigate} delay={0.58} isDarkMode={isDarkMode} />
-          <KpiCard variant="flashcard" value={dashboardData?.totalFlashcards || 0} loading={isLoading} navigate={navigate} delay={0.64} isDarkMode={isDarkMode} />
-          <KpiCard variant="resumos"   value={dashboardData?.totalResumos    || 0} loading={isLoading} navigate={navigate} delay={0.70} isDarkMode={isDarkMode} />
-        </div>
       </motion.div>
 
       {/* ═══════════════════════════════════════════
-          MAIN GRID (max-w-1280, responsive)
-          ═══════════════════════════════════════════ */}
-      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 mt-4 sm:mt-5">
-        <motion.div variants={staggerContainer} initial="hidden" animate="show">
+         ② FLOATING KPIs (Efeito de Sobreposição)
+         ═══════════════════════════════════════════ */}
+      <div className="relative z-20 max-w-[1280px] mx-auto px-5 sm:px-8 -mt-10 sm:-mt-12">
+        <div className="grid grid-cols-3 gap-3 sm:gap-5" role="list">
+          <KpiCard 
+            variant="materias"  
+            value={dashboardData?.totalMaterias || 0} 
+            loading={isLoading} 
+            navigate={navigate} 
+            delay={0.58} 
+            isDarkMode={isDarkMode} 
+          />
+          <KpiCard 
+            variant="flashcard" 
+            value={dashboardData?.totalFlashcards || 0} 
+            loading={isLoading} 
+            navigate={navigate} 
+            delay={0.64} 
+            isDarkMode={isDarkMode} 
+          />
+          <KpiCard 
+            variant="resumos"   
+            value={dashboardData?.totalResumos || 0} 
+            loading={isLoading} 
+            navigate={navigate} 
+            delay={0.70} 
+            isDarkMode={isDarkMode} 
+          />
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════
+         MAIN GRID (max-w-1280, responsive)
+         ═══════════════════════════════════════════ */}
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 mt-8">
+        <motion.div 
+          variants={staggerContainer} 
+          initial="hidden" 
+          animate="show" 
+          className="flex flex-col gap-6"
+        >
 
           {/* ═══════════════════════════════
-              ① REVISÃO DE HOJE (SM-2)
+              ③ ZONA DE FOCO (Revisão + Agenda)
               ═══════════════════════════════ */}
-          {pendingReviews > 0 ? (
-            <motion.div variants={fadeUp} className="mb-4">
-              <motion.div
-                className="relative overflow-hidden cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(251,146,60,0.10) 0%, rgba(234,88,12,0.06) 100%)',
-                  border: '1px solid rgba(251,146,60,0.25)',
-                  borderRadius: '16px',
-                  padding: '16px 20px',
-                }}
-                onClick={() => navigate('/flashcards', { state: { reviewMode: true } })}
-                whileHover={{ y: -2, borderColor: 'rgba(251,146,60,0.45)' }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--primary-bg)' }}>
-                    <BookOpen size={22} style={{ color: '#EA580C' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-sm" style={{ color: 'var(--text-1)' }}>
-                      Revisão de Hoje
-                    </h3>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
-                      <span className="font-bold font-mono" style={{ color: '#EA580C' }}>{pendingReviews}</span> flashcard{pendingReviews !== 1 ? 's' : ''} pendente{pendingReviews !== 1 ? 's' : ''} de revisão
-                    </p>
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="bg-orange-500 hover:bg-orange-600 shrink-0"
-                    onClick={(e) => { e.stopPropagation(); navigate('/flashcards', { state: { reviewMode: true } }); }}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            
+            {/* ── Revisão de Hoje (SM-2) ── */}
+            <div className="lg:col-span-2 flex flex-col justify-center">
+              {pendingReviews > 0 ? (
+                <motion.div variants={fadeUp} className="h-full">
+                  <motion.div
+                    className="relative overflow-hidden cursor-pointer h-full flex items-center"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(234,88,12,0.04) 100%)',
+                      border: '1px solid rgba(251,146,60,0.3)',
+                      borderRadius: '16px',
+                      padding: '24px 28px',
+                    }}
+                    onClick={() => navigate('/flashcards', { state: { reviewMode: true } })}
+                    whileHover={{ y: -2, borderColor: 'rgba(251,146,60,0.6)' }}
+                    whileTap={{ scale: 0.99 }}
                   >
-                    Revisar agora
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          ) : (
-            <motion.div variants={fadeUp} className="mb-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div
-                className="flex items-center gap-3 rounded-2xl"
-                style={{
-                  padding: '14px 20px',
-                  backgroundColor: 'rgba(13,148,136,0.08)',
-                  border: '1px solid rgba(13,148,136,0.20)',
-                }}
-              >
-                <span style={{ fontSize: '18px' }}>✅</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--teal)' }}>
-                  Tudo em dia!
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══════════════════════════════
-              ② ACESSO RÁPIDO + AGENDA
-              ═══════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-
-            {/* ── Quick Access ── */}
-            <motion.div className="lg:col-span-2" variants={fadeUp}>
-              <SectionCard className="p-5" hover={false}>
-                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
-                  <Zap size={15} style={{ color: 'var(--primary)' }} />
-                  Acesso Rápido
-                </h2>
-                <div className="grid gap-3 grid-cols-3 sm:grid-cols-6">
-                  {quickActions.map((action, idx) => {
-                    const isActive = location.pathname === action.path;
-                    return (
-                    <motion.button
-                      key={action.label}
-                      onClick={action.onClick}
-                      className="group relative flex flex-col items-center gap-2.5 rounded-2xl overflow-hidden"
-                      style={{
-                        padding: '16px 8px 12px',
-                        border: isActive ? `2px solid ${action.color}` : `1px solid rgba(${action.rgb}, 0.25)`,
-                        backgroundColor: isActive ? `rgba(${action.rgb}, 0.18)` : `rgba(${action.rgb}, 0.10)`,
-                        transition: 'all 220ms ease',
-                        cursor: 'pointer',
-                        boxShadow: isActive ? `0 0 0 1px rgba(${action.rgb}, 0.15), 0 4px 12px rgba(${action.rgb}, 0.20)` : 'none',
-                      }}
-                      whileHover={{
-                        y: -3,
-                        backgroundColor: `rgba(${action.rgb}, 0.18)`,
-                        borderColor: `rgba(${action.rgb}, 0.45)`,
-                        boxShadow: `0 8px 24px rgba(${action.rgb}, 0.20)`,
-                      }}
-                      whileTap={{ scale: 0.97, y: 0 }}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + idx * 0.06, duration: 0.35 }}
-                    >
-                      <div
-                        className="flex items-center justify-center rounded-2xl shrink-0"
-                        style={{
-                          width: '46px',
-                          height: '46px',
-                          backgroundColor: action.color,
-                          boxShadow: `0 6px 16px rgba(${action.rgb}, 0.40), 0 2px 6px rgba(${action.rgb}, 0.25)`,
-                        }}
+                    <div className="flex items-center gap-5 w-full">
+                      <div 
+                        className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" 
+                        style={{ backgroundColor: '#EA580C15' }}
                       >
-                        <action.Icon size={22} color="#FFFFFF" />
+                        <BookOpen size={28} style={{ color: '#EA580C' }} />
                       </div>
-                      <span
-                        className="font-bold text-center leading-tight"
-                        style={{ fontSize: '12px', color: 'var(--text-1)', letterSpacing: '0.01em' }}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg" style={{ color: 'var(--text-1)' }}>
+                          Sua Revisão Diária
+                        </h3>
+                        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
+                          Você tem <span className="font-bold font-mono text-orange-500 text-base">{pendingReviews}</span> flashcards te esperando.
+                        </p>
+                      </div>
+                      <Button
+                        variant="primary"
+                        className="bg-orange-500 hover:bg-orange-600 shrink-0 font-bold px-6 py-3"
+                        onClick={(e) => { e.stopPropagation(); navigate('/flashcards', { state: { reviewMode: true } }); }}
                       >
-                        {action.label}
+                        Iniciar Revisão
+                      </Button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  variants={fadeUp} 
+                  className="h-full"
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  exit={{ opacity: 0 }}
+                >
+                  <div
+                    className="flex items-center gap-4 h-full rounded-2xl"
+                    style={{
+                      padding: '24px 28px',
+                      backgroundColor: 'rgba(13,148,136,0.05)',
+                      border: '1px dashed rgba(13,148,136,0.3)',
+                    }}
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center" 
+                      style={{ backgroundColor: 'rgba(13,148,136,0.1)' }}
+                    >
+                      <span style={{ fontSize: '20px' }}>✨</span>
+                    </div>
+                    <div>
+                      <span className="text-base font-bold block mb-0.5" style={{ color: 'var(--teal)' }}>
+                        Tudo em dia!
                       </span>
-                      {action.badge && (
-                        <span
-                          className="absolute font-extrabold uppercase"
-                          style={{
-                            top: '8px',
-                            right: '8px',
-                            fontSize: '8px',
-                            padding: '2px 5px',
-                            borderRadius: '4px',
-                            backgroundColor: '#7C3AED',
-                            color: 'white',
-                            letterSpacing: '0.05em',
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {action.badge}
-                        </span>
-                      )}
-                    </motion.button>
-                    );
-                  })}
-                </div>
-              </SectionCard>
-            </motion.div>
+                      <span className="text-sm" style={{ color: 'var(--text-3)' }}>
+                        Você completou todas as revisões programadas para hoje.
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
 
             {/* ── Agenda Compacta ── */}
             <motion.div className="lg:col-span-1" variants={fadeUp}>
@@ -744,55 +772,86 @@ const Home = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
                     <Calendar size={15} style={{ color: 'var(--primary)' }} />
-                    Agenda
+                    Próximos Eventos
                   </h2>
                   <button
                     onClick={() => handleOpenEventModal()}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105"
-                    style={{ backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-strong)', color: 'var(--primary)' }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 hover:bg-opacity-80"
+                    style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)' }}
                     title="Adicionar Evento"
                   >
-                    <Plus size={15} />
+                    <Plus size={16} />
                   </button>
                 </div>
 
                 {proximosEventos.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {proximosEventos.map((evento, index) => (
                       <motion.div
                         key={evento.id || index}
-                        className="group flex items-center gap-3 p-2.5 rounded-xl transition-colors"
-                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + index * 0.08 }}
+                        className="group flex items-center gap-3 p-2.5 rounded-xl transition-all"
+                        style={{ backgroundColor: 'transparent', border: '1px solid var(--border)' }}
+                        whileHover={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)' }}
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: 0.3 + index * 0.08 }}
                       >
-                        <div className="shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-strong)' }}>
-                          <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>{evento.dataObj.getDate()}</span>
-                          <span className="uppercase" style={{ fontSize: '8px', color: 'var(--text-3)' }}>
+                        <div 
+                          className="shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center" 
+                          style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                        >
+                          <span className="font-mono text-sm font-bold" style={{ color: 'var(--primary)', lineHeight: 1.1 }}>
+                            {evento.dataObj.getDate()}
+                          </span>
+                          <span className="uppercase font-semibold mt-0.5" style={{ fontSize: '9px', color: 'var(--text-4)' }}>
                             {evento.dataObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-1)' }}>{evento.titulo || evento.title}</p>
-                          {evento.tipo && <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>{evento.tipo}</p>}
+                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-1)' }}>
+                            {evento.titulo || evento.title}
+                          </p>
+                          {evento.tipo && (
+                            <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>
+                              {evento.tipo}
+                            </p>
+                          )}
                         </div>
                         {evento.id && (
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }} className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0" style={{ color: 'var(--accent)' }} title="Excluir evento">
-                            <Trash2 size={13} />
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }} 
+                            className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0 hover:bg-red-500 hover:bg-opacity-10" 
+                            style={{ color: 'var(--accent)' }} 
+                            title="Excluir evento"
+                          >
+                            <Trash2 size={14} />
                           </button>
                         )}
                       </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <motion.div className="text-center py-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: 'var(--primary-bg)' }}>
-                      <CalendarDays size={22} style={{ color: 'var(--text-4)' }} />
+                  <motion.div 
+                    className="text-center py-8" 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" 
+                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                    >
+                      <CalendarDays size={20} style={{ color: 'var(--text-4)' }} />
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--text-3)' }}>Nenhum evento próximo</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-4)' }}>Clique em + para adicionar</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>
+                      Nenhum evento próximo
+                    </p>
+                    <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-4)' }}>
+                      Clique no + para se organizar
+                    </p>
                   </motion.div>
                 )}
-
+                
                 <div className="mt-4 pt-3 text-center" style={{ borderTop: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>
                     {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -803,20 +862,96 @@ const Home = () => {
           </div>
 
           {/* ═══════════════════════════════
-              ③ PROGRESSO GERAL (full width)
+              ④ FERRAMENTAS (Acesso Rápido Estilo Linear)
               ═══════════════════════════════ */}
-          <motion.div variants={fadeUp} className="mb-4">
+          <motion.div variants={fadeUp}>
+            <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-3 ml-2" style={{ color: 'var(--text-2)' }}>
+              <Zap size={14} /> Acesso Rápido
+            </h2>
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+              {quickActions.map((action, idx) => {
+                const isActive = location.pathname === action.path;
+                return (
+                  <motion.button
+                    key={action.label}
+                    onClick={action.onClick}
+                    className="group flex flex-col items-center justify-center gap-2 rounded-2xl transition-all relative overflow-hidden"
+                    style={{
+                      padding: '16px 10px',
+                      backgroundColor: isActive ? `rgba(${action.rgb}, 0.08)` : 'var(--bg-card)',
+                      border: isActive ? `1px solid rgba(${action.rgb}, 0.3)` : '1px solid var(--border)',
+                      cursor: 'pointer',
+                    }}
+                    whileHover={{
+                      backgroundColor: `rgba(${action.rgb}, 0.04)`,
+                      borderColor: `rgba(${action.rgb}, 0.3)`,
+                      y: -2,
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + idx * 0.05, duration: 0.3 }}
+                  >
+                    <action.Icon 
+                      size={20} 
+                      style={{ color: isActive ? action.color : 'var(--text-3)' }} 
+                      className="group-hover:text-[color:var(--hover-color)] transition-colors" 
+                    />
+                    <style>{`.group:hover .group-hover\\:text-\\[color\\:var\\(--hover-color\\)\\] { color: ${action.color} !important; }`}</style>
+                    <span 
+                      className="font-semibold" 
+                      style={{ fontSize: '12px', color: isActive ? 'var(--text-1)' : 'var(--text-2)' }}
+                    >
+                      {action.label}
+                    </span>
+                    
+                    {/* Mantido o código original do badge caso adicione futuramente */}
+                    {action.badge && (
+                      <span
+                        className="absolute font-extrabold uppercase"
+                        style={{
+                          top: '8px',
+                          right: '8px',
+                          fontSize: '8px',
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          backgroundColor: '#7C3AED',
+                          color: 'white',
+                          letterSpacing: '0.05em',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {action.badge}
+                      </span>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* ═══════════════════════════════
+              ⑤ PROGRESSO GERAL
+              ═══════════════════════════════ */}
+          <motion.div variants={fadeUp}>
             {isLoading ? (
               <SkeletonPulse className="h-48" />
             ) : (
               <SectionCard className="overflow-hidden" hover={false}>
                 {/* Header with divider */}
-                <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div 
+                  className="flex items-center justify-between px-5 py-4" 
+                  style={{ borderBottom: '1px solid var(--border)' }}
+                >
                   <h2 className="font-display text-[13px] font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
                     <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
                     Progresso Geral
                   </h2>
-                  <button onClick={() => navigate('/materias')} className="group flex items-center gap-1 text-xs font-medium transition-colors" style={{ color: 'var(--primary)' }}>
+                  <button 
+                    onClick={() => navigate('/materias')} 
+                    className="group flex items-center gap-1 text-xs font-medium transition-colors" 
+                    style={{ color: 'var(--primary)' }}
+                  >
                     Ver todas
                     <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                   </button>
@@ -825,10 +960,17 @@ const Home = () => {
                 {/* Total bar with shimmer */}
                 <div className="mx-5 mt-3">
                   <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-                    <span className="font-bold font-mono" style={{ color: 'var(--text-1)' }}>{dashboardData?.concluidas || 0}</span>
-                    <span style={{ color: 'var(--text-3)' }}> / {dashboardData?.totalMaterias || 0} matérias concluídas</span>
+                    <span className="font-bold font-mono" style={{ color: 'var(--text-1)' }}>
+                      {dashboardData?.concluidas || 0}
+                    </span>
+                    <span style={{ color: 'var(--text-3)' }}>
+                      {' / '}{dashboardData?.totalMaterias || 0} matérias concluídas
+                    </span>
                   </p>
-                  <div className="relative mt-2 mb-4 overflow-hidden" style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}>
+                  <div 
+                    className="relative mt-2 mb-4 overflow-hidden" 
+                    style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}
+                  >
                     <motion.div
                       className="h-full relative overflow-hidden"
                       style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
@@ -836,9 +978,17 @@ const Home = () => {
                       animate={{ width: `${progressPercent}%` }}
                       transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     >
-                      <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} />
+                      <div 
+                        className="absolute inset-0" 
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} 
+                      />
                     </motion.div>
-                    <span className="absolute right-1 top-1/2 -translate-y-1/2 font-mono font-bold" style={{ fontSize: '10px', color: 'var(--text-3)' }}>{progressPercent}%</span>
+                    <span 
+                      className="absolute right-1 top-1/2 -translate-y-1/2 font-mono font-bold" 
+                      style={{ fontSize: '10px', color: 'var(--text-3)' }}
+                    >
+                      {progressPercent}%
+                    </span>
                   </div>
                 </div>
 
@@ -851,19 +1001,32 @@ const Home = () => {
                         className="flex items-center gap-3 px-5 py-2.5 transition-colors cursor-pointer"
                         style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}
                         onClick={() => navigate('/materias')}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-bg)'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, x: -15 }} 
+                        animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + idx * 0.07 }}
                       >
                         {/* Subject icon */}
-                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center font-bold text-sm shrink-0"
-                          style={{ backgroundColor: `${materia.cor || '#2563EB'}18`, color: materia.cor || 'var(--primary)', borderLeft: `3px solid ${materia.cor || 'var(--primary)'}` }}>
+                        <div 
+                          className="w-10 h-10 rounded-[10px] flex items-center justify-center font-bold text-sm shrink-0"
+                          style={{ 
+                            backgroundColor: `${materia.cor || '#2563EB'}18`, 
+                            color: materia.cor || 'var(--primary)', 
+                            borderLeft: `3px solid ${materia.cor || 'var(--primary)'}` 
+                          }}
+                        >
                           {materia.nome?.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>{materia.nome}</h3>
-                          {materia.descricao && <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-3)' }}>{materia.descricao}</p>}
+                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>
+                            {materia.nome}
+                          </h3>
+                          {materia.descricao && (
+                            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-3)' }}>
+                              {materia.descricao}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: '11px', color: 'var(--text-4)' }}>
                             <span>{materia.totalFlashcards || 0} cards</span>
                             <span>·</span>
@@ -872,22 +1035,46 @@ const Home = () => {
                         </div>
                         {/* Progress pill — only show if real data exists */}
                         {materia.progresso != null && (
-                          <div className="hidden sm:block shrink-0" style={{ width: '48px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--bg-elevated)', overflow: 'hidden' }}>
-                            <motion.div className="h-full" style={{ backgroundColor: materia.cor || 'var(--primary)', borderRadius: '2px' }} initial={{ width: 0 }} animate={{ width: `${Math.min(materia.progresso, 100)}%` }} transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }} />
+                          <div 
+                            className="hidden sm:block shrink-0" 
+                            style={{ width: '48px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--bg-elevated)', overflow: 'hidden' }}
+                          >
+                            <motion.div 
+                              className="h-full" 
+                              style={{ backgroundColor: materia.cor || 'var(--primary)', borderRadius: '2px' }} 
+                              initial={{ width: 0 }} 
+                              animate={{ width: `${Math.min(materia.progresso, 100)}%` }} 
+                              transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }} 
+                            />
                           </div>
                         )}
-                        <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-4)' }} />
+                        <ChevronRight size={16} className="shrink-0 ml-2" style={{ color: 'var(--text-4)' }} />
                       </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-10 px-5">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    className="text-center py-10 px-5"
+                  >
+                    <div 
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" 
+                      style={{ backgroundColor: 'var(--primary-bg)' }}
+                    >
                       <Bookmark size={28} style={{ color: 'var(--text-4)' }} />
                     </div>
-                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--text-1)' }}>Nenhuma matéria criada</h3>
-                    <p className="text-sm mb-5 max-w-xs mx-auto" style={{ color: 'var(--text-3)' }}>Crie sua primeira matéria para organizar seus estudos</p>
-                    <Button variant="primary" leftIcon={<Plus size={16} />} onClick={() => navigate('/materias')}>
+                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--text-1)' }}>
+                      Nenhuma matéria criada
+                    </h3>
+                    <p className="text-sm mb-5 max-w-xs mx-auto" style={{ color: 'var(--text-3)' }}>
+                      Crie sua primeira matéria para organizar seus estudos
+                    </p>
+                    <Button 
+                      variant="primary" 
+                      leftIcon={<Plus size={16} />} 
+                      onClick={() => navigate('/materias')}
+                    >
                       Criar Matéria
                     </Button>
                   </motion.div>
@@ -897,13 +1084,13 @@ const Home = () => {
           </motion.div>
 
           {/* ═══════════════════════════════
-              ④ ESTE MÊS + META MENSAL
+              ⑥ ESTE MÊS + META MENSAL
               ═══════════════════════════════ */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-            {/* ── Este Mês — dados reais ── */}
+            {/* ── Este Mês — dados reais (Restaurados os Cards e o Gráfico de 7 Dias) ── */}
             <motion.div className="lg:col-span-2" variants={fadeUp}>
-              <SectionCard className="p-5" hover={false}>
+              <SectionCard className="p-5 h-full flex flex-col" hover={false}>
                 <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
                   <TrendingUp size={15} style={{ color: 'var(--teal)' }} />
                   Este Mês
@@ -912,19 +1099,26 @@ const Home = () => {
                   </span>
                 </h2>
 
-                {/* Stat cards row */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                {/* Stat cards row (Restaurado) */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   {/* Resumos */}
                   <motion.div
-                    className="rounded-2xl p-4"
+                    className="rounded-2xl p-4 flex flex-col justify-between"
                     style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.35 }}
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                      <div 
+                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" 
+                        style={{ backgroundColor: 'var(--primary-bg)' }}
+                      >
                         <FileText size={14} style={{ color: 'var(--primary)' }} />
                       </div>
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Resumos</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+                        Resumos
+                      </span>
                     </div>
                     <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
                       {isLoading ? '—' : (dashboardData?.metaMensal?.resumosDoMes || 0) === 0
@@ -938,15 +1132,22 @@ const Home = () => {
 
                   {/* Flashcards */}
                   <motion.div
-                    className="rounded-2xl p-4"
+                    className="rounded-2xl p-4 flex flex-col justify-between"
                     style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.45 }}
                   >
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--teal-bg)' }}>
+                      <div 
+                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" 
+                        style={{ backgroundColor: 'var(--teal-bg)' }}
+                      >
                         <CreditCard size={14} style={{ color: 'var(--teal)' }} />
                       </div>
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Flashcards</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+                        Flashcards
+                      </span>
                     </div>
                     <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
                       {isLoading ? '—' : (dashboardData?.metaMensal?.flashcardsDoMes || 0) === 0
@@ -959,16 +1160,20 @@ const Home = () => {
                   </motion.div>
                 </div>
 
-                {/* Streak — últimos 7 dias */}
+                {/* Streak — últimos 7 dias (Restaurado e Adaptado) */}
                 <motion.div
-                  className="rounded-2xl p-4"
+                  className="rounded-2xl p-4 mt-auto"
                   style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
+                  initial={{ opacity: 0, y: 10 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  transition={{ delay: 0.55 }}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Zap size={14} style={{ color: 'var(--accent)' }} />
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Sequência de acesso</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>
+                        Sequência de acesso
+                      </span>
                     </div>
                     <span className="font-mono font-bold text-sm" style={{ color: 'var(--accent)' }}>
                       {isLoading ? '—' : `${dashboardData?.offensiveStreak || 0} dias`}
@@ -988,11 +1193,16 @@ const Home = () => {
                           const parsed = raw?.toDate?.() || (raw ? new Date(raw) : null);
                           if (!parsed || isNaN(parsed.getTime())) return false;
                           return parsed.toISOString().split('T')[0] === dateStr;
-                        } catch { return false; }
+                        } catch { 
+                          return false; 
+                        }
                       });
                       const isToday = i === 6;
+                      
                       return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1"
+                        <div 
+                          key={i} 
+                          className="flex-1 flex flex-col items-center gap-1"
                           title={dayDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
                         >
                           <div
@@ -1015,23 +1225,34 @@ const Home = () => {
               </SectionCard>
             </motion.div>
 
-            {/* ── Meta Mensal — gradient card + circular SVG ── */}
+            {/* ── Meta Mensal — gradient card + circular SVG + Lógicas Omitidas (Restaurado) ── */}
             <motion.div className="lg:col-span-1" variants={fadeUp}>
-              <div className="relative overflow-hidden" style={{
-                background: 'linear-gradient(135deg, var(--primary-bg) 0%, var(--teal-bg) 100%)',
-                border: '1px solid var(--border-strong)', borderRadius: '16px', padding: '20px',
-              }}>
+              <div 
+                className="relative overflow-hidden h-full flex flex-col" 
+                style={{
+                  backgroundColor: 'var(--bg-card)',
+                  border: '1px solid var(--border)', 
+                  borderRadius: '16px', 
+                  padding: '24px',
+                }}
+              >
                 {/* Decorative */}
-                <div className="absolute pointer-events-none" style={{ right: '16px', top: '16px', opacity: 0.12 }}>
+                <div 
+                  className="absolute pointer-events-none" 
+                  style={{ right: '16px', top: '16px', opacity: 0.12 }}
+                >
                   <Target size={40} style={{ color: 'var(--text-1)' }} />
                 </div>
 
-                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
-                  <Target size={15} style={{ color: 'var(--primary)' }} />
+                <h2 
+                  className="font-display text-sm font-bold flex items-center gap-2 mb-4 relative z-10" 
+                  style={{ color: 'var(--text-1)' }}
+                >
+                  <Target size={16} style={{ color: 'var(--primary)' }} />
                   Meta de {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
                   <button
                     onClick={() => { setMetaValue(dashboardData?.metaMensal?.meta || 50); setEditingMeta(true); }}
-                    className="ml-1 p-1 rounded-md transition-colors"
+                    className="ml-1 p-1 rounded-md transition-colors hover:bg-gray-500 hover:bg-opacity-10"
                     style={{ color: 'var(--text-4)' }}
                     title="Editar meta"
                   >
@@ -1040,7 +1261,7 @@ const Home = () => {
                 </h2>
 
                 {editingMeta && (
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-4 relative z-10">
                     <input
                       type="number"
                       min={1}
@@ -1054,36 +1275,49 @@ const Home = () => {
                     />
                     <button
                       onClick={() => { persistMetaMensal(metaValue); setEditingMeta(false); }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                      style={{ backgroundColor: 'var(--primary)', color: 'white' }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700"
                     >
                       OK
                     </button>
                   </div>
                 )}
 
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mt-2 mb-4 relative z-10">
                   <CircularProgress
                     current={dashboardData?.metaMensal?.atual || 0}
                     total={editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
-                    size={90}
+                    size={110}
                     showStartMessage={(dashboardData?.metaMensal?.atual || 0) === 0 && !hasSavedMeta}
                   />
                 </div>
 
-                <p className="text-center text-xs mb-1" style={{ color: 'var(--text-3)' }}>resumos + flashcards criados</p>
+                <p 
+                  className="text-center text-xs mb-1 font-medium relative z-10" 
+                  style={{ color: 'var(--text-3)' }}
+                >
+                  resumos + flashcards criados
+                </p>
 
-                {/* Tip card */}
-                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                {/* Tip card (Restaurado) */}
+                <div 
+                  className="mt-4 p-3 rounded-xl relative z-10" 
+                  style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                >
                   <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
-                    {(dashboardData?.offensiveStreak || 0) > 0
-                      ? <>💡 Você está em uma sequência de <span style={{ color: 'var(--accent)' }}>🔥 {dashboardData.offensiveStreak} dias</span>! Continue estudando hoje.</>
-                      : <>💡 Crie um hábito diário. Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> para começar sua sequência!</>}
+                    {(dashboardData?.offensiveStreak || 0) > 0 ? (
+                      <>
+                        💡 Você está em uma sequência de <span style={{ color: 'var(--accent)' }}>🔥 {dashboardData.offensiveStreak} dias</span>! Continue estudando hoje.
+                      </>
+                    ) : (
+                      <>
+                        💡 Crie um hábito diário. Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> para começar sua sequência!
+                      </>
+                    )}
                   </p>
                 </div>
 
-                {/* Bottom progress bar */}
-                <div className="mt-4">
+                {/* Bottom progress bar (Restaurado) */}
+                <div className="mt-auto pt-4 relative z-10">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
                       {dashboardData?.metaMensal?.atual || 0}/{editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
@@ -1092,7 +1326,10 @@ const Home = () => {
                       {dashboardData?.metaMensal?.porcentagem || 0}% do mês
                     </span>
                   </div>
-                  <div className="overflow-hidden" style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}>
+                  <div 
+                    className="overflow-hidden" 
+                    style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}
+                  >
                     <motion.div
                       className="h-full relative overflow-hidden"
                       style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
@@ -1100,27 +1337,48 @@ const Home = () => {
                       animate={{ width: `${dashboardData?.metaMensal?.porcentagem || 0}%` }}
                       transition={{ duration: 1.2, delay: 0.8, ease: 'easeOut' }}
                     >
-                      <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} />
+                      <div 
+                        className="absolute inset-0" 
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} 
+                      />
                     </motion.div>
                   </div>
                 </div>
+                
               </div>
             </motion.div>
+
           </div>
 
         </motion.div>
       </div>
 
       {/* ═══════════════════════════════════════════
-          MODALS
-          ═══════════════════════════════════════════ */}
-      <AddEventModal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} onSave={handleSaveEvent} selectedDate={selectedDateForEvent} />
+         MODALS
+         ═══════════════════════════════════════════ */}
+      <AddEventModal 
+        isOpen={isEventModalOpen} 
+        onClose={() => setIsEventModalOpen(false)} 
+        onSave={handleSaveEvent} 
+        selectedDate={selectedDateForEvent} 
+      />
       <ConfirmModal
         isOpen={confirmDeleteEvento.isOpen}
         onClose={() => setConfirmDeleteEvento({ isOpen: false, evento: null })}
         onConfirm={confirmarExclusaoEvento}
         title="Excluir Evento"
-        message={<>Tem certeza que deseja excluir o evento{' '}<span className="font-semibold" style={{ color: 'var(--text-1)' }}>"{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"</span>?<br /><span className="font-medium" style={{ color: 'var(--accent)' }}>Essa ação não pode ser desfeita.</span></>}
+        message={
+          <>
+            Tem certeza que deseja excluir o evento{' '}
+            <span className="font-semibold" style={{ color: 'var(--text-1)' }}>
+              "{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"
+            </span>
+            ?<br />
+            <span className="font-medium" style={{ color: 'var(--accent)' }}>
+              Essa ação não pode ser desfeita.
+            </span>
+          </>
+        }
         confirmText="Excluir Evento"
         type="danger"
         isLoading={isDeletingEvento}

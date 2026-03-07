@@ -26,16 +26,6 @@ setInterval(() => {
   checkForUpdate();
 }, 30000);
 
-// Remove PWA Splash Screen App Shell
-function removeSplash() {
-  const splash = document.getElementById('pwa-splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    splash.style.transition = 'opacity 0.4s ease';
-    setTimeout(() => splash.remove(), 400);
-  }
-}
-
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
@@ -43,4 +33,16 @@ root.render(
   </React.StrictMode>
 );
 
-setTimeout(removeSplash, 0);
+// Remove splash screen após React pintar a UI
+window.requestAnimationFrame(() => {
+  window.requestAnimationFrame(() => {
+    const splash = document.getElementById('pwa-splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      splash.style.visibility = 'hidden';
+      setTimeout(() => {
+        splash.remove();
+      }, 500); // tempo igual ao transition do CSS
+    }
+  });
+});
