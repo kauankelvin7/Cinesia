@@ -231,7 +231,7 @@ const Layout = memo(({ children }) => {
 
         {/* Floating Actions (Bottom-Right) */}
         {!focusMode && (
-          <div className="fixed bottom-[90px] right-4 md:bottom-8 md:right-8 z-[55] flex flex-col items-center gap-4">
+          <div className="fixed bottom-[90px] right-4 md:bottom-8 md:right-8 z-[55] flex flex-col items-end gap-6">
             <Suspense fallback={null}>
               <ChatPanel showButton={isDesktop} />
               {!isQuadroBranco && <KakaBot />}
