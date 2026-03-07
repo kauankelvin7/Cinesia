@@ -200,7 +200,12 @@ export default function OnboardingFlow() {
   if (status !== 'show') return null;
 
   const isSkippable = SKIPPABLE_STEPS.includes(step);
-  const nomePreferido = nome.trim() || user?.displayName || 'estudante';
+
+  const nomePreferido =
+    (onboardingData.nomePreferido &&
+      onboardingData.nomePreferido.trim()) ||
+    user?.displayName ||
+    'estudante';
 
   return (
     <>
