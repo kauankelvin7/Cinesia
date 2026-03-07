@@ -4,6 +4,8 @@
   "outputDirectory": "frontend/dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/manifest.json", "destination": "/manifest.webmanifest" },
+    { "source": "/manifest.webmanifest", "destination": "/manifest.webmanifest" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
