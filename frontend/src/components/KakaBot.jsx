@@ -1,28 +1,28 @@
-/*
+/**
  * @file KakaBot.jsx
  * @description Agente de IA conversacional integrado ao Cinesia. Componente FAB (floating action button)
  * que abre um chat com o modelo Gemini, capaz de responder dúvidas clínicas E executar ações
  * reais no Firestore (criar matérias, flashcards, resumos, agendar revisões).
  *
  * @dependencies
- *  - useKakabotContext — provê dados do sistema em tempo real para o system prompt
- *  - useSpeechRecognition — entrada por voz via Web Speech API
- *  - kakabotActions (extrairAcoes, executarAcoes) — parser e executor de blocos ```action```
- *  - KakaAvatar — componente visual do avatar
- *  - @google/generative-ai — SDK do Gemini (importado dinamicamente via `import()`)
- *  - AuthContext-firebase — UID do usuário autenticado
+ * - useKakabotContext — provê dados do sistema em tempo real para o system prompt
+ * - useSpeechRecognition — entrada por voz via Web Speech API
+ * - kakabotActions (extrairAcoes, executarAcoes) — parser e executor de blocos ```action```
+ * - KakaAvatar — componente visual do avatar
+ * - @google/generative-ai — SDK do Gemini (importado dinamicamente via `import()`)
+ * - AuthContext-firebase — UID do usuário autenticado
  *
  * @sideEffects
- *  - Lê/escreve em `users/{uid}/kakabot_memoria/historico` (memória persistente)
- *  - Via kakabotActions: pode escrever em `materias`, `flashcards`, `resumos`, `eventos`
- *  - Chama a API externa do Google Gemini a cada mensagem enviada
+ * - Lê/escreve em `users/{uid}/kakabot_memoria/historico` (memória persistente)
+ * - Via kakabotActions: pode escrever em `materias`, `flashcards`, `resumos`, `eventos`
+ * - Chama a API externa do Google Gemini a cada mensagem enviada
  *
  * @notes
- *  - O histórico completo da sessão é reenviado ao Gemini a cada mensagem (sem memória nativa)
- *  - A memória persistida no Firestore (últimas 20 mensagens) é injetada na inicialização do chat
- *  - O modelo Gemini é importado dinamicamente para não aumentar o bundle inicial
- *  - Fallback automático entre 5 modelos Gemini se o primário falhar (ver GEMINI_MODELS)
- *  - Última revisão significativa: reimplementação visual v3 (Feb 2026) — paleta teal/cyan
+ * - O histórico completo da sessão é reenviado ao Gemini a cada mensagem (sem memória nativa)
+ * - A memória persistida no Firestore (últimas 20 mensagens) é injetada na inicialização do chat
+ * - O modelo Gemini é importado dinamicamente para não aumentar o bundle inicial
+ * - Fallback automático entre 5 modelos Gemini se o primário falhar (ver GEMINI_MODELS)
+ * - Última revisão significativa: reimplementação visual v3 (Feb 2026) — paleta teal/cyan
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
@@ -88,7 +88,7 @@ const MAX_USER_CHARS = 2000;
 /**
  * Remove qualquer bloco ```action``` ou ```json``` residual do texto antes de exibir.
  * WARN: camada de segurança secundária — o parser principal (extrairAcoes) deve
- *       remover os blocos. Esta função é o fallback para evitar JSON vazando na UI.
+ * remover os blocos. Esta função é o fallback para evitar JSON vazando na UI.
  */
 const sanitizarTexto = (texto) =>
   texto
@@ -207,9 +207,9 @@ const QUICK_ACTIONS_BY_PAGE = {
    ACAO BADGE — mensagem amigável, sem termos técnicos
    ═══════════════════════════════════════════════════ */
 const AcaoBadge = ({ label }) => (
-  <div className="mt-2.5 flex items-center gap-2 px-2.75 py-1.75 rounded-[10px] bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800/50">
-    <CheckCircle2 size={14} strokeWidth={2.2} className="text-green-600 dark:text-green-400" />
-    <span className="text-[11.5px] font-medium text-green-700 dark:text-green-400">
+  <div className="mt-2.5 flex items-center gap-2 px-2.75 py-1.75 rounded-[10px] bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800/50">
+    <CheckCircle2 size={14} strokeWidth={2.2} className="text-teal-600 dark:text-teal-400" />
+    <span className="text-[11.5px] font-medium text-teal-700 dark:text-teal-300">
       {label}
     </span>
   </div>
@@ -548,6 +548,10 @@ const getAcaoLabel = (acao, dados) => {
   }
 };
 
+const cleanUndefined = (obj) => {
+  return JSON.parse(JSON.stringify(obj));
+};
+
 // ─── Vocabulário para inferência de nível ────────────────────────────────────
 
 const VOCAB_AVANCADO = [
@@ -814,7 +818,7 @@ const KakaBot = () => {
         }
 
         await setDoc(docRef, updateData, { merge: true });
-  await setDoc(docRef, cleanUndefined(updateData), { merge: true });
+        await setDoc(docRef, cleanUndefined(updateData), { merge: true });
 
         setMemoriaUsuario((prev) => ({
           ...prev,
@@ -1578,7 +1582,7 @@ const KakaBot = () => {
               exit={{ opacity: 0, y: 50, scale: 0.97 }}
               transition={{ duration: 0.28, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              {/* ════ HEADER ════ */}
+              {/* ════ HEADER COM BACKGROUNDS TRANSLÚCIDOS ════ */}
               <div
                 className="px-5 py-4.5 flex items-center justify-between shrink-0"
                 style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #0891b2 100%)' }}
@@ -1641,7 +1645,7 @@ const KakaBot = () => {
                   )}
                   <button
                     onClick={() => setShowHistorico(true)}
-                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
+                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors bg-white/10 hover:bg-white/20"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}
                     title="Histórico de conversas"
                     aria-label="Histórico de conversas"
@@ -1650,7 +1654,7 @@ const KakaBot = () => {
                   </button>
                   <button
                     onClick={handleNovaSessao}
-                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
+                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors bg-white/10 hover:bg-white/20"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}
                     title="Nova conversa"
                     aria-label="Iniciar nova conversa"
@@ -1659,7 +1663,7 @@ const KakaBot = () => {
                   </button>
                   <button
                     onClick={handleFechar}
-                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors hover:bg-white/15"
+                    className="w-8 h-8 rounded-[9px] flex items-center justify-center transition-colors bg-white/10 hover:bg-white/20"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}
                     aria-label="Fechar"
                   >
@@ -1742,9 +1746,8 @@ const KakaBot = () => {
                             </div>
                             <div className="flex flex-col gap-1 items-end max-w-[78%]">
                               <div
-                                className="px-3.75 py-2.75 text-[13.5px] leading-[1.65] text-white shadow-md"
+                                className="px-3.75 py-2.75 text-[13.5px] leading-[1.65] text-white shadow-md rounded-2xl rounded-tr-[4px]"
                                 style={{
-                                  borderRadius: '18px 18px 4px 18px',
                                   background: 'linear-gradient(135deg, #0f766e, #0891b2)',
                                   boxShadow: '0 4px 14px rgba(13,148,136,0.28)',
                                 }}
@@ -1778,14 +1781,13 @@ const KakaBot = () => {
                               KAKA
                             </span>
                             <div
-                              className={`px-3.75 py-2.75 text-[13.5px] leading-[1.65] shadow-sm border ${
+                              className={`px-3.75 py-2.75 text-[13.5px] leading-[1.65] shadow-sm border rounded-2xl rounded-tl-[4px] ${
                                 message.isSystem && message.systemType === 'error'
-                                  ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800/50'
+                                  ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border-red-100 dark:border-red-800/50'
                                   : message.isSystem && message.systemType === 'success'
-                                  ? 'bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800/50'
-                                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                                  ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border-teal-100 dark:border-teal-800/50'
+                                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-100 dark:border-slate-700'
                               }`}
-                              style={{ borderRadius: '18px 18px 18px 4px' }}
                             >
                               <ReactMarkdown components={markdownComponents}>
                                 {message.content}
@@ -1927,8 +1929,7 @@ const KakaBot = () => {
                       <div className="flex items-end gap-2 mb-3.5">
                         <KakaAvatar size="sm" speaking />
                         <div
-                          className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2.5"
-                          style={{ borderRadius: '18px 18px 18px 4px' }}
+                          className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2.5 rounded-2xl rounded-tl-[4px]"
                         >
                           <div className="flex items-center gap-0.75">
                             {[0, 1, 2, 3, 4].map((i) => (
@@ -1954,8 +1955,7 @@ const KakaBot = () => {
                       <div className="flex items-end gap-2 mb-3.5">
                         <KakaAvatar size="sm" speaking />
                         <div
-                          className="px-4 py-3 border shadow-sm flex items-center gap-2.5 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/50"
-                          style={{ borderRadius: '18px 18px 18px 4px' }}
+                          className="px-4 py-3 border shadow-sm flex items-center gap-2.5 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/50 rounded-2xl rounded-tl-[4px]"
                         >
                           <Loader size={14} className="animate-spin text-teal-600 dark:text-teal-400" />
                           <span className="text-xs text-teal-700 dark:text-teal-400">
@@ -2002,12 +2002,11 @@ const KakaBot = () => {
                   )}
                 </AnimatePresence>
 
-                {/* ════ Modal Preview de Ação ════ */}
+                {/* ════ Modal Preview de Ação COM GLASSMORPHISM ════ */}
                 <AnimatePresence>
                   {acaoPendente && (
                     <motion.div
-                      className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4"
-                      style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(6px)' }}
+                      className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm bg-slate-900/40"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -2054,7 +2053,7 @@ const KakaBot = () => {
                         <div className="flex gap-2 px-5 pb-5 pt-2">
                           <button
                             onClick={() => setAcaoPendente(null)}
-                            className="flex-1 py-2.5 rounded-xl text-[13px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                            className="flex-1 py-2.5 rounded-xl text-[13px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors hover:bg-slate-200"
                           >
                             Cancelar
                           </button>
@@ -2137,12 +2136,11 @@ const KakaBot = () => {
                   )}
                 </AnimatePresence>
 
-                {/* ════ Modal Confirmar Nova Sessão ════ */}
+                {/* ════ Modal Confirmar Nova Sessão COM GLASSMORPHISM ════ */}
                 <AnimatePresence>
                   {showConfirmNovaSessao && (
                     <motion.div
-                      className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4"
-                      style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(4px)' }}
+                      className="absolute inset-0 z-20 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm bg-slate-900/40"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -2203,7 +2201,7 @@ const KakaBot = () => {
                   </div>
                 )}
 
-                {/* ════ Quick Action Chips ════ */}
+                {/* ════ Quick Action Chips (Design mais limpo e sutil) ════ */}
                 {!isLoading && !isExecutingAction && connectionStatus === 'connected' && quickActions.length > 0 && (
                   <div className="flex gap-1.5 px-3.5 pt-2.5 pb-0 overflow-x-auto scrollbar-none border-t border-slate-100 dark:border-slate-700/50">
                     {quickActions.map((action, i) => (
@@ -2214,7 +2212,7 @@ const KakaBot = () => {
                           inputRef.current?.focus();
                         }}
                         disabled={isLoading}
-                        className="shrink-0 flex items-center gap-1.25 px-3 py-1.25 text-[11.5px] font-medium rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-700/60 text-teal-700 dark:text-teal-400"
+                        className="shrink-0 flex items-center gap-1.25 px-3 py-1.25 text-[11.5px] font-medium rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 text-slate-600 dark:text-slate-300"
                         whileTap={{ scale: 0.97 }}
                       >
                         {action.icon}
@@ -2224,91 +2222,93 @@ const KakaBot = () => {
                   </div>
                 )}
 
-                {/* ════ INPUT BAR ════ */}
-                <div className="px-3.5 pb-3.5 pt-2.5 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
-                  <div className="flex items-end gap-2">
-                    {/* Botão Microfone */}
+                {/* ════ INPUT BAR UNIFICADA (Estilo Premium) ════ */}
+                <div className="px-3.5 pb-3.5 pt-2.5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700/50 shrink-0">
+                  <div
+                    className={`relative flex items-end w-full rounded-[24px] border transition-all ${
+                      isListening
+                        ? 'border-red-400 bg-red-50 shadow-sm'
+                        : 'border-slate-200 bg-slate-50 dark:bg-slate-800 dark:border-slate-700 focus-within:border-teal-400 focus-within:ring-4 focus-within:ring-teal-500/10 focus-within:bg-white'
+                    }`}
+                  >
+                    {/* Botão Microfone Integrado */}
                     {isSupported && (
-                      <div className="relative shrink-0">
+                      <div className="absolute left-1.5 bottom-1.5 z-10">
                         {isListening && (
-                          <span className="absolute inset-0 rounded-[13px] bg-red-400/20 animate-ping" />
+                          <span className="absolute inset-0 rounded-full bg-red-400/20 animate-ping" />
                         )}
                         <motion.button
                           onClick={isListening ? stopListening : startListening}
-                          className={`w-11 h-11 rounded-[13px] flex items-center justify-center transition-all border ${
+                          className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
                             isListening
-                              ? 'bg-red-500 border-transparent shadow-lg shadow-red-500/30'
-                              : 'bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600'
+                              ? 'bg-red-500 text-white shadow-md'
+                              : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
                           }`}
-                          whileTap={{ scale: 0.94 }}
-                          aria-label={isListening ? 'Parar gravação' : 'Falar'}
+                          whileTap={{ scale: 0.9 }}
                           disabled={isLoading || isExecutingAction}
+                          aria-label={isListening ? 'Parar gravação' : 'Falar'}
                         >
                           {isListening ? (
-                            <MicOff size={18} className="text-white" strokeWidth={2} />
+                            <MicOff size={16} strokeWidth={2.5} className="text-white" />
                           ) : (
-                            <Mic size={18} className="text-slate-500 dark:text-slate-400" strokeWidth={2} />
+                            <Mic size={18} />
                           )}
                         </motion.button>
                       </div>
                     )}
 
-                    {/* Textarea */}
-                    <div className="flex-1 relative">
-                      <textarea
-                        ref={inputRef}
-                        value={isListening ? transcript : inputValue}
-                        onChange={(e) => !isListening && setInputValue(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        placeholder={
-                          isListening
-                            ? 'Ouvindo...'
-                            : connectionStatus !== 'connected'
-                            ? 'Aguardando conexão...'
-                            : 'Pergunte ou peça algo ao Kaka...'
-                        }
-                        disabled={isLoading || isExecutingAction || connectionStatus !== 'connected'}
-                        rows={1}
-                        className={`w-full px-3.5 py-2.75 rounded-[13px] text-[13.5px] text-slate-700 dark:text-slate-200 outline-none resize-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                          isListening
-                            ? 'bg-red-50 dark:bg-red-950/20 border-[1.5px] border-red-300'
-                            : 'bg-slate-50 dark:bg-slate-700/50 border-[1.5px] border-slate-200 dark:border-slate-600 focus:border-teal-400'
-                        }`}
-                        style={{ minHeight: 44, maxHeight: 120, fontFamily: 'inherit', lineHeight: 1.5 }}
-                      />
-                    </div>
-
-                    {/* Botão Enviar */}
-                    <motion.button
-                      onClick={() => sendMessage()}
-                      disabled={!inputValue.trim() || isLoading || isExecutingAction || connectionStatus !== 'connected'}
-                      className="w-11 h-11 rounded-[13px] flex items-center justify-center border-none transition-all disabled:cursor-not-allowed shrink-0 disabled:bg-slate-100 dark:disabled:bg-slate-700"
+                    {/* Textarea Integrado */}
+                    <textarea
+                      ref={inputRef}
+                      value={isListening ? transcript : inputValue}
+                      onChange={(e) => !isListening && setInputValue(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder={
+                        isListening
+                          ? 'Ouvindo...'
+                          : connectionStatus !== 'connected'
+                          ? 'Aguardando conexão...'
+                          : 'Pergunte ou peça algo ao Kaka...'
+                      }
+                      disabled={isLoading || isExecutingAction || connectionStatus !== 'connected'}
+                      rows={1}
+                      className="flex-1 w-full bg-transparent border-none text-[13.5px] text-slate-700 dark:text-slate-200 outline-none resize-none placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed pt-3.5 pb-3.5 pl-12 pr-12"
                       style={{
-                        background:
-                          inputValue.trim() && !isLoading && connectionStatus === 'connected'
-                            ? 'linear-gradient(135deg, #0f766e, #0891b2)'
-                            : undefined,
-                        boxShadow:
-                          inputValue.trim() && !isLoading && connectionStatus === 'connected'
-                            ? '0 4px 12px rgba(13,148,136,0.35)'
-                            : 'none',
+                        minHeight: 44,
+                        maxHeight: 120,
+                        fontFamily: 'inherit',
+                        lineHeight: 1.5,
                       }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {isLoading || isExecutingAction ? (
-                        <Loader size={18} className="animate-spin text-slate-400" strokeWidth={2} />
-                      ) : (
-                        <Send
-                          size={18}
-                          color={inputValue.trim() && connectionStatus === 'connected' ? '#fff' : '#94a3b8'}
-                          strokeWidth={2}
-                        />
-                      )}
-                    </motion.button>
+                    />
+
+                    {/* Botão Enviar Integrado */}
+                    <div className="absolute right-1.5 bottom-1.5 z-10">
+                      <motion.button
+                        onClick={() => sendMessage()}
+                        disabled={
+                          !inputValue.trim() ||
+                          isLoading ||
+                          isExecutingAction ||
+                          connectionStatus !== 'connected'
+                        }
+                        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all disabled:cursor-not-allowed ${
+                          inputValue.trim() && !isLoading && connectionStatus === 'connected'
+                            ? 'bg-teal-600 text-white shadow-sm hover:bg-teal-700'
+                            : 'bg-slate-200 text-slate-400 dark:bg-slate-700'
+                        }`}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {isLoading || isExecutingAction ? (
+                          <Loader size={16} className="animate-spin text-slate-500" strokeWidth={2} />
+                        ) : (
+                          <ArrowDown size={18} strokeWidth={2.5} className="rotate-[-90deg]" />
+                        )}
+                      </motion.button>
+                    </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between mt-2 text-[10.5px] text-slate-400 dark:text-slate-500">
+                  <div className="flex items-center justify-between mt-2 px-1 text-[10.5px] text-slate-400 dark:text-slate-500">
                     <span>Enter para enviar · Shift+Enter nova linha</span>
                     <span className="flex items-center gap-1">
                       <Sparkles size={10} color="#0d9488" />
@@ -2316,6 +2316,7 @@ const KakaBot = () => {
                     </span>
                   </div>
                 </div>
+
               </div>
             </motion.div>
           </>

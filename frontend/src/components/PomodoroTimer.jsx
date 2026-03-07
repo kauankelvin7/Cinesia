@@ -1,11 +1,9 @@
 /**
- * ⏱️ POMODORO TIMER - Timer de Estudos Flutuante
- * 
- * Timer Pomodoro integrado: 25min Foco / 5min Pausa
+ * ⏱️ POMODORO TIMER - Timer de Estudos Flutuante Premium
+ * * Timer Pomodoro integrado: 25min Foco / 5min Pausa
  * Incrementa horas estudadas no dashboard
  * Design minimalista e não-intrusivo
- * 
- * OTIMIZAÇÕES v2.0:
+ * * OTIMIZAÇÕES v2.0:
  * - React.memo para evitar re-renders
  * - useCallback para handlers estáveis
  * - useMemo para cálculos derivados
@@ -30,6 +28,10 @@ import { useAuth } from '../contexts/AuthContext-firebase';
 // Configurações do Pomodoro
 const FOCUS_TIME = 25 * 60; // 25 minutos em segundos
 const BREAK_TIME = 5 * 60;  // 5 minutos em segundos
+
+const cleanUndefined = (obj) => {
+  return JSON.parse(JSON.stringify(obj));
+};
 
 const PomodoroTimer = memo(() => {
   const { user } = useAuth();
@@ -141,31 +143,26 @@ const PomodoroTimer = memo(() => {
       const today = new Date().toISOString().split('T')[0];
       const pomodoroRef = doc(db, 'pomodoro', `${userId}_${today}`);
       
-      await setDoc(pomodoroRef, {
+      const pomodoroData = {
         uid: userId,
         date: today,
         cycles,
         minutesStudied: minutes,
         updatedAt: serverTimestamp()
-      }, { merge: true });
-      await setDoc(pomodoroRef, cleanUndefined({
-        uid: userId,
-        date: today,
-        cycles,
-        minutesStudied: minutes,
-        updatedAt: serverTimestamp()
-      }), { merge: true });
+      };
+
+      await setDoc(pomodoroRef, pomodoroData, { merge: true });
+      await setDoc(pomodoroRef, cleanUndefined(pomodoroData), { merge: true });
       
       // Atualizar também o total do usuário (setDoc + merge para criar se não existir)
       const userRef = doc(db, 'users', userId);
-      await setDoc(userRef, {
+      const userData = {
         totalMinutesStudied: increment(25),
         lastPomodoroAt: serverTimestamp()
-      }, { merge: true });
-      await setDoc(userRef, cleanUndefined({
-        totalMinutesStudied: increment(25),
-        lastPomodoroAt: serverTimestamp()
-      }), { merge: true });
+      };
+
+      await setDoc(userRef, userData, { merge: true });
+      await setDoc(userRef, cleanUndefined(userData), { merge: true });
       
     } catch (error) {
       if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
@@ -233,162 +230,178 @@ const PomodoroTimer = memo(() => {
         className="fixed bottom-[148px] right-4 z-[50] sm:bottom-6 sm:right-24 lg:bottom-6 lg:right-28"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
       >
         <AnimatePresence mode="wait">
           {!isExpanded ? (
-            // Botão Minimizado
+            // Botão Minimizado (FAB Premium)
             <motion.button
               key="minimized"
               onClick={() => setIsExpanded(true)}
               aria-label="Abrir temporizador Pomodoro"
               aria-pressed={false}
-              className={`relative w-14 h-14 max-[374px]:w-12 max-[374px]:h-12 rounded-full shadow-md flex items-center justify-center transition-colors ${
+              className={`relative w-14 h-14 max-[374px]:w-12 max-[374px]:h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
                 isRunning
                   ? mode === 'focus'
-                    ? 'bg-primary-600'
-                    : 'bg-amber-500'
-                  : 'bg-slate-600'
+                    ? 'bg-gradient-to-br from-indigo-500 to-teal-500 shadow-indigo-500/40'
+                    : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/40'
+                  : 'bg-slate-700 dark:bg-slate-800 shadow-slate-900/20'
               }`}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.95 }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
             >
               {isRunning ? (
                 <motion.div
-                  className="absolute inset-0 rounded-full border-2 border-white/30"
+                  className="absolute inset-0 rounded-full border-2 border-white/20"
                   style={{
-                    background: `conic-gradient(transparent ${100 - progress}%, rgba(255,255,255,0.3) ${100 - progress}%)`
+                    background: `conic-gradient(transparent ${100 - progress}%, rgba(255,255,255,0.25) ${100 - progress}%)`
                   }}
                 />
               ) : null}
-              <Timer className="text-white" size={24} />
+              <Timer className="text-white relative z-10" size={24} strokeWidth={2} />
+              
               {isRunning && (
                 <motion.div
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs font-bold text-slate-700 shadow-md"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
+                  className="absolute -top-1 -right-1 w-[22px] h-[22px] bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-slate-800 shadow-md border border-slate-100"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 >
                   {Math.floor(timeLeft / 60)}
                 </motion.div>
               )}
             </motion.button>
           ) : (
-            // Painel Expandido
+            // Painel Expandido (Glassmorphism Style)
             <motion.div
               key="expanded"
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-md overflow-hidden w-72 border border-slate-200 dark:border-slate-700"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[28px] shadow-2xl overflow-hidden w-[300px] border border-slate-200/60 dark:border-slate-700/60 flex flex-col"
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
             >
               {/* Header */}
-              <div className={`px-4 py-3 flex items-center justify-between ${
+              <div className={`px-5 py-4 flex items-center justify-between ${
                 mode === 'focus'
-                  ? 'bg-primary-600'
-                  : 'bg-amber-500'
+                  ? 'bg-gradient-to-r from-indigo-600 to-teal-500'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500'
               }`}>
-                <div className="flex items-center gap-2 text-white">
+                <div className="flex items-center gap-2.5 text-white">
                   {mode === 'focus' ? (
-                    <Brain size={20} />
+                    <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                      <Brain size={18} strokeWidth={2.5} />
+                    </div>
                   ) : (
-                    <Coffee size={20} />
+                    <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm">
+                      <Coffee size={18} strokeWidth={2.5} />
+                    </div>
                   )}
-                  <span className="font-semibold">
-                    {mode === 'focus' ? 'Modo Foco' : 'Pausa'}
+                  <span className="font-bold text-[15px] tracking-wide">
+                    {mode === 'focus' ? 'Modo Foco' : 'Pausa Curta'}
                   </span>
                 </div>
                 <button
                   onClick={() => setIsExpanded(false)}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm"
                 >
-                  <ChevronDown className="text-white" size={20} />
+                  <ChevronDown className="text-white" size={20} strokeWidth={2.5} />
                 </button>
               </div>
 
               {/* Timer Display */}
               <div className="p-6 text-center">
                 {/* Círculo de Progresso */}
-                <div className="relative w-32 h-32 mx-auto mb-4">
+                <div className="relative w-40 h-40 mx-auto mb-6">
                   <svg className="w-full h-full transform -rotate-90">
                     <circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="80"
+                      cy="80"
+                      r="70"
                       fill="none"
-                      stroke="#E2E8F0"
+                      className="stroke-slate-100 dark:stroke-slate-800"
                       strokeWidth="8"
                     />
                     <motion.circle
-                      cx="64"
-                      cy="64"
-                      r="56"
+                      cx="80"
+                      cy="80"
+                      r="70"
                       fill="none"
-                      stroke={mode === 'focus' ? '#14B8A6' : '#F59E0B'}
+                      stroke={mode === 'focus' ? '#6366f1' : '#f59e0b'} // Indigo vs Amber
                       strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={352}
-                      strokeDashoffset={352 - (352 * progress) / 100}
-                      transition={{ duration: 0.5 }}
+                      strokeDasharray={440}
+                      strokeDashoffset={440 - (440 * progress) / 100}
+                      transition={{ duration: 0.5, ease: "linear" }}
+                      style={{ filter: `drop-shadow(0 0 6px ${mode === 'focus' ? 'rgba(99,102,241,0.4)' : 'rgba(245,158,11,0.4)'})` }}
                     />
                   </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[40px] font-extrabold text-slate-800 dark:text-white font-mono tracking-tighter leading-none mt-2">
                       {formatTime(timeLeft)}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                      {mode === 'focus' ? 'Focado' : 'Relaxando'}
                     </span>
                   </div>
                 </div>
 
-                {/* Controles */}
-                <div className="flex items-center justify-center gap-3 mb-4">
+                {/* Controles Principais */}
+                <div className="flex items-center justify-center gap-4 mb-6">
                   <motion.button
                     onClick={resetTimer}
-                    className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                    className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-colors text-slate-500 dark:text-slate-400"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    title="Reiniciar Timer"
                   >
-                    <RotateCcw size={20} className="text-slate-600" />
+                    <RotateCcw size={20} strokeWidth={2.5} />
                   </motion.button>
                   
                   <motion.button
                     onClick={toggleTimer}
-                    className={`p-4 rounded-xl text-white transition-colors ${
+                    className={`w-16 h-16 flex items-center justify-center rounded-[20px] text-white shadow-lg transition-all ${
                       mode === 'focus'
-                        ? 'bg-primary-500 hover:bg-primary-600'
-                        : 'bg-amber-500 hover:bg-amber-600'
+                        ? 'bg-gradient-to-br from-indigo-500 to-teal-500 shadow-indigo-500/25 hover:shadow-indigo-500/40'
+                        : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-orange-500/25 hover:shadow-orange-500/40'
                     }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {isRunning ? <Pause size={24} /> : <Play size={24} />}
+                    {isRunning ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
                   </motion.button>
 
                   <motion.button
                     onClick={() => switchMode(mode === 'focus' ? 'break' : 'focus')}
-                    className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                    className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl transition-colors text-slate-500 dark:text-slate-400"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    title={mode === 'focus' ? 'Pular para Pausa' : 'Pular para Foco'}
                   >
                     {mode === 'focus' ? (
-                      <Coffee size={20} className="text-slate-600" />
+                      <Coffee size={20} strokeWidth={2.5} />
                     ) : (
-                      <Brain size={20} className="text-slate-600" />
+                      <Brain size={20} strokeWidth={2.5} />
                     )}
                   </motion.button>
                 </div>
 
-                {/* Estatísticas do Dia */}
-                <div className="bg-slate-50 rounded-xl p-3 text-sm">
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span>Ciclos hoje:</span>
-                    <span className="font-bold text-slate-900 dark:text-white">{cyclesCompleted}</span>
+                {/* Estatísticas do Dia (Box style) */}
+                <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-4 text-[13px] font-medium border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-500 dark:text-slate-400">Ciclos hoje:</span>
+                    <span className="font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-700 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-600">
+                      {cyclesCompleted} <span className="text-[10px] text-amber-500 ml-0.5">🔥</span>
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 mt-1">
-                    <span>Tempo estudado:</span>
-                    <span className="font-bold text-primary-600 dark:text-primary-400">{formatHours(totalMinutesToday)}</span>
+                  <div className="w-full h-px bg-slate-200 dark:bg-slate-700/50 my-2" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 dark:text-slate-400">Tempo total:</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                      {formatHours(totalMinutesToday)}
+                    </span>
                   </div>
                 </div>
               </div>

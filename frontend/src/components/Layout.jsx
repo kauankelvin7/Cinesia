@@ -7,35 +7,39 @@ import BottomNavigation from './BottomNavigation';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useFocusMode } from '../contexts/FocusModeContext';
 import { useSocial } from '../features/social/context/SocialContext';
+import { 
+  Menu, 
+  X, 
+  ChevronLeft, 
+  ChevronRight, 
+  AlertTriangle, 
+  RefreshCw,
+  Sparkles
+} from 'lucide-react';
 
+/* ── Error Boundary com Design Premium ── */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {}
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, errorInfo) { console.error("Layout Error:", error, errorInfo); }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-slate-900 text-center p-8 transition-colors">
-          <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 text-center p-8">
+          <div className="w-20 h-20 rounded-[24px] bg-red-50 dark:bg-red-900/20 flex items-center justify-center mb-6 border border-red-100 dark:border-red-800">
+            <AlertTriangle size={40} className="text-red-500" />
           </div>
-          <h2 className="text-lg font-semibold mb-2 text-slate-900 dark:text-slate-100">Ocorreu um erro inesperado</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Tente recarregar a página.</p>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Ops! Algo deu errado</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-[15px] mb-8 max-w-xs mx-auto">Não se preocupe, isso acontece. Vamos tentar de novo?</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
+            className="flex items-center gap-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
           >
-            Recarregar
+            <RefreshCw size={18} /> Recarregar Sistema
           </button>
         </div>
       );
@@ -49,7 +53,7 @@ const KakaBot = lazy(() => import('./KakaBot'));
 const ChatPanel = lazy(() => import('../features/social/components/chat/ChatPanel'));
 const ChallengeRoom = lazy(() => import('../features/social/components/challenges/ChallengeRoom'));
 
-/* ── Mobile Topbar with Avatar ── */
+/* ── Mobile Topbar Refinada ── */
 const MobileTopbar = memo(({ onOpenDrawer }) => {
   const { user } = useAuth();
   const [imgError, setImgError] = useState(false);
@@ -57,60 +61,43 @@ const MobileTopbar = memo(({ onOpenDrawer }) => {
   const initials = (user?.displayName || user?.email || 'U')
     .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
-  const avatarColors = ['#2563EB','#0D9488','#7C3AED','#059669','#D97706','#DB2777'];
+  const avatarColors = ['#6366F1', '#14B8A6', '#F59E0B', '#EF4444', '#8B5CF6'];
   const avatarBg = avatarColors[(user?.displayName || user?.email || '')?.charCodeAt(0) % avatarColors.length || 0];
 
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between h-14 px-4 backdrop-blur-xl transition-colors"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
-        borderBottom: '1px solid var(--border)',
-      }}
-    >
-      {/* Left: Hamburger + Logo */}
-      <div className="flex items-center gap-3">
+    <header className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between h-16 px-5 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-900/80 transition-all">
+      <div className="flex items-center gap-4">
         <button
           onClick={onOpenDrawer}
-          className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-colors"
-          style={{
-            border: '1px solid var(--border)',
-            backgroundColor: 'var(--bg-elevated)',
-            color: 'var(--text-2)',
-          }}
-          aria-label="Abrir menu"
+          className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-90 transition-all"
+          aria-label="Menu"
         >
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <Menu size={20} strokeWidth={2.5} />
         </button>
-        <span className="font-display font-extrabold text-base" style={{ color: 'var(--primary)' }}>
-          Cinesia
-        </span>
+        <div className="flex items-center gap-2">
+          <Logo size="small" iconOnly />
+          <span className="font-black text-[18px] tracking-tighter text-slate-900 dark:text-white">Cinesia</span>
+        </div>
       </div>
 
-      {/* Right: Avatar */}
-      {user?.photoURL && !imgError ? (
-        <img
-          src={user.photoURL}
-          alt={user.displayName || ''}
-          className="w-9 h-9 rounded-full object-cover shrink-0 cursor-pointer transition-transform hover:scale-105"
-          style={{ border: '2px solid var(--primary)' }}
-          onError={() => setImgError(true)}
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 cursor-pointer"
-          style={{ backgroundColor: avatarBg }}
-        >
-          {initials}
-        </div>
-      )}
+      <div className="relative">
+        {user?.photoURL && !imgError ? (
+          <img
+            src={user.photoURL}
+            alt="Perfil"
+            className="w-9 h-9 rounded-full object-cover border-2 border-indigo-500 shadow-sm"
+            onError={() => setImgError(true)}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md border-2 border-white dark:border-slate-700" style={{ backgroundColor: avatarBg }}>
+            {initials}
+          </div>
+        )}
+      </div>
     </header>
   );
 });
-MobileTopbar.displayName = 'MobileTopbar';
 
 const Layout = memo(({ children }) => {
   const location = useLocation();
@@ -118,19 +105,13 @@ const Layout = memo(({ children }) => {
   const { activeChallengeId, endChallenge } = useSocial();
   const { user } = useAuth();
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768);
-
   const [sidebarVisible, setSidebarVisible] = useState(() => {
     if (typeof window === 'undefined') return false;
-    if (window.innerWidth >= 768) {
-      const saved = localStorage.getItem('sidebarVisible');
-      return saved !== null ? JSON.parse(saved) : true;
-    }
-    return false;
+    const saved = localStorage.getItem('sidebarVisible');
+    return isDesktop ? (saved !== null ? JSON.parse(saved) : true) : false;
   });
 
-  // Mobile drawer state (separate from desktop sidebar)
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-
   const isQuadroBranco = location.pathname === '/quadro-branco';
 
   const handleResize = useCallback(() => {
@@ -141,9 +122,7 @@ const Layout = memo(({ children }) => {
     } else {
       setMobileDrawerOpen(false);
       const saved = localStorage.getItem('sidebarVisible');
-      if (saved !== null) {
-        setSidebarVisible(JSON.parse(saved));
-      }
+      if (saved !== null) setSidebarVisible(JSON.parse(saved));
     }
   }, []);
 
@@ -153,41 +132,22 @@ const Layout = memo(({ children }) => {
   }, [handleResize]);
 
   useEffect(() => {
-    if (isDesktop) {
-      localStorage.setItem('sidebarVisible', JSON.stringify(sidebarVisible));
-    }
+    if (isDesktop) localStorage.setItem('sidebarVisible', JSON.stringify(sidebarVisible));
   }, [sidebarVisible, isDesktop]);
 
-  const toggleSidebar = useCallback(() => {
-    setSidebarVisible(prev => !prev);
-  }, []);
+  const toggleSidebar = useCallback(() => setSidebarVisible(p => !p), []);
 
-  // Close mobile drawer on navigation
-  useEffect(() => {
-    if (mobileDrawerOpen) {
-      setMobileDrawerOpen(false);
-    }
-  }, [location.pathname]);
+  useEffect(() => { if (mobileDrawerOpen) setMobileDrawerOpen(false); }, [location.pathname]);
 
-  // Lock body scroll when mobile drawer is open
   useEffect(() => {
-    if (mobileDrawerOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = mobileDrawerOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileDrawerOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        toggleSidebar();
-      }
-      if (e.key === 'Escape' && focusMode) {
-        exitFocusMode();
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') { e.preventDefault(); toggleSidebar(); }
+      if (e.key === 'Escape' && focusMode) exitFocusMode();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -195,91 +155,48 @@ const Layout = memo(({ children }) => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen overflow-x-hidden flex flex-col transition-colors duration-200" style={{ backgroundColor: 'var(--bg-page)' }}>
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-200 focus:bg-primary-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:outline-none"
-        >
-          Pular para o conteúdo principal
-        </a>
-
-        {/* Mobile header with Avatar */}
-        {!isDesktop && !focusMode && (
-          <MobileTopbar onOpenDrawer={() => setMobileDrawerOpen(true)} />
-        )}
-
-        {/* Mobile sidebar drawer + overlay */}
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-500 overflow-x-hidden">
+        
+        {/* Mobile View */}
         {!isDesktop && !focusMode && (
           <>
+            <MobileTopbar onOpenDrawer={() => setMobileDrawerOpen(true)} />
             <AnimatePresence>
               {mobileDrawerOpen && (
-                <motion.div
-                  className="fixed inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm z-190"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={() => setMobileDrawerOpen(false)}
-                />
-              )}
-            </AnimatePresence>
-            <AnimatePresence>
-              {mobileDrawerOpen && (
-                <motion.div
-                  className="fixed left-0 top-0 bottom-0 z-200 w-70 max-w-[85vw]"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: 0 }}
-                  exit={{ x: '-100%' }}
-                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                >
-                  <Sidebar />
-                </motion.div>
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[70]"
+                    onClick={() => setMobileDrawerOpen(false)}
+                  />
+                  <motion.div 
+                    initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                    className="fixed left-0 top-0 bottom-0 z-[80] w-[280px] shadow-2xl"
+                  >
+                    <Sidebar />
+                  </motion.div>
+                </>
               )}
             </AnimatePresence>
           </>
         )}
 
-        {/* Desktop sidebar */}
+        {/* Desktop Sidebar + Toggle */}
         {isDesktop && !focusMode && (
           <>
             <button
-              className={`
-                fixed z-40 p-2 rounded-lg
-                hover:bg-slate-50 dark:hover:bg-slate-700
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900
-                transition-all duration-200 shadow-sm
-                top-1/2 -translate-y-1/2
-                ${sidebarVisible ? 'left-63' : 'left-4'}
-              `}
-              style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border)' }}
               onClick={toggleSidebar}
-              aria-label={sidebarVisible ? "Ocultar menu (Ctrl+B)" : "Mostrar menu (Ctrl+B)"}
-              title={sidebarVisible ? "Ocultar menu (Ctrl+B)" : "Mostrar menu (Ctrl+B)"}
+              className={`fixed z-[55] w-8 h-12 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-r-xl shadow-sm hover:bg-slate-50 transition-all top-1/2 -translate-y-1/2 ${sidebarVisible ? 'left-64' : 'left-0'}`}
             >
-              <svg
-                width="18"
-                height="18"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="text-slate-500 dark:text-slate-400"
-              >
-                {sidebarVisible ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              {sidebarVisible ? <ChevronLeft size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
             </button>
-
             <AnimatePresence mode="wait">
               {sidebarVisible && (
-                <motion.div
-                  className="fixed left-0 top-0 bottom-0 z-50"
-                  initial={{ x: -264 }}
-                  animate={{ x: 0 }}
-                  exit={{ x: -264 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                <motion.div 
+                  initial={{ x: -264 }} animate={{ x: 0 }} exit={{ x: -264 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className="fixed left-0 top-0 bottom-0 z-50 w-64 shadow-xl border-r border-slate-200/50 dark:border-slate-800/50"
                 >
                   <Sidebar />
                 </motion.div>
@@ -288,85 +205,57 @@ const Layout = memo(({ children }) => {
           </>
         )}
 
-        {/* Main content */}
-        <main
+        {/* Main Area */}
+        <main 
           id="main-content"
-          className={`
-            flex-1 min-h-0
-            transition-[margin] duration-200 ease-in-out
-            ${!isDesktop && !focusMode ? 'mt-14 mb-16' : ''}
-            ${isDesktop && sidebarVisible && !focusMode ? 'ml-64' : 'ml-0'}
-            ${!isQuadroBranco ? (isDesktop ? 'pt-8 px-8' : 'px-4 pt-4') : ''}
-          `}
+          className={`flex-1 transition-all duration-300 ease-in-out ${!isDesktop && !focusMode ? 'mt-16 mb-20' : ''} ${isDesktop && sidebarVisible && !focusMode ? 'ml-64' : 'ml-0'}`}
         >
-          <motion.div
-            key={location.pathname}
-            className={`w-full ${isQuadroBranco ? 'h-full' : 'max-w-full mx-auto'}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-          >
-            {children}
-          </motion.div>
+          <div className={`${!isQuadroBranco ? (isDesktop ? 'p-8' : 'p-4') : 'h-full'}`}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
+          </div>
         </main>
 
-        {/* Floating utilities */}
-        {!isDesktop && !isQuadroBranco && !focusMode && (
-          <Suspense fallback={null}>
-            <PomodoroTimer />
-          </Suspense>
-        )}
-        {!isDesktop && !focusMode && <BottomNavigation />}
-        {isDesktop && !isQuadroBranco && !focusMode && (
-          <Suspense fallback={null}>
-            <PomodoroTimer />
-          </Suspense>
-        )}
+        {/* Widgets Flutuantes */}
+        <Suspense fallback={null}>
+          {!focusMode && <PomodoroTimer />}
+          {!isDesktop && !focusMode && <BottomNavigation />}
+        </Suspense>
 
-        {/* Botões flutuantes — canto inferior direito (Chat + IA) */}
+        {/* Floating Actions (Bottom-Right) */}
         {!focusMode && (
-          <div className="fixed bottom-[80px] right-3 md:bottom-6 md:right-6 z-50 flex flex-col items-center gap-3">
-            {/* Chat — botão oculto no mobile (acessível pelo Bottom Sheet "Mais") */}
+          <div className="fixed bottom-[90px] right-4 md:bottom-8 md:right-8 z-[55] flex flex-col items-center gap-4">
             <Suspense fallback={null}>
               <ChatPanel showButton={isDesktop} />
+              {!isQuadroBranco && <KakaBot />}
             </Suspense>
-
-            {/* Agente IA */}
-            {!isQuadroBranco && (
-              <Suspense fallback={null}>
-                <KakaBot />
-              </Suspense>
-            )}
           </div>
         )}
 
-        {/* Focus Mode exit button */}
+        {/* Focus Mode Overlay */}
         <AnimatePresence>
           {focusMode && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
               onClick={exitFocusMode}
-              className="fixed top-4 right-4 z-200 px-3 py-2 rounded-xl bg-slate-900/80 dark:bg-white/90 text-white dark:text-slate-900 text-xs font-medium backdrop-blur-sm shadow-lg hover:bg-slate-900 dark:hover:bg-white transition-colors flex items-center gap-1.5"
-              title="Sair do Modo Foco (Esc)"
+              className="fixed top-6 right-6 z-[100] flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-slate-900/90 dark:bg-white/90 text-white dark:text-slate-900 font-bold text-[13px] backdrop-blur-md shadow-2xl border border-white/10"
             >
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Sair do Foco
+              <X size={16} strokeWidth={3} /> Sair do Foco (Esc)
             </motion.button>
           )}
         </AnimatePresence>
 
-        {/* Global Challenge Room overlay — renders from any page */}
+        {/* Global Challenge Overlay */}
         {activeChallengeId && (
           <Suspense fallback={null}>
-            <ChallengeRoom
-              challengeId={activeChallengeId}
-              currentUserId={user?.uid}
-              onClose={endChallenge}
-            />
+            <ChallengeRoom challengeId={activeChallengeId} currentUserId={user?.uid} onClose={endChallenge} />
           </Suspense>
         )}
       </div>
@@ -375,5 +264,4 @@ const Layout = memo(({ children }) => {
 });
 
 Layout.displayName = 'Layout';
-
 export default Layout;

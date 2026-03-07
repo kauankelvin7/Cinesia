@@ -1,32 +1,38 @@
 @echo off
-REM Simple build and run script for Cinesia Backend using Java
-
 setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
 
-echo Building Cinesia Backend...
+echo 🔍 Verificando ambiente Java e Maven...
+
+REM Tenta detectar se já estão no PATH
+javac -version >nul 2>&1
+if !ERRORLEVEL! NEQ 0 (
+    echo ⚠️ JDK nao detectado no PATH. Tentando localizar...
+    set "JAVA_HOME=C:\Program Files\Java\jdk-17"  REM <-- AJUSTE SUA VERSAO AQUI
+    set "PATH=!JAVA_HOME!\bin;!PATH!"
+)
+
+mvn -v >nul 2>&1
+if !ERRORLEVEL! NEQ 0 (
+    echo ⚠️ Maven nao detectado no PATH. Tentando localizar...
+    set "M2_HOME=C:\Program Files\apache-maven-3.9.6" REM <-- AJUSTE SUA PASTA AQUI
+    set "PATH=!M2_HOME!\bin;!PATH!"
+)
+
+echo.
+echo 🚀 Iniciando Build do Cinesia...
 echo.
 
-REM Create output directories
-if not exist "build\classes" mkdir build\classes
-if not exist "build\lib" mkdir build\lib
-
-REM Compile Java files
-echo Compiling Java files...
-javac -d build\classes -sourcepath src\main\java src\main\java\com\fisioterapia\cinesia\*.java 2>nul
+REM Agora usamos o Maven de verdade
+call mvn clean install -DskipTests
 
 if !ERRORLEVEL! EQU 0 (
-    echo Build successful!
-    echo.
-    echo Starting application...
-    java -cp "build\classes" com.fisioterapia.cinesia.CinesiaApplication
+    echo ✅ Sucesso! Rodando aplicacao...
+    call mvn spring-boot:run
 ) else (
-    echo Build failed. Maven is required to build this project.
-    echo.
-    echo Please install Maven:
-    echo choco install maven
-    echo.
+    echo ❌ O Maven falhou ao compilar. 
+    echo Verifique se o arquivo pom.xml esta na mesma pasta deste .bat.
     pause
 )
 

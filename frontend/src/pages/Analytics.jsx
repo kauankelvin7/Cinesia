@@ -1,7 +1,6 @@
 /**
- * 📊 ANALYTICS - Página de Estatísticas de Estudo
- * 
- * Gráficos e métricas de desempenho do usuário.
+ * 📊 ANALYTICS - Página de Estatísticas de Estudo Premium
+ * * Gráficos e métricas de desempenho do usuário.
  * Usa recharts para visualizações interativas.
  */
 
@@ -18,6 +17,7 @@ import {
   FileText,
   Zap,
   Clock,
+  ChevronRight
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -137,203 +137,260 @@ function Analytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"
+            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+            className="w-14 h-14 border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-500 rounded-full mx-auto mb-5 shadow-lg"
           />
-          <p className="text-slate-500 dark:text-slate-400">Carregando analytics...</p>
+          <p className="text-[15px] font-bold text-slate-500 dark:text-slate-400">Processando seus dados...</p>
         </div>
       </div>
     );
   }
 
-  const KpiCard = ({ icon: Icon, label, value, color, sub }) => (
+  const KpiCard = ({ icon: Icon, label, value, colorClass, gradientClass, sub, onClick }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
+      whileHover={onClick ? { y: -4, scale: 1.01 } : {}}
+      onClick={onClick}
+      className={`relative overflow-hidden bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all ${onClick ? 'cursor-pointer hover:shadow-lg' : ''}`}
     >
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={18} className="text-white" />
+      <div className="flex items-center gap-4 mb-4">
+        <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shadow-sm ${gradientClass}`}>
+          <Icon size={22} className="text-white" strokeWidth={2} />
         </div>
-        <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">{label}</span>
+        <span className="text-[14px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+      <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{value}</p>
+      {sub && (
+        <p className={`text-[12px] font-semibold mt-2 flex items-center gap-1 ${colorClass}`}>
+          {sub}
+        </p>
+      )}
     </motion.div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 pb-24">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
-            <BarChart3 size={22} className="text-white" />
+    <div className="min-h-screen pb-32 pt-8 px-4 bg-slate-50/50 dark:bg-slate-950">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Premium */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[18px] flex items-center justify-center shadow-lg shadow-indigo-500/25 border border-indigo-400 dark:border-indigo-600">
+              <BarChart3 size={30} className="text-white" strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none mb-1.5">
+                Analytics
+              </h1>
+              <p className="text-[15px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <TrendingUp size={16} className="text-indigo-500" />
+                Acompanhe seu progresso e desempenho
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics</h1>
-        </div>
-        <p className="text-slate-500 dark:text-slate-400">Acompanhe seu progresso e desempenho</p>
-      </motion.div>
+        </motion.div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard icon={Brain} label="Flashcards" value={data.flashcards.length} color="bg-indigo-500" />
-        <KpiCard icon={FileText} label="Resumos" value={data.resumos.length} color="bg-emerald-500" />
-        <div
-          onClick={() => navigate('/historico-simulados')}
-          className="cursor-pointer"
-          title="Ver histórico de simulados"
-        >
-          <KpiCard icon={Target} label="Simulados" value={data.simulados.length} color="bg-amber-500" sub={`Média: ${avgScore}% — Ver detalhes →`} />
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          <KpiCard 
+            icon={Brain} 
+            label="Flashcards" 
+            value={data.flashcards.length} 
+            gradientClass="bg-gradient-to-br from-blue-500 to-indigo-600" 
+            colorClass="text-indigo-500"
+          />
+          <KpiCard 
+            icon={FileText} 
+            label="Resumos" 
+            value={data.resumos.length} 
+            gradientClass="bg-gradient-to-br from-teal-400 to-emerald-600"
+            colorClass="text-emerald-500" 
+          />
+          <KpiCard 
+            icon={Target} 
+            label="Simulados" 
+            value={data.simulados.length} 
+            gradientClass="bg-gradient-to-br from-amber-400 to-orange-500" 
+            colorClass="text-amber-600 dark:text-amber-400"
+            sub={<span>Média: {avgScore}% <ChevronRight size={14} className="inline -ml-0.5" /></span>} 
+            onClick={() => navigate('/historico-simulados')}
+          />
+          <KpiCard 
+            icon={Clock} 
+            label="Tempo" 
+            value={`${totalStudyTime}m`} 
+            gradientClass="bg-gradient-to-br from-purple-500 to-pink-600" 
+            colorClass="text-purple-500"
+            sub="Dedicado a simulados" 
+          />
         </div>
-        <KpiCard icon={Clock} label="Tempo Total" value={`${totalStudyTime}min`} color="bg-purple-500" sub="Em simulados" />
-      </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Activity last 7 days */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
-        >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-indigo-500" />
-            Atividade (últimos 7 dias)
-          </h3>
-          {activityChart.some(d => d.flashcards > 0 || d.resumos > 0) ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={activityChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" allowDecimals={false} />
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Activity last 7 days */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[28px] p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xl"
+          >
+            <h3 className="text-[18px] font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2.5">
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                <Calendar size={20} className="text-indigo-600 dark:text-indigo-400" strokeWidth={2.5} />
+              </div>
+              Produção (últimos 7 dias)
+            </h3>
+            {activityChart.some(d => d.flashcards > 0 || d.resumos > 0) ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={activityChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis tick={{ fontSize: 12, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                    contentStyle={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', fontWeight: 600 }}
+                    itemStyle={{ fontWeight: 700 }}
+                  />
+                  <Bar dataKey="flashcards" name="Flashcards" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={16} />
+                  <Bar dataKey="resumos" name="Resumos" fill="#10b981" radius={[6, 6, 0, 0]} barSize={16} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[240px] flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                <Calendar size={32} className="mb-2 opacity-50" />
+                <span className="text-[14px] font-bold">Sem atividade nos últimos 7 dias</span>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Content distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[28px] p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xl"
+          >
+            <h3 className="text-[18px] font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2.5">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
+                <BookOpen size={20} className="text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+              </div>
+              Distribuição de Conteúdo
+            </h3>
+            {pieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={6} dataKey="value" stroke="none">
+                    {pieData.map((_, i) => (
+                      <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', fontWeight: 600 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 13, fontWeight: 700, color: '#64748B' }} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[240px] flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                <BookOpen size={32} className="mb-2 opacity-50" />
+                <span className="text-[14px] font-bold">Nenhum conteúdo criado ainda</span>
+              </div>
+            )}
+          </motion.div>
+        </div>
+
+        {/* Simulados performance line */}
+        {simuladosChart.length > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[28px] p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xl mb-8"
+          >
+            <h3 className="text-[18px] font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2.5">
+              <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-xl">
+                <TrendingUp size={20} className="text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
+              </div>
+              Evolução nos Simulados
+            </h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={simuladosChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorNota" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} dy={10} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 13 }}
+                  contentStyle={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                  itemStyle={{ fontWeight: 800, fontSize: 16 }}
+                  labelStyle={{ color: '#94A3B8', fontWeight: 600, marginBottom: 4 }}
+                  formatter={(value) => [`${value}%`, 'Nota']}
+                  labelFormatter={(label) => {
+                    const item = simuladosChart.find(s => s.name === label);
+                    return item?.tema || label;
+                  }}
                 />
-                <Bar dataKey="flashcards" name="Flashcards" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="resumos" name="Resumos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Area type="monotone" dataKey="nota" stroke="#6366f1" strokeWidth={3} fill="url(#colorNota)" activeDot={{ r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </motion.div>
+        )}
+
+        {/* Per-matéria breakdown */}
+        {materiasChart.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[28px] p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-xl"
+          >
+            <h3 className="text-[18px] font-extrabold text-slate-800 dark:text-white mb-6 flex items-center gap-2.5">
+              <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-xl">
+                <Zap size={20} className="text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
+              </div>
+              Conteúdo por Matéria
+            </h3>
+            <ResponsiveContainer width="100%" height={Math.max(240, materiasChart.length * 45)}>
+              <BarChart data={materiasChart} layout="vertical" margin={{ top: 0, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 12, fill: '#64748B', fontWeight: 600 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: '#64748B', fontWeight: 700 }} axisLine={false} tickLine={false} width={130} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                  contentStyle={{ borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', fontWeight: 600 }}
+                  labelFormatter={(label) => {
+                    const item = materiasChart.find(m => m.name === label);
+                    return item?.fullName || label;
+                  }}
+                />
+                <Bar dataKey="flashcards" name="Flashcards" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={12} />
+                <Bar dataKey="resumos" name="Resumos" fill="#10b981" radius={[0, 6, 6, 0]} barSize={12} />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-400 text-sm">
-              Sem atividade nos últimos 7 dias
-            </div>
-          )}
-        </motion.div>
+          </motion.div>
+        )}
 
-        {/* Content distribution */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
-        >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <BookOpen size={18} className="text-emerald-500" />
-            Distribuição de Conteúdo
-          </h3>
-          {pieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
-                  {pieData.map((_, i) => (
-                    <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 13 }} />
-                <Legend wrapperStyle={{ fontSize: 13 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-400 text-sm">
-              Nenhum conteúdo criado ainda
+        {/* Empty state Geral */}
+        {data.flashcards.length === 0 && data.resumos.length === 0 && data.simulados.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-white/50 dark:bg-slate-800/30 rounded-[32px] border border-dashed border-slate-300 dark:border-slate-700">
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+              <BarChart3 size={36} className="text-slate-400" />
             </div>
-          )}
-        </motion.div>
+            <p className="text-[18px] font-bold text-slate-800 dark:text-slate-200 mb-1">Seu painel está vazio</p>
+            <p className="text-[14px] font-medium text-slate-500 max-w-sm mx-auto">
+              Comece a criar flashcards, resumos e a fazer simulados. Suas estatísticas aparecerão aqui automaticamente.
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Simulados performance line */}
-      {simuladosChart.length > 1 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-700/60 shadow-sm mb-8"
-        >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-amber-500" />
-            Evolução nos Simulados
-          </h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={simuladosChart}>
-              <defs>
-                <linearGradient id="colorNota" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <Tooltip
-                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 13 }}
-                formatter={(value, name) => [`${value}%`, 'Nota']}
-                labelFormatter={(label) => {
-                  const item = simuladosChart.find(s => s.name === label);
-                  return item?.tema || label;
-                }}
-              />
-              <Area type="monotone" dataKey="nota" stroke="#6366f1" strokeWidth={2.5} fill="url(#colorNota)" dot={{ r: 4, fill: '#6366f1' }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-      )}
-
-      {/* Per-matéria breakdown */}
-      {materiasChart.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
-        >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Zap size={18} className="text-purple-500" />
-            Conteúdo por Matéria
-          </h3>
-          <ResponsiveContainer width="100%" height={Math.max(200, materiasChart.length * 40)}>
-            <BarChart data={materiasChart} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis type="number" tick={{ fontSize: 12 }} stroke="#94a3b8" allowDecimals={false} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} stroke="#94a3b8" width={120} />
-              <Tooltip
-                contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 13 }}
-                labelFormatter={(label) => {
-                  const item = materiasChart.find(m => m.name === label);
-                  return item?.fullName || label;
-                }}
-              />
-              <Bar dataKey="flashcards" name="Flashcards" fill="#6366f1" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="resumos" name="Resumos" fill="#10b981" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      )}
-
-      {/* Empty state */}
-      {data.flashcards.length === 0 && data.resumos.length === 0 && data.simulados.length === 0 && (
-        <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-          <BarChart3 size={48} className="mx-auto mb-3 opacity-30" />
-          <p className="text-lg font-medium">Sem dados ainda</p>
-          <p className="text-sm mt-1">Crie flashcards, resumos e faça simulados para ver seus analytics</p>
-        </div>
-      )}
     </div>
   );
 }

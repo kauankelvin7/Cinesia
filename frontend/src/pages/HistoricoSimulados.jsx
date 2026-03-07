@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Plus,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { listarSimulados, criarFlashcard } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
@@ -44,9 +45,9 @@ const getScoreColor = (score) => {
 };
 
 const getScoreBg = (score) => {
-  if (score >= 80) return 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800';
-  if (score >= 60) return 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800';
-  return 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800';
+  if (score >= 80) return 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50';
+  if (score >= 60) return 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50';
+  return 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/50';
 };
 
 function HistoricoSimulados() {
@@ -55,7 +56,6 @@ function HistoricoSimulados() {
   const [simulados, setSimulados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSimulado, setSelectedSimulado] = useState(null);
-  // { id: string, status: 'loading' | 'done' | 'error' }
   const [flashcardStatus, setFlashcardStatus] = useState({});
 
   useEffect(() => {
@@ -78,7 +78,6 @@ function HistoricoSimulados() {
     };
   }, [simulados]);
 
-  // Agrupa questões erradas por tema para exibir pontos fracos
   const pontosFracos = useMemo(() => {
     if (simulados.length === 0) return [];
     const mapa = {};
@@ -97,7 +96,6 @@ function HistoricoSimulados() {
       .slice(0, 5);
   }, [simulados]);
 
-  // Cria flashcard a partir de uma questão errada
   const handleCriarFlashcard = useCallback(async (sim, q, key) => {
     const userId = user?.id || user?.uid;
     if (!userId) return;
@@ -113,89 +111,111 @@ function HistoricoSimulados() {
         userId
       );
       setFlashcardStatus(prev => ({ ...prev, [key]: 'done' }));
+      toast.success('Flashcard criado com sucesso!');
     } catch {
       setFlashcardStatus(prev => ({ ...prev, [key]: 'error' }));
+      toast.error('Erro ao criar flashcard.');
     }
   }, [user]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+            className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"
+          />
+          <p className="text-slate-500 font-bold">Processando histórico...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen pb-32 pt-8 px-4">
+    <div className="min-h-screen pb-32 pt-8 px-4 bg-slate-50/50 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+        {/* Header Premium */}
         <motion.div
-          className="mb-6"
+          className="mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => navigate('/simulado')}
-              className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm active:scale-95"
             >
-              <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
+              <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" strokeWidth={2.5} />
             </button>
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Histórico de Simulados
               </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {stats.total} simulado{stats.total !== 1 ? 's' : ''} realizado{stats.total !== 1 ? 's' : ''}
+              <p className="text-[15px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                Você já completou <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stats.total} sessões</span> de estudo
               </p>
             </div>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards Premium */}
           {stats.total > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               {[
-                { icon: <Target size={16} />, label: 'Média', value: `${stats.media}%`, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30' },
-                { icon: <Trophy size={16} />, label: 'Melhor', value: `${stats.melhor}%`, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30' },
-                { icon: <BookOpen size={16} />, label: 'Total', value: stats.total, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-                { icon: <Clock size={16} />, label: 'Tempo Total', value: formatTime(stats.tempoTotal), color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+                { icon: <Target size={18} />, label: 'Média', value: `${stats.media}%`, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-800' },
+                { icon: <Trophy size={18} />, label: 'Recorde', value: `${stats.melhor}%`, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-800' },
+                { icon: <BookOpen size={18} />, label: 'Simulados', value: stats.total, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-800' },
+                { icon: <Clock size={18} />, label: 'Tempo Total', value: formatTime(stats.tempoTotal), color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-800' },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-5 shadow-sm"
                 >
-                  <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center mb-2 ${stat.color}`}>
+                  <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-3 ${stat.color}`}>
                     {stat.icon}
                   </div>
-                  <p className="text-xl font-bold text-slate-900 dark:text-white font-mono">{stat.value}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stat.value}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Pontos Fracos */}
+          {/* Pontos Fracos Visual Insight */}
           {pontosFracos.length > 0 && (
             <motion.div
-              className="mb-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+              className="mb-10 bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm overflow-hidden relative"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                <AlertTriangle size={15} className="text-amber-500" />
-                Pontos Fracos (por tema)
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl pointer-events-none" />
+              <h2 className="flex items-center gap-2 text-[15px] font-bold text-slate-800 dark:text-slate-200 mb-5">
+                <div className="p-1.5 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
+                  <AlertTriangle size={16} className="text-amber-500" strokeWidth={2.5} />
+                </div>
+                Onde Focar o Estudo (Pontos Fracos)
               </h2>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                 {pontosFracos.map(pt => (
-                  <div key={pt.tema}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs text-slate-600 dark:text-slate-400 truncate max-w-[60%]">{pt.tema}</span>
-                      <span className={`text-xs font-bold font-mono ${
+                  <div key={pt.tema} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-bold text-slate-600 dark:text-slate-300 truncate max-w-[70%]">{pt.tema}</span>
+                      <span className={`text-[12px] font-black font-mono ${
                         pt.pct >= 70 ? 'text-red-500' : pt.pct >= 40 ? 'text-amber-500' : 'text-emerald-500'
                       }`}>
-                        {pt.pct}% erros ({pt.erros}/{pt.total})
+                        {pt.pct}% de erros
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          pt.pct >= 70 ? 'bg-red-400' : pt.pct >= 40 ? 'bg-amber-400' : 'bg-emerald-400'
+                    <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                      <motion.div
+                        className={`h-full rounded-full ${
+                          pt.pct >= 70 ? 'bg-red-500' : pt.pct >= 40 ? 'bg-amber-500' : 'bg-emerald-500'
                         }`}
-                        style={{ width: `${pt.pct}%` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pt.pct}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
                       />
                     </div>
                   </div>
@@ -205,177 +225,210 @@ function HistoricoSimulados() {
           )}
         </motion.div>
 
-        {/* Content */}
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse h-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
-            ))}
-          </div>
-        ) : simulados.length === 0 ? (
+        {/* Content - Lista de Simulados */}
+        {simulados.length === 0 ? (
           <motion.div
-            className="text-center py-16"
+            className="flex flex-col items-center justify-center py-20 text-center bg-white/50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-300 dark:border-slate-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="w-20 h-20 rounded-3xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mx-auto mb-4">
-              <BookOpen size={36} className="text-indigo-400" />
+            <div className="w-20 h-20 rounded-3xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mx-auto mb-6">
+              <BookOpen size={40} className="text-indigo-400" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-              Nenhum simulado realizado
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              Nenhum simulado ainda
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-              Complete um simulado para ver seu histórico aqui
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mb-8 max-w-xs mx-auto leading-relaxed">
+              Realize seu primeiro simulado com IA para começar a traquear seu progresso.
             </p>
-            <Button variant="primary" onClick={() => navigate('/simulado')}>
-              Fazer Simulado
+            <Button variant="primary" size="lg" className="h-12 px-8 rounded-xl font-bold shadow-md bg-indigo-600" onClick={() => navigate('/simulado')}>
+              Começar Agora
             </Button>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            <h2 className="text-[14px] font-bold uppercase tracking-widest text-slate-400 ml-2 mb-4">Sessões Recentes</h2>
             {simulados.map((sim, idx) => (
               <motion.div
                 key={sim.id}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
+                className="group bg-white dark:bg-slate-800 rounded-[22px] border border-slate-200 dark:border-slate-700 p-5 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 onClick={() => setSelectedSimulado(sim)}
               >
-                <div className="flex items-center gap-4">
-                  {/* Score badge */}
-                  <div className={`w-14 h-14 rounded-xl border flex flex-col items-center justify-center shrink-0 ${getScoreBg(sim.score)}`}>
-                    <span className={`text-lg font-bold font-mono ${getScoreColor(sim.score)}`}>
-                      {sim.score}%
+                <div className="flex items-center gap-5">
+                  {/* Score badge Ring Style */}
+                  <div className={`w-16 h-16 rounded-[18px] border-2 flex flex-col items-center justify-center shrink-0 shadow-sm ${getScoreBg(sim.score)}`}>
+                    <span className={`text-xl font-black font-mono leading-none ${getScoreColor(sim.score)}`}>
+                      {sim.score}
                     </span>
+                    <span className={`text-[10px] font-bold uppercase mt-1 opacity-70 ${getScoreColor(sim.score)}`}>%</span>
                   </div>
 
-                  {/* Info */}
+                  {/* Info Section */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                    <h3 className="text-[17px] font-extrabold text-slate-800 dark:text-white truncate tracking-tight mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {sim.tema}
                     </h3>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Target size={12} /> {sim.acertos}/{sim.total}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2 text-[12px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded-md">
+                        <Target size={13} className="text-emerald-500" strokeWidth={3} /> {sim.acertos}/{sim.total} Acertos
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} /> {formatTime(sim.tempoSegundos)}
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={13} /> {formatTime(sim.tempoSegundos)}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar size={12} /> {formatDate(sim.data || sim.createdAt)}
+                      <span className="flex items-center gap-1.5">
+                        <Calendar size={13} /> {formatDate(sim.data || sim.createdAt)}
                       </span>
                     </div>
                   </div>
 
-                  <ChevronRight size={18} className="text-slate-400 shrink-0" />
+                  <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-300 group-hover:text-indigo-500 group-hover:bg-indigo-50 transition-all">
+                    <ChevronRight size={20} strokeWidth={3} />
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         )}
 
-        {/* Detail Modal */}
+        {/* Detail Modal com Glassmorphism e Refinamento de Leitura */}
         <AnimatePresence>
           {selectedSimulado && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedSimulado(null)}
             >
               <motion.div
-                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200/50 dark:border-slate-700/50 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                 onClick={e => e.stopPropagation()}
               >
-                {/* Modal Header */}
-                <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-5 flex items-center justify-between z-10">
+                {/* Modal Header Premium */}
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 p-6 flex items-start justify-between shrink-0">
                   <div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                      {selectedSimulado.tema}
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {formatDate(selectedSimulado.data || selectedSimulado.createdAt)} • {selectedSimulado.acertos}/{selectedSimulado.total} acertos
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800">Review</span>
+                      <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+                        {selectedSimulado.tema}
+                      </h2>
+                    </div>
+                    <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400">
+                      Realizado em {formatDate(selectedSimulado.data || selectedSimulado.createdAt)}
                     </p>
                   </div>
                   <button
                     onClick={() => setSelectedSimulado(null)}
-                    className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm"
                   >
-                    <X size={18} className="text-slate-600 dark:text-slate-300" />
+                    <X size={20} className="text-slate-600 dark:text-slate-300" strokeWidth={2.5} />
                   </button>
                 </div>
 
-                {/* Questions */}
-                <div className="p-5 space-y-4">
+                {/* Questions Scroll Area */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/50 dark:bg-slate-950/20">
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                      <p className="text-[11px] font-bold uppercase text-slate-400 mb-1">Aproveitamento</p>
+                      <p className={`text-3xl font-black ${getScoreColor(selectedSimulado.score)}`}>{selectedSimulado.score}%</p>
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-sm">
+                      <p className="text-[11px] font-bold uppercase text-slate-400 mb-1">Tempo Total</p>
+                      <p className="text-3xl font-black text-slate-800 dark:text-white font-mono">{formatTime(selectedSimulado.tempoSegundos)}</p>
+                    </div>
+                  </div>
+
                   {(selectedSimulado.questoes || []).map((q, qIdx) => {
                     const fcKey = `${selectedSimulado.id}-${qIdx}`;
                     const fcStatus = flashcardStatus[fcKey];
                     return (
                     <div
                       key={qIdx}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+                      className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
                     >
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                        <div className="flex items-start gap-3">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                            q.acertou ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400'
-                          }`}>
-                            {q.acertou ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                          </div>
-                          <p className="text-sm font-medium text-slate-900 dark:text-white flex-1">
+                      <div className={`p-5 border-b border-slate-100 dark:border-slate-700/50 flex items-start gap-4 ${q.acertou ? 'bg-emerald-50/20' : 'bg-red-50/20'}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${
+                          q.acertou 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' 
+                            : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'
+                        }`}>
+                          {q.acertou ? <CheckCircle size={18} strokeWidth={2.5} /> : <XCircle size={18} strokeWidth={2.5} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-bold text-slate-800 dark:text-slate-100 leading-snug">
                             {q.pergunta}
                           </p>
-                          {/* Botão criar flashcard — apenas em questões erradas */}
+                          
+                          {/* Botão criar flashcard Inteligente */}
                           {!q.acertou && (
-                            <button
-                              onClick={() => handleCriarFlashcard(selectedSimulado, q, fcKey)}
-                              disabled={fcStatus === 'loading' || fcStatus === 'done'}
-                              title={fcStatus === 'done' ? 'Flashcard criado!' : 'Criar flashcard desta questão'}
-                              className={`shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all font-medium ${
-                                fcStatus === 'done'
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
-                                  : fcStatus === 'error'
-                                  ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
-                                  : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
-                              }`}
-                            >
-                              {fcStatus === 'loading' ? (
-                                <Loader2 size={12} className="animate-spin" />
-                              ) : fcStatus === 'done' ? (
-                                <CheckCircle size={12} />
-                              ) : (
-                                <Plus size={12} />
-                              )}
-                              {fcStatus === 'done' ? 'Criado' : fcStatus === 'error' ? 'Erro' : 'Flashcard'}
-                            </button>
+                            <div className="mt-4">
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleCriarFlashcard(selectedSimulado, q, fcKey)}
+                                disabled={fcStatus === 'loading' || fcStatus === 'done'}
+                                className={`flex items-center gap-2 text-[12px] px-3 py-1.5 rounded-lg transition-all font-bold shadow-sm ${
+                                  fcStatus === 'done'
+                                    ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/20'
+                                }`}
+                              >
+                                {fcStatus === 'loading' ? (
+                                  <Loader2 size={14} className="animate-spin" />
+                                ) : fcStatus === 'done' ? (
+                                  <CheckCircle size={14} strokeWidth={3} />
+                                ) : (
+                                  <Sparkles size={14} fill="white" />
+                                )}
+                                {fcStatus === 'done' ? 'Flashcard Criado!' : 'Salvar como Flashcard'}
+                              </motion.button>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <div className="p-4 space-y-2">
+                      
+                      <div className="p-5 space-y-2.5">
                         {(q.opcoes || []).map((opcao, oIdx) => {
                           const isCorrect = q.correta === oIdx;
                           const isSelected = q.respostaUsuario === oIdx;
-                          let cls = 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400';
-                          if (isCorrect) cls = 'border-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300';
-                          if (isSelected && !isCorrect) cls = 'border-red-400 bg-red-50/50 dark:bg-red-950/20 text-red-700 dark:text-red-300';
+                          
+                          let cardCls = 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-400';
+                          let letterCls = 'bg-slate-200 dark:bg-slate-700 text-slate-500';
+
+                          if (isCorrect) {
+                            cardCls = 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100 ring-2 ring-emerald-500/10';
+                            letterCls = 'bg-emerald-500 text-white';
+                          } else if (isSelected && !isCorrect) {
+                            cardCls = 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100';
+                            letterCls = 'bg-red-500 text-white';
+                          }
+
                           return (
-                            <div key={oIdx} className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm ${cls}`}>
-                              <span className="font-bold text-xs w-5">{String.fromCharCode(65 + oIdx)}</span>
-                              <span className="flex-1">{opcao}</span>
-                              {isCorrect && <CheckCircle size={14} className="text-emerald-500 shrink-0" />}
-                              {isSelected && !isCorrect && <XCircle size={14} className="text-red-500 shrink-0" />}
+                            <div key={oIdx} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${cardCls}`}>
+                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 shadow-sm ${letterCls}`}>
+                                {String.fromCharCode(65 + oIdx)}
+                              </div>
+                              <span className="flex-1 font-medium text-[14px] leading-snug">{opcao}</span>
                             </div>
                           );
                         })}
+                        
                         {q.explicacao && (
-                          <div className="mt-2 p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800">
-                            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1">Explicação</p>
-                            <p className="text-sm text-slate-700 dark:text-slate-300">{q.explicacao}</p>
+                          <div className="mt-4 p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <BookOpen size={14} className="text-indigo-600 dark:text-indigo-400" strokeWidth={2.5} />
+                              <p className="text-[12px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">Explicação do Professor</p>
+                            </div>
+                            <p className="text-[14px] font-medium text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                              "{q.explicacao}"
+                            </p>
                           </div>
                         )}
                       </div>
@@ -383,11 +436,32 @@ function HistoricoSimulados() {
                     );
                   })}
                 </div>
+                
+                {/* Modal Footer */}
+                <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+                  <Button variant="secondary" fullWidth onClick={() => setSelectedSimulado(null)} className="h-12 rounded-xl font-bold">
+                    Fechar Revisão
+                  </Button>
+                </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Estilos para Scrollbar Customizada */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.2);
+          border-radius: 10px;
+        }
+      `}</style>
     </div>
   );
 }

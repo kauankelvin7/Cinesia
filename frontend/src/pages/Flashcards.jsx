@@ -1,7 +1,6 @@
 /**
  * 🎴 FLASHCARDS - Gerenciamento e Modo Estudo Premium
- * 
- * Features:
+ * * Features:
  * - CORREÇÃO: Salva materiaNome e materiaCor junto com materiaId
  * - Filtro por matéria
  * - Grid de cards com flip 3D
@@ -23,7 +22,8 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { 
   listarFlashcards, 
@@ -54,12 +54,12 @@ const containerVariants = {
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 12, scale: 0.97 },
+  hidden: { opacity: 0, y: 15, scale: 0.96 },
   visible: { 
     opacity: 1, 
     y: 0, 
     scale: 1,
-    transition: { duration: 0.2, ease: 'easeOut' }
+    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }
   },
   exit: { 
     opacity: 0, 
@@ -72,18 +72,18 @@ const slideVariants = {
   enter: (direction) => ({
     x: direction > 0 ? 400 : -400,
     opacity: 0,
-    scale: 0.9
+    scale: 0.92
   }),
   center: {
     x: 0,
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }
+    transition: { duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }
   },
   exit: (direction) => ({
     x: direction < 0 ? 400 : -400,
     opacity: 0,
-    scale: 0.9,
+    scale: 0.92,
     transition: { duration: 0.3 }
   })
 };
@@ -505,40 +505,39 @@ function Flashcards() {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 animate-pulse" />
-                  <div className="h-8 w-48 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800/50 animate-pulse" />
+                  <div className="h-8 w-48 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse" />
                 </div>
-                <div className="h-4 w-64 bg-slate-50 rounded-lg animate-pulse" />
+                <div className="h-4 w-64 bg-slate-50 dark:bg-slate-800/30 rounded-lg animate-pulse" />
               </div>
               <div className="flex gap-3">
-                <div className="h-12 w-32 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
-                <div className="h-12 w-36 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />
+                <div className="h-12 w-32 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse" />
+                <div className="h-12 w-36 bg-slate-100 dark:bg-slate-800/50 rounded-xl animate-pulse" />
               </div>
             </div>
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 animate-pulse">
+            <div className="bg-white dark:bg-slate-800/40 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50 animate-pulse">
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="h-10 w-20 bg-slate-100 dark:bg-slate-700 rounded-lg" />
-                <div className="h-10 w-full sm:w-64 bg-slate-100 dark:bg-slate-700 rounded-lg" />
-                <div className="h-10 w-24 bg-slate-100 dark:bg-slate-700 rounded-lg ml-auto" />
+                <div className="h-12 w-24 bg-slate-50 dark:bg-slate-700/30 rounded-xl" />
+                <div className="h-12 w-full sm:w-64 bg-slate-50 dark:bg-slate-700/30 rounded-xl" />
+                <div className="h-12 w-28 bg-slate-50 dark:bg-slate-700/30 rounded-xl ml-auto" />
               </div>
             </div>
           </div>
           <div className="grid grid-cols-1 ipad:grid-cols-2 ipad:lg:grid-cols-3 ipad:xl:grid-cols-4 gap-6 ipad:gap-8">
             {[1,2,3,4,5,6,7,8].map(i => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm h-72" style={{animationDelay:`${i*80}ms`}}>
-                <div className="h-1 bg-slate-100 dark:bg-slate-700 animate-pulse" />
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="h-5 w-24 bg-blue-50 rounded-full animate-pulse" />
-                    <div className="flex gap-1"><div className="w-8 h-8 bg-slate-50 rounded-lg animate-pulse" /><div className="w-8 h-8 bg-slate-50 rounded-lg animate-pulse" /></div>
+              <div key={i} className="bg-white dark:bg-slate-800/40 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm h-[280px] overflow-hidden" style={{animationDelay:`${i*80}ms`}}>
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-700/50 animate-pulse" />
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="h-6 w-28 bg-blue-50 dark:bg-blue-900/20 rounded-full animate-pulse" />
+                    <div className="flex gap-1.5"><div className="w-8 h-8 bg-slate-50 dark:bg-slate-700/30 rounded-lg animate-pulse" /><div className="w-8 h-8 bg-slate-50 dark:bg-slate-700/30 rounded-lg animate-pulse" /></div>
                   </div>
-                  <div className="space-y-2 mt-4">
-                    <div className="h-4 w-full bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-                    <div className="h-4 w-4/5 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-                    <div className="h-4 w-3/5 bg-slate-50 rounded animate-pulse" />
+                  <div className="space-y-2.5 mt-6">
+                    <div className="h-4 w-full bg-slate-100 dark:bg-slate-700/40 rounded-md animate-pulse" />
+                    <div className="h-4 w-4/5 bg-slate-100 dark:bg-slate-700/40 rounded-md animate-pulse" />
+                    <div className="h-4 w-3/5 bg-slate-50 dark:bg-slate-700/20 rounded-md animate-pulse" />
                   </div>
                 </div>
-                <div className="absolute bottom-5 left-0 right-0 text-center"><div className="h-3.5 w-32 bg-slate-50 rounded animate-pulse mx-auto" /></div>
               </div>
             ))}
           </div>
@@ -550,80 +549,80 @@ function Flashcards() {
   return (
     <div className="min-h-screen pb-32 pt-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header Premium */}
         <motion.div
           className="mb-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.25 }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 mb-6">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-3 tracking-tight">
                 <div 
-                  className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center"
+                  className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-500/20"
                 >
-                  <CreditCard size={22} className="text-blue-600 dark:text-blue-400" />
+                  <CreditCard size={24} className="text-white" strokeWidth={2} />
                 </div>
                 Meus Flashcards
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                Crie e estude com flashcards interativos
+              <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium ml-1">
+                Crie cartas, memorize conteúdos e não esqueça de revisar.
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:min-w-[180px]">
-              <Button
-                variant="primary"
-                size="md"
-                leftIcon={<Plus size={18} />}
-                onClick={() => setShowModal(true)}
-                className="w-full justify-center"
-              >
-                Novo Flashcard
-              </Button>
-              {flashcardsFiltrados.length > 0 && (
-                <Button
-                  variant="secondary"
-                  size="md"
-                  leftIcon={<Play size={16} />}
-                  onClick={() => iniciarModoEstudo(false)}
-                  className="w-full justify-center"
-                >
-                  Modo Estudo
-                </Button>
-              )}
+            <div className="flex flex-col sm:flex-row gap-3">
               {pendingReviewCount > 0 && (
                 <Button
                   variant="secondary"
                   size="md"
-                  leftIcon={<RotateCcw size={16} />}
+                  leftIcon={<RotateCcw size={18} />}
                   onClick={() => iniciarModoEstudo(true)}
-                  className="w-full justify-center"
+                  className="w-full sm:w-auto justify-center bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
                 >
                   Revisar
-                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-bold">
+                  <span className="ml-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-white text-xs font-bold shadow-sm">
                     {pendingReviewCount}
                   </span>
                 </Button>
               )}
+              {flashcardsFiltrados.length > 0 && (
+                <Button
+                  variant="secondary"
+                  size="md"
+                  leftIcon={<Play size={18} className="ml-0.5" />}
+                  onClick={() => iniciarModoEstudo(false)}
+                  className="w-full sm:w-auto justify-center shadow-sm"
+                >
+                  Modo Estudo
+                </Button>
+              )}
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus size={20} />}
+                onClick={() => setShowModal(true)}
+                className="w-full sm:w-auto justify-center shadow-md bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 border-none"
+              >
+                Novo Flashcard
+              </Button>
             </div>
           </div>
 
-          {/* Barra de Filtros */}
+          {/* Barra de Filtros Estilo Floating Island */}
           <motion.div 
-            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
           >
-            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-              <Filter size={18} className="text-primary-600 dark:text-primary-400" />
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-semibold text-sm">
+              <Filter size={16} className="text-indigo-500 dark:text-indigo-400" />
               Filtrar por:
             </div>
             <Select
               value={selectedMateria}
               onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTag('all'); }}
-              className="w-full sm:w-64"
+              className="w-full sm:w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
             >
               <option value="all">Todas as Matérias</option>
               {materias.map(materia => (
@@ -641,7 +640,7 @@ function Flashcards() {
                 <Select
                   value={selectedTag}
                   onChange={(e) => setSelectedTag(e.target.value)}
-                  className="w-full sm:w-48"
+                  className="w-full sm:w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                 >
                   <option value="all">Todas as Tags</option>
                   {allTags.map(tag => (
@@ -652,7 +651,7 @@ function Flashcards() {
             })()}
             
             <div className="ml-auto flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 {flashcardsFiltrados.length} card{flashcardsFiltrados.length !== 1 && 's'}
               </span>
             </div>
@@ -662,26 +661,32 @@ function Flashcards() {
         {/* Grid de Flashcards */}
         {flashcardsFiltrados.length === 0 ? (
           <motion.div
-            className="text-center py-20"
+            className="flex flex-col items-center justify-center py-24 text-center"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <div 
-              className="w-20 h-20 bg-blue-50 dark:bg-blue-950 rounded-2xl flex items-center justify-center mx-auto mb-5"
-            >
-              <CreditCard size={40} className="text-blue-600 dark:text-blue-400" />
+            <div className="relative mb-6">
+              <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/30 rounded-3xl flex items-center justify-center mx-auto shadow-inner border border-indigo-100 dark:border-indigo-800/50 relative z-10">
+                <CreditCard size={48} className="text-indigo-500 dark:text-indigo-400" strokeWidth={1.5} />
+              </div>
+              <motion.div 
+                className="absolute inset-0 bg-teal-400 blur-2xl opacity-20 rounded-full"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.3, 0.2] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              {selectedMateria === 'all' ? 'Pronto para memorizar? \u{1F9E0}' : 'Nenhum flashcard nesta mat\u00e9ria'}
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-3 tracking-tight">
+              {selectedMateria === 'all' ? 'Seu baralho está vazio 🎴' : 'Nenhum flashcard nesta matéria'}
             </h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto">
-              Flashcards são a melhor forma de fixar um conteúdo. Crie o primeiro e comece a revisar!
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
+              Flashcards são a melhor forma de fixar o conteúdo usando repetição espaçada. Crie o seu primeiro!
             </p>
             <Button
               variant="primary"
               size="lg"
               leftIcon={<Plus size={20} />}
               onClick={() => setShowModal(true)}
+              className="shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 border-none"
             >
               Criar Primeiro Flashcard
             </Button>
@@ -703,7 +708,7 @@ function Flashcards() {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  whileHover={{ y: -6, transition: { duration: 0.2, ease: 'easeOut' } }}
                 >
                   <FlashcardItem
                     flashcard={flashcard}
@@ -716,7 +721,7 @@ function Flashcards() {
           </motion.div>
         )}
 
-        {/* Modal de Criação/Edição */}
+        {/* Modal de Criação/Edição Refinado */}
         <Modal
           isOpen={showModal}
           onClose={resetForm}
@@ -724,12 +729,12 @@ function Flashcards() {
           size="lg"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* CORREÇÃO: onChange usa handleMateriaChange */}
             <Select
               label="Matéria"
               value={formData.materiaId}
               onChange={handleMateriaChange}
               required
+              className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
             >
               <option value="">Selecione uma matéria</option>
               {materias.map(materia => (
@@ -740,31 +745,34 @@ function Flashcards() {
             </Select>
 
             <Textarea
-              label="Pergunta"
-              placeholder="Digite a pergunta..."
+              label="Pergunta (Frente)"
+              placeholder="Digite a pergunta do card..."
               value={formData.pergunta}
               onChange={(e) => setFormData(prev => ({ ...prev, pergunta: e.target.value }))}
               onKeyDown={(e) => e.stopPropagation()}
               required
               rows={3}
+              className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-[15px] font-medium"
             />
 
             <Textarea
-              label="Resposta"
-              placeholder="Digite a resposta..."
+              label="Resposta (Verso)"
+              placeholder="Digite a resposta correta..."
               value={formData.resposta}
               onChange={(e) => setFormData(prev => ({ ...prev, resposta: e.target.value }))}
               onKeyDown={(e) => e.stopPropagation()}
               required
               rows={4}
+              className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-[15px]"
             />
 
-            {/* Upload de Imagem */}
+            {/* Upload de Imagem Premium */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-3">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                 Imagem (Opcional)
               </label>
-              <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-primary-500 transition-colors duration-200">
+              <div className="relative group rounded-[20px] overflow-hidden transition-all duration-300">
+                <div className={`absolute inset-0 border-2 border-dashed rounded-[20px] pointer-events-none transition-colors ${imagePreview ? 'border-transparent' : 'border-slate-300 dark:border-slate-600 group-hover:border-indigo-400'}`} />
                 <input
                   type="file"
                   accept="image/*"
@@ -775,14 +783,15 @@ function Flashcards() {
                 />
                 <label
                   htmlFor="image-upload"
-                  className="cursor-pointer flex flex-col items-center gap-3"
+                  className={`cursor-pointer flex flex-col items-center justify-center p-6 transition-colors ${imagePreview ? 'bg-slate-50/50 dark:bg-slate-900/50' : 'bg-slate-50 hover:bg-indigo-50/50 dark:bg-slate-800/50 dark:hover:bg-indigo-900/20'}`}
+                  style={{ minHeight: imagePreview ? 'auto' : '160px' }}
                 >
                   {imagePreview ? (
-                    <div className="relative">
+                    <div className="relative w-full max-w-sm mx-auto">
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        className="max-w-full h-48 rounded-lg object-cover shadow-md"
+                        className="w-full h-48 rounded-xl object-cover shadow-md border border-slate-200 dark:border-slate-700"
                       />
                       <button
                         type="button"
@@ -791,24 +800,22 @@ function Flashcards() {
                           setImagePreview(null);
                           setSelectedImageFile(null);
                         }}
-                        className="absolute -top-2 -right-2 flex items-center justify-center p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg hover:scale-105 active:scale-95"
                       >
-                        <X size={16} />
+                        <X size={16} strokeWidth={2.5} />
                       </button>
                     </div>
                   ) : (
                     <>
-                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-                        <ImageIcon size={28} className="text-slate-400" />
+                      <div className="w-16 h-16 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                        <ImageIcon size={28} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
                       </div>
-                      <div>
-                        <p className="text-slate-700 font-medium">
-                          {compressingImage ? 'Processando...' : 'Clique para adicionar imagem'}
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          PNG, JPG ou WEBP (máx. 10MB)
-                        </p>
-                      </div>
+                      <p className="text-slate-700 dark:text-slate-200 font-semibold text-[15px]">
+                        {compressingImage ? 'Processando...' : 'Clique para enviar imagem'}
+                      </p>
+                      <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                        PNG, JPG ou WEBP (máx. 10MB)
+                      </p>
                     </>
                   )}
                 </label>
@@ -831,7 +838,7 @@ function Flashcards() {
 
             {error && (
               <motion.div 
-                className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"
+                className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
@@ -844,7 +851,7 @@ function Flashcards() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="flex-1"
+                className="flex-1 bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 border-none shadow-md"
                 disabled={compressingImage}
               >
                 {editingId ? 'Atualizar Flashcard' : 'Criar Flashcard'}
@@ -854,6 +861,7 @@ function Flashcards() {
                 variant="secondary"
                 size="lg"
                 onClick={resetForm}
+                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-none"
               >
                 Cancelar
               </Button>
@@ -861,63 +869,73 @@ function Flashcards() {
           </form>
         </Modal>
 
-        {/* ==================== MODO ESTUDO IMERSIVO ==================== */}
+        {/* ==================== MODO ESTUDO IMERSIVO PREMIUM ==================== */}
         <AnimatePresence>
           {modoEstudo && currentFlashcard && (
             <motion.div
-              className="fixed inset-0 z-[70] bg-slate-900 flex flex-col"
+              className="fixed inset-0 z-[100] bg-slate-950 flex flex-col overflow-hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Header do Modo Estudo */}
+              {/* Glow Orbs de Fundo (Cinema Effect) */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <motion.div 
+                  className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full bg-indigo-600/20 blur-[120px]"
+                  animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.25, 0.15] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div 
+                  className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-teal-600/20 blur-[100px]"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+                  transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                />
+              </div>
+
+              {/* Header do Modo Estudo (Glassmorphism) */}
               <motion.div 
-                className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-white/10"
+                className="relative z-10 flex items-center justify-between px-6 sm:px-10 py-5 bg-white/5 backdrop-blur-md border-b border-white/10"
                 initial={{ y: -50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
               >
                 <div className="flex items-center gap-4">
-                  <motion.div 
-                    className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center"
-                  >
-                    <BookOpen size={20} className="text-white" />
-                  </motion.div>
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg">
+                    <BookOpen size={24} className="text-white" strokeWidth={2} />
+                  </div>
                   <div>
-                    <h2 className="text-white font-bold text-lg">
+                    <h2 className="text-white font-extrabold text-xl tracking-tight">
                       {modoRevisao ? 'Revisão Programada' : 'Modo Estudo'}
                     </h2>
-                    <p className="text-white/60 text-sm">
+                    <p className="text-white/60 text-[13px] font-medium mt-0.5">
                       Card {currentIndex + 1} de {studyCards.length}
-                      {modoRevisao && <span className="ml-2 text-amber-400">· SRS ativo</span>}
+                      {modoRevisao && <span className="ml-2 text-amber-400">· Algoritmo SM-2 ativo</span>}
                     </p>
                   </div>
                 </div>
 
                 <motion.button
                   onClick={fecharModoEstudo}
-                  className="flex items-center justify-center p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white/90 transition-colors border border-white/10"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <X size={24} />
+                  <X size={24} strokeWidth={2} />
                 </motion.button>
               </motion.div>
 
-              {/* Barra de Progresso */}
-              <div className="px-4 sm:px-8 py-3">
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-primary-500 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                  />
-                </div>
+              {/* Barra de Progresso Sleek */}
+              <div className="w-full h-1 bg-white/5 relative z-10">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressPercent}%` }}
+                  transition={{ duration: 0.3, ease: 'easeOut' }}
+                />
               </div>
 
               {/* Card de Estudo Central */}
-              <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 overflow-hidden">
+              <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 relative z-10">
                 <AnimatePresence mode="wait" custom={slideDirection}>
                   <motion.div
                     key={currentIndex}
@@ -926,92 +944,105 @@ function Flashcards() {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="w-full max-w-2xl"
+                    className="w-full max-w-3xl"
                   >
                     <motion.div
                       className="relative perspective-1000 cursor-pointer"
                       onClick={flipStudyCard}
+                      whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.98 }}
-                      style={{ minHeight: 'min(400px, 60vh)' }}
+                      style={{ minHeight: 'min(450px, 65vh)' }}
                     >
                       <motion.div
                         className="relative w-full h-full"
                         animate={{ rotateY: isStudyFlipped ? 180 : 0 }}
-                        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
                         style={{ transformStyle: 'preserve-3d' }}
                       >
                         {/* FRENTE - Pergunta */}
                         <div
-                          className="absolute inset-0 backface-hidden rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col justify-between overflow-hidden"
+                          className="absolute inset-0 backface-hidden rounded-[32px] shadow-2xl p-8 sm:p-14 flex flex-col justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden"
                           style={{ 
-                            backgroundColor: 'var(--bg-surface)',
                             backfaceVisibility: 'hidden',
-                            minHeight: 'min(400px, 60vh)'
+                            minHeight: 'min(450px, 65vh)'
                           }}
                         >
                           <div>
-                            <Badge color={currentFlashcard.materiaCor} size="md">
-                              {currentFlashcard.materiaNome || 'Sem matéria'}
-                            </Badge>
-                            <div className="mt-8">
-                              <p className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: 'var(--text-3)' }}>
-                                Pergunta
+                            <div className="flex items-center gap-3 mb-8">
+                              <Badge color={currentFlashcard.materiaCor} size="md" className="shadow-sm">
+                                {currentFlashcard.materiaNome || 'Sem matéria'}
+                              </Badge>
+                              {currentFlashcard.tags && currentFlashcard.tags.length > 0 && (
+                                <div className="flex gap-1.5">
+                                  {currentFlashcard.tags.slice(0, 2).map(tag => (
+                                    <span key={tag} className="text-[11px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div>
+                              <p className="text-[13px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-500 mb-4 flex items-center gap-2">
+                                <Sparkles size={14} /> Pergunta
                               </p>
-                              <h3 className="text-xl sm:text-3xl font-bold leading-relaxed line-clamp-6 overflow-hidden" style={{ color: 'var(--text-1)' }}>
+                              <h3 className="text-2xl sm:text-4xl font-extrabold leading-snug text-slate-800 dark:text-slate-100 line-clamp-6">
                                 {currentFlashcard.pergunta}
                               </h3>
                             </div>
                           </div>
                           
                           <motion.div 
-                            className="text-center mt-8"
-                            animate={{ y: [0, 5, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
+                            className="text-center mt-10"
+                            animate={{ y: [0, 6, 0] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium" style={{ backgroundColor: 'var(--bg-elevated)', color: 'var(--text-2)' }}>
-                              <RotateCcw size={16} />
-                              Clique para virar
+                            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[15px] font-semibold bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 shadow-sm border border-slate-200 dark:border-slate-600">
+                              <RotateCcw size={18} strokeWidth={2.5} />
+                              Clique ou aperte Espaço para virar
                             </div>
                           </motion.div>
                         </div>
 
-                        {/* VERSO - Resposta */}
+                        {/* VERSO - Resposta (Gradiente Premium) */}
                         <div
-                          className="absolute inset-0 backface-hidden bg-primary-600 rounded-3xl shadow-2xl p-6 sm:p-12 flex flex-col overflow-hidden"
+                          className="absolute inset-0 backface-hidden rounded-[32px] shadow-2xl p-8 sm:p-14 flex flex-col border border-white/20 overflow-hidden"
                           style={{ 
+                            background: 'linear-gradient(135deg, #4f46e5 0%, #0d9488 100%)',
                             backfaceVisibility: 'hidden',
                             transform: 'rotateY(180deg)',
-                            minHeight: 'min(400px, 60vh)'
+                            minHeight: 'min(450px, 65vh)'
                           }}
                         >
-                          <div className="flex-1 overflow-y-auto">
-                            <p className="text-xs uppercase tracking-wider text-white/70 font-semibold mb-3">
-                              Resposta
+                          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar-light">
+                            <p className="text-[13px] uppercase tracking-widest font-bold text-white/60 mb-4 flex items-center gap-2">
+                              <BookOpen size={14} /> Resposta
                             </p>
-                            <p className="text-lg sm:text-2xl text-white leading-relaxed font-medium line-clamp-8 overflow-hidden">
+                            <p className="text-xl sm:text-3xl text-white font-bold leading-relaxed whitespace-pre-wrap drop-shadow-sm">
                               {currentFlashcard.resposta}
                             </p>
 
                             {currentFlashcard.imagemUrl && (
                               <motion.div 
-                                className="mt-6 rounded-2xl overflow-hidden shadow-lg"
-                                initial={{ opacity: 0, scale: 0.9 }}
+                                className="mt-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/10"
+                                initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.2 }}
+                                transition={{ delay: 0.2, duration: 0.3 }}
                               >
                                 <img
                                   src={currentFlashcard.imagemUrl}
                                   alt="Imagem do flashcard"
-                                  className="w-full max-h-48 object-cover"
+                                  className="w-full max-h-64 object-cover"
                                 />
                               </motion.div>
                             )}
                           </div>
                           
-                          <div className="text-center mt-6">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white/90 text-sm font-medium">
+                          <div className="text-center mt-6 pt-4 border-t border-white/10 shrink-0">
+                            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 rounded-full text-white/90 text-[14px] font-medium backdrop-blur-sm border border-white/20">
                               <RotateCcw size={16} />
-                              Clique para voltar
+                              Voltar para a pergunta
                             </div>
                           </div>
                         </div>
@@ -1021,64 +1052,64 @@ function Flashcards() {
                 </AnimatePresence>
               </div>
 
-              {/* Controles de Navegação + SM-2 Rating */}
+              {/* Controles de Navegação + SM-2 Rating (Glassmorphism) */}
               <motion.div 
-                className="px-4 sm:px-8 py-6 border-t border-white/10"
+                className="px-4 sm:px-8 pb-10 pt-4 relative z-10"
                 initial={{ y: 50, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                {/* SM-2 Rating Buttons — show after flip */}
+                {/* SM-2 Rating Buttons */}
                 <AnimatePresence>
                   {isStudyFlipped && (
                     <motion.div
-                      className="mb-4"
-                      initial={{ opacity: 0, y: 10 }}
+                      className="max-w-2xl mx-auto"
+                      initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
+                      exit={{ opacity: 0, y: 15 }}
                     >
-                      <p className="text-center text-white/50 text-xs mb-3 font-medium uppercase tracking-wider">
-                        Como foi? (atalhos: 1, 2, 3)
+                      <p className="text-center text-white/40 text-[12px] mb-3 font-bold uppercase tracking-widest">
+                        Avalie para agendar a próxima revisão (1, 2, 3)
                       </p>
-                      <div className="flex items-center justify-center gap-3 max-w-lg mx-auto">
+                      <div className="flex items-center justify-center gap-3 sm:gap-4 p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[28px] shadow-2xl">
                         {/* Difícil */}
                         <motion.button
-                          onClick={() => handleSM2Rating(1)}
-                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300"
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
+                          onClick={(e) => { e.stopPropagation(); handleSM2Rating(1); }}
+                          className="flex-1 py-4 px-2 sm:px-4 rounded-[20px] font-bold flex flex-col items-center gap-1.5 transition-all bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 group"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
                         >
-                          <span className="text-lg">😰</span>
-                          <span className="text-sm">Difícil</span>
-                          <span className="text-[10px] opacity-60">
+                          <span className="text-2xl group-hover:scale-110 transition-transform">😰</span>
+                          <span className="text-[14px]">Difícil</span>
+                          <span className="text-[11px] opacity-70 bg-red-950/50 px-2 py-0.5 rounded-full mt-1">
                             {getNextReviewLabel(1, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
                           </span>
                         </motion.button>
 
                         {/* Médio */}
                         <motion.button
-                          onClick={() => handleSM2Rating(3)}
-                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-300"
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
+                          onClick={(e) => { e.stopPropagation(); handleSM2Rating(3); }}
+                          className="flex-1 py-4 px-2 sm:px-4 rounded-[20px] font-bold flex flex-col items-center gap-1.5 transition-all bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 group"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
                         >
-                          <span className="text-lg">😐</span>
-                          <span className="text-sm">Médio</span>
-                          <span className="text-[10px] opacity-60">
+                          <span className="text-2xl group-hover:scale-110 transition-transform">😐</span>
+                          <span className="text-[14px]">Médio</span>
+                          <span className="text-[11px] opacity-70 bg-amber-950/50 px-2 py-0.5 rounded-full mt-1">
                             {getNextReviewLabel(3, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
                           </span>
                         </motion.button>
 
                         {/* Fácil */}
                         <motion.button
-                          onClick={() => handleSM2Rating(5)}
-                          className="flex-1 py-3.5 px-4 rounded-2xl font-semibold flex flex-col items-center gap-1.5 transition-all bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300"
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
+                          onClick={(e) => { e.stopPropagation(); handleSM2Rating(5); }}
+                          className="flex-1 py-4 px-2 sm:px-4 rounded-[20px] font-bold flex flex-col items-center gap-1.5 transition-all bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 group"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.96 }}
                         >
-                          <span className="text-lg">😄</span>
-                          <span className="text-sm">Fácil</span>
-                          <span className="text-[10px] opacity-60">
+                          <span className="text-2xl group-hover:scale-110 transition-transform">😄</span>
+                          <span className="text-[14px]">Fácil</span>
+                          <span className="text-[11px] opacity-70 bg-emerald-950/50 px-2 py-0.5 rounded-full mt-1">
                             {getNextReviewLabel(5, currentFlashcard?.repetitions || 0, currentFlashcard?.interval || 0, currentFlashcard?.easeFactor || 2.5)}
                           </span>
                         </motion.button>
@@ -1087,70 +1118,67 @@ function Flashcards() {
                   )}
                 </AnimatePresence>
 
-                {/* Standard navigation (only show if card is NOT flipped) */}
+                {/* Standard navigation */}
                 {!isStudyFlipped && (
-                  <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
+                  <div className="flex items-center justify-center gap-4 max-w-xl mx-auto">
                     <motion.button
                       onClick={cardAnterior}
                       disabled={currentIndex === 0}
-                      className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                      className={`flex-1 py-4 px-6 rounded-[24px] font-bold text-[15px] flex items-center justify-center gap-2 transition-all duration-200 ${
                         currentIndex === 0
-                          ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                          : 'bg-white/10 hover:bg-white/20 text-white'
+                          ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+                          : 'bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10'
                       }`}
                       whileHover={currentIndex !== 0 ? { scale: 1.02 } : {}}
                       whileTap={currentIndex !== 0 ? { scale: 0.98 } : {}}
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={20} strokeWidth={2.5} />
                       Anterior
                     </motion.button>
 
                     <motion.button
                       onClick={proximoCard}
                       disabled={currentIndex === studyCards.length - 1}
-                      className={`flex-1 py-4 px-6 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                      className={`flex-1 py-4 px-6 rounded-[24px] font-bold text-[15px] flex items-center justify-center gap-2 transition-all duration-200 ${
                         currentIndex === studyCards.length - 1
-                          ? 'bg-white/5 text-white/30 cursor-not-allowed'
-                          : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'
+                          ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+                          : 'bg-gradient-to-r from-indigo-500 to-teal-500 hover:from-indigo-400 hover:to-teal-400 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] border border-white/20'
                       }`}
                       whileHover={currentIndex !== studyCards.length - 1 ? { scale: 1.02 } : {}}
                       whileTap={currentIndex !== studyCards.length - 1 ? { scale: 0.98 } : {}}
                     >
                       Próximo
-                      <ChevronRight size={20} />
+                      <ChevronRight size={20} strokeWidth={2.5} />
                     </motion.button>
                   </div>
                 )}
-
-                <p className="text-center text-white/40 text-sm mt-4">
-                  {isStudyFlipped 
-                    ? 'Avalie sua resposta · Espaço para voltar à pergunta'
-                    : 'Use as setas ← → ou barra de espaço para navegar'
-                  }
-                </p>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* CSS para efeito 3D */}
+      {/* CSS Customizado para o Flip 3D e Scrollbar do Verso */}
       <style>{`
-        .perspective-1000 {
-          perspective: 1000px;
-        }
+        .perspective-1000 { perspective: 1200px; }
         .backface-hidden {
           -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
         }
-        .transform-style-3d {
-          transform-style: preserve-3d;
+        .transform-style-3d { transform-style: preserve-3d; }
+        
+        .custom-scrollbar-light::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar-light::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar-light::-webkit-scrollbar-thumb { 
+          background-color: rgba(255, 255, 255, 0.2); 
+          border-radius: 10px; 
         }
-        /* Study mode — responsive card sizing */
+        .custom-scrollbar-light::-webkit-scrollbar-thumb:hover { 
+          background-color: rgba(255, 255, 255, 0.4); 
+        }
+
         @media (max-width: 640px) {
-          .perspective-1000 {
-            min-height: 300px !important;
-          }
+          .perspective-1000 { min-height: 400px !important; }
         }
       `}</style>
 
@@ -1165,7 +1193,6 @@ function Flashcards() {
         isLoading={isDeleting}
         type="danger"
       />
-
     </div>
   );
 }

@@ -1,10 +1,13 @@
 /**
- * @file ChatMessage.jsx
- * @description Bolha de mensagem estilo WhatsApp com suporte a agrupamento, tipos especiais e ações.
+ * 💬 CHAT MESSAGE
+ * * Bolhas de mensagem adaptativas com suporte a gamificação e conteúdo compartilhado.
+ * - Design de duelo (Challenge) imersivo
+ * - Agrupamento visual inteligente
+ * - Feedback de status em tempo real via Firestore
  */
 
 import React, { memo, useState, useCallback, useEffect } from 'react';
-import { Trash2, Copy, Check } from 'lucide-react';
+import { Trash2, Copy, Check, Swords, Trophy, Clock, XCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../../../../config/firebase-config';
@@ -13,10 +16,7 @@ import ShareContent from '../shared/ShareContent';
 import { formatChatTime } from '../../utils/chatHelpers';
 import { toast } from 'sonner';
 
-/**
- * Renders a real-time challenge invite bubble. Subscribes to the challenge
- * document so the UI updates instantly when the invite is accepted/declined.
- */
+/* ─── Challenge Invite Bubble Refinado ─── */
 const ChallengeInviteMessage = memo(({ attachedContent, isOwn, createdAt, onAcceptChallenge, onDeclineChallenge }) => {
   const [challengeStatus, setChallengeStatus] = useState(null);
   const challengeId = attachedContent?.challengeId;
@@ -33,59 +33,63 @@ const ChallengeInviteMessage = memo(({ attachedContent, isOwn, createdAt, onAcce
 
   const status = challengeStatus ?? 'pending';
 
-  const statusLabel = () => {
-    if (isOwn) {
-      if (status === 'in_progress') return <p className="text-xs text-green-600 dark:text-green-400 text-center py-1">✅ Aceito!</p>;
-      if (status === 'cancelled' || status === 'declined') return <p className="text-xs text-slate-400 text-center py-1">❌ Recusado.</p>;
-      if (status === 'expired') return <p className="text-xs text-slate-400 text-center py-1">⏱️ Expirado.</p>;
-      if (status === 'finished') return <p className="text-xs text-slate-400 text-center py-1">🏁 Finalizado.</p>;
-      return null;
-    }
-    if (status === 'pending') return (
+  const renderStatus = () => {
+    if (status === 'in_progress') return <div className="flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tighter bg-emerald-50 dark:bg-emerald-900/20 rounded-lg"><Loader2 size={12} className="animate-spin" /> Duelo em curso!</div>;
+    if (status === 'cancelled' || status === 'declined') return <div className="py-1.5 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-lg uppercase tracking-tighter">Desafio recusado</div>;
+    if (status === 'expired') return <div className="py-1.5 text-center text-[11px] font-bold text-slate-400 bg-slate-100 rounded-lg uppercase tracking-tighter"><Clock size={12} className="inline mr-1" /> Expirado</div>;
+    if (status === 'finished') return <div className="py-1.5 text-center text-[11px] font-bold text-indigo-500 bg-indigo-50 rounded-lg uppercase tracking-tighter"><Trophy size={12} className="inline mr-1" /> Finalizado</div>;
+
+    if (!isOwn && status === 'pending') return (
       <div className="flex gap-2">
         <button
           onClick={() => onAcceptChallenge?.(challengeId)}
-          className="flex-1 py-2 text-xs font-bold rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+          className="flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
         >
           Aceitar ⚔️
         </button>
         <button
           onClick={() => onDeclineChallenge?.(challengeId)}
-          className="flex-1 py-2 text-xs font-bold rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors"
+          className="flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-all"
         >
           Recusar
         </button>
       </div>
     );
-    if (status === 'in_progress') return <p className="text-xs font-semibold text-green-600 dark:text-green-400 text-center py-1.5">✅ Duelo em andamento!</p>;
-    if (status === 'cancelled' || status === 'declined') return <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 text-center py-1.5">❌ Desafio recusado.</p>;
-    if (status === 'expired') return <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 text-center py-1.5">⏱️ Expirado.</p>;
-    if (status === 'finished') return <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 text-center py-1.5">🏁 Finalizado.</p>;
-    return null;
+
+    return <p className="text-[11px] font-bold text-amber-600/80 text-center py-1.5 uppercase tracking-widest animate-pulse">Aguardando resposta...</p>;
   };
 
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
-      <div className="max-w-[75%] rounded-2xl overflow-hidden border-2 border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-900/20 dark:to-orange-900/20 shadow-sm">
-        <div className="px-3.5 py-3">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-lg">⚡</span>
-            <span className="text-sm font-bold text-amber-700 dark:text-amber-400">
-              Duelo de Flashcards!
-            </span>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3`}>
+      <motion.div 
+        whileHover={{ y: -2 }}
+        className="max-w-[80%] rounded-[24px] overflow-hidden border-2 border-amber-400/40 bg-white dark:bg-slate-900 shadow-xl"
+      >
+        <div className="bg-gradient-to-br from-amber-400 to-orange-500 p-4 pb-3">
+           <div className="flex items-center justify-between mb-3 text-white">
+             <div className="p-2 bg-white/20 backdrop-blur-md rounded-xl shadow-inner">
+               <Swords size={20} strokeWidth={2.5} />
+             </div>
+             <span className="text-[10px] font-black uppercase tracking-widest bg-black/10 px-2 py-1 rounded-md">Desafio Real</span>
+           </div>
+           <h4 className="text-[15px] font-black text-white leading-tight mb-1">Duelo de Flashcards!</h4>
+           <p className="text-amber-50 text-[11px] font-bold uppercase tracking-tighter opacity-90 italic">
+             Deck: {attachedContent.deckName}
+           </p>
+        </div>
+        <div className="p-4 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-4 mb-4">
+             <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-full bg-amber-400" />
+             </div>
+             <span className="text-[10px] font-black text-slate-400">{attachedContent.cardCount} Cards</span>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-            Deck: <span className="font-medium">{attachedContent.deckName}</span>
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-500">
-            {attachedContent.cardCount} questões
-          </p>
-          <div className="mt-2.5">{statusLabel()}</div>
+          {renderStatus()}
+          <div className="mt-3 flex justify-end">
+            <span className="text-[9px] font-bold text-slate-300 uppercase">{formatChatTime(createdAt)}</span>
+          </div>
         </div>
-        <div className="px-3 py-1 bg-amber-500/5 flex justify-end">
-          <span className="text-[10px] text-slate-400">{formatChatTime(createdAt)}</span>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 });
@@ -95,198 +99,115 @@ const ChatMessage = memo(({ message, isOwn, isFirstInGroup, isLastInGroup, onOpe
   const [showActions, setShowActions] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback((e) => {
+    e.stopPropagation();
     if (text) {
       navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       setShowActions(false);
-      toast.success('Copiado!');
+      toast.success('Mensagem copiada');
     }
   }, [text]);
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback((e) => {
+    e.stopPropagation();
     onDelete?.(message.id);
     setShowActions(false);
   }, [message.id, onDelete]);
 
-  const toggleActions = useCallback(() => {
-    setShowActions((prev) => !prev);
-  }, []);
-
-  // Detect if message is emoji-only (1-3 emojis with no other text)
   const isEmojiOnly = text && /^[\p{Emoji}\p{Emoji_Presentation}\p{Emoji_Modifier}\p{Emoji_Modifier_Base}\p{Emoji_Component}\u200d\uFE0F\s]{1,11}$/u.test(text.trim()) && text.trim().length <= 11;
 
-  // Mensagem do sistema
   if (type === 'system') {
     return (
-      <div className="flex justify-center my-3">
-        <span className="text-[11px] text-slate-400 dark:text-slate-500 bg-slate-100/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full backdrop-blur-sm">
+      <div className="flex justify-center my-4">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 px-4 py-1.5 rounded-full backdrop-blur-md">
           {text}
         </span>
       </div>
     );
   }
 
-  // Convite de desafio
   if (type === 'challenge_invite' && attachedContent) {
-    return (
-      <ChallengeInviteMessage
-        attachedContent={attachedContent}
-        isOwn={isOwn}
-        createdAt={createdAt}
-        onAcceptChallenge={onAcceptChallenge}
-        onDeclineChallenge={onDeclineChallenge}
-      />
-    );
+    return <ChallengeInviteMessage attachedContent={attachedContent} isOwn={isOwn} createdAt={createdAt} onAcceptChallenge={onAcceptChallenge} onDeclineChallenge={onDeclineChallenge} />;
   }
 
-  // Resultado de desafio
-  if (type === 'challenge_result' && attachedContent) {
-    const { scores, winnerId } = attachedContent;
-    const players = Object.entries(scores || {});
+  // Estilo de bolha para agrupamento
+  const bubbleStyles = isOwn 
+    ? `${isFirstInGroup ? 'rounded-t-[20px]' : 'rounded-t-[6px]'} ${isLastInGroup ? 'rounded-bl-[20px] rounded-br-[4px]' : 'rounded-b-[6px]'} rounded-l-[20px] bg-indigo-600 text-white shadow-md shadow-indigo-500/10`
+    : `${isFirstInGroup ? 'rounded-t-[20px]' : 'rounded-t-[6px]'} ${isLastInGroup ? 'rounded-br-[20px] rounded-bl-[4px]' : 'rounded-b-[6px]'} rounded-r-[20px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 shadow-sm`;
 
-    return (
-      <div className="flex justify-center my-2">
-        <div className="max-w-[75%] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-850 shadow-sm">
-          <div className="px-4 py-3 text-center">
-            <span className="text-2xl">🏆</span>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-1">
-              Resultado: {attachedContent.deckName}
-            </p>
-            <div className="flex justify-center gap-6 mt-2">
-              {players.map(([uid, data]) => (
-                <div key={uid} className={`text-center ${winnerId === uid ? 'font-bold' : ''}`}>
-                  <p className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                    {data.correct}/{data.total}
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    {winnerId === uid ? '🏅 Vencedor' : winnerId === 'draw' ? '🤝' : ''}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Resumo ou flashcard compartilhado
-  if ((type === 'resumo' || type === 'flashcard') && attachedContent) {
-    return (
-      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1.5`}>
-        <div className="max-w-[75%]">
-          <ShareContent content={attachedContent} onOpen={onOpenContent} />
-          <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <span className="text-[10px] text-slate-400">{formatChatTime(createdAt)}</span>
-            {isOwn && <MessageStatus status={status} readBy={readBy} senderId={senderId} />}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Emoji-only message (large emojis)
-  if (isEmojiOnly) {
-    return (
-      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-2' : 'mb-0.5'}`}>
-        <div
-          className="relative max-w-[75%] group cursor-pointer"
-          onClick={toggleActions}
-        >
-          <p className="text-4xl leading-tight px-1">
-            {text}
-          </p>
-          <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              {formatChatTime(createdAt)}
-            </span>
-            {isOwn && <MessageStatus status={status} readBy={readBy} senderId={senderId} />}
-          </div>
-
-          {/* Actions popup */}
-          <AnimatePresence>
-            {showActions && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-10 flex gap-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-1 z-10`}
-              >
-                <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors" title="Copiar">
-                  {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                </button>
-                {isOwn && (
-                  <button onClick={handleDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-400 hover:text-red-500 transition-colors" title="Apagar">
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    );
-  }
-
-  // Bubble corner radius logic for message grouping
-  const getBubbleRadius = () => {
-    if (isOwn) {
-      if (isFirstInGroup && isLastInGroup) return 'rounded-2xl rounded-br-md';
-      if (isFirstInGroup) return 'rounded-2xl rounded-br-md rounded-br-md';
-      if (isLastInGroup) return 'rounded-2xl rounded-tr-md rounded-br-md';
-      return 'rounded-2xl rounded-r-md';
-    }
-    if (isFirstInGroup && isLastInGroup) return 'rounded-2xl rounded-bl-md';
-    if (isFirstInGroup) return 'rounded-2xl rounded-bl-md';
-    if (isLastInGroup) return 'rounded-2xl rounded-tl-md rounded-bl-md';
-    return 'rounded-2xl rounded-l-md';
-  };
-
-  // Mensagem de texto normal — estilo WhatsApp
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-2' : 'mb-0.5'}`}>
-      <div
-        className={`
-          relative max-w-[75%] px-3 py-1.5 ${getBubbleRadius()} group cursor-pointer
-          ${isOwn
-            ? 'bg-gradient-to-br from-primary-500/15 to-cyan-500/10 dark:from-primary-500/20 dark:to-cyan-500/15 border border-primary-500/20 dark:border-primary-400/15'
-            : 'bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 shadow-sm'
-          }
-        `}
-        onClick={toggleActions}
-      >
-        <p className="text-[13.5px] text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words leading-relaxed">
-          {text}
-        </p>
-        <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'} -mb-0.5`}>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 select-none">
-            {formatChatTime(createdAt)}
-          </span>
-          {isOwn && <MessageStatus status={status} readBy={readBy} senderId={senderId} />}
-        </div>
-
-        {/* Actions popup */}
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-3' : 'mb-0.5'} group px-2`}>
+      <div className="relative max-w-[80%]">
         <AnimatePresence>
           {showActions && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-10 flex gap-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-1 z-10`}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-12 z-20 flex gap-1 p-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl`}
             >
-              <button onClick={handleCopy} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors" title="Copiar">
-                {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+              <button onClick={handleCopy} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-all active:scale-90">
+                {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
               </button>
               {isOwn && (
-                <button onClick={handleDelete} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-red-400 hover:text-red-500 transition-colors" title="Apagar">
-                  <Trash2 size={14} />
+                <button onClick={handleDelete} className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500 transition-all active:scale-90">
+                  <Trash2 size={16} />
                 </button>
               )}
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div 
+          onClick={() => setShowActions(!showActions)}
+          className={`
+            relative px-4 py-2.5 cursor-pointer transition-all duration-200 active:scale-[0.98]
+            ${isEmojiOnly ? 'bg-transparent shadow-none border-none !px-1' : bubbleStyles}
+          `}
+        >
+          {type === 'challenge_result' && (
+             <div className="mb-2 p-3 bg-white/10 dark:bg-black/20 rounded-xl border border-white/10 text-center">
+                <Trophy size={20} className="mx-auto text-amber-300 mb-1" />
+                <p className="text-[12px] font-black uppercase tracking-tighter italic">Resultado: {attachedContent.deckName}</p>
+                <div className="flex justify-center gap-4 mt-2">
+                   {Object.entries(attachedContent.scores || {}).map(([uid, d]) => (
+                     <div key={uid} className="flex flex-col">
+                        <span className="text-lg font-black">{d.correct}/{d.total}</span>
+                        <span className="text-[8px] uppercase opacity-60">{attachedContent.winnerId === uid ? '🏅 Win' : 'Ponto'}</span>
+                     </div>
+                   ))}
+                </div>
+             </div>
+          )}
+
+          {(type === 'resumo' || type === 'flashcard') && attachedContent && (
+            <div className="mb-2 -mx-1">
+              <ShareContent content={attachedContent} onOpen={onOpenContent} />
+            </div>
+          )}
+
+          <p className={`${isEmojiOnly ? 'text-5xl' : 'text-[14px]'} font-medium leading-relaxed whitespace-pre-wrap break-words`}>
+            {text}
+          </p>
+          
+          {!isEmojiOnly && (
+            <div className={`flex items-center gap-1.5 mt-1.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <span className={`text-[9px] font-bold uppercase tracking-tighter ${isOwn ? 'text-indigo-200' : 'text-slate-400'}`}>
+                {formatChatTime(createdAt)}
+              </span>
+              {isOwn && <MessageStatus status={status} readBy={readBy} senderId={senderId} />}
+            </div>
+          )}
+        </div>
+        
+        {isEmojiOnly && (
+           <div className={`flex items-center gap-1.5 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+             <span className="text-[9px] font-bold text-slate-400 uppercase">{formatChatTime(createdAt)}</span>
+             {isOwn && <MessageStatus status={status} readBy={readBy} senderId={senderId} />}
+           </div>
+        )}
       </div>
     </div>
   );

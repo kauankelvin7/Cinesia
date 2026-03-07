@@ -1,13 +1,7 @@
 /**
- * 👤 PROFILE MODAL - Edição de Perfil do Usuário
- * 
- * Modal premium com seções organizadas:
- * - Foto de perfil (upload via Cloudinary)
- * - Dados Pessoais (nome + email)
- * - Preferências (tema + acessibilidade)
- * - Informações da conta
- * 
- * Integrado com Firebase Auth updateProfile
+ * 👤 PROFILE MODAL - Edição de Perfil do Usuário Premium
+ * * Modal premium com seções organizadas e Glassmorphism.
+ * Integrado com Firebase Auth + Cloudinary.
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -43,20 +37,21 @@ import {
   Trash2,
 } from 'lucide-react';
 
-/* ─── Section wrapper ─── */
+/* ─── Section wrapper Refinado ─── */
 const Section = ({ icon: Icon, title, children, className = '' }) => (
-  <div className={`space-y-3 ${className}`}>
-    <div className="flex items-center gap-2">
-      <div className="w-6 h-6 rounded-lg bg-primary-50 dark:bg-primary-950 flex items-center justify-center">
-        <Icon size={13} className="text-primary-600 dark:text-primary-400" />
+  <div className={`space-y-4 ${className}`}>
+    <div className="flex items-center gap-2.5 px-1">
+      <div className="w-8 h-8 rounded-[10px] bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
+        <Icon size={14} className="text-indigo-600 dark:text-indigo-400" strokeWidth={2.5} />
       </div>
-      <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em]">{title}</h3>
     </div>
-    {children}
+    <div className="bg-slate-50/50 dark:bg-slate-900/20 rounded-[20px] p-4 border border-slate-100 dark:border-slate-800/50">
+      {children}
+    </div>
   </div>
 );
 
-/* Max file size: 5MB */
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const ProfileModal = ({ isOpen, onClose }) => {
@@ -83,15 +78,14 @@ const ProfileModal = ({ isOpen, onClose }) => {
     if (!isOpen) { setSuccess(false); setError(null); setPhotoFile(null); setDragOver(false); }
   }, [isOpen]);
 
-  /* ─── Photo handling ─── */
   const handlePhotoSelect = useCallback((file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('Selecione uma imagem válida (JPG, PNG, etc.)');
+      toast.error('Selecione uma imagem válida');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error('Imagem muito grande. Máximo: 5MB');
+      toast.error('Imagem muito grande (máx 5MB)');
       return;
     }
     setPhotoFile(file);
@@ -118,36 +112,29 @@ const ProfileModal = ({ isOpen, onClose }) => {
     setDragOver(true);
   }, []);
 
-  const handleDragLeave = useCallback(() => setDragOver(false), []);
-
   const handleRemovePhoto = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
   };
 
-  /* ─── Save ─── */
   const handleSave = async () => {
-    if (!displayName.trim()) { setError('Por favor, digite um nome.'); return; }
+    if (!displayName.trim()) { setError('Digite seu nome para continuar.'); return; }
     setLoading(true);
     setError(null);
 
     try {
       let photoURL = user?.photoURL || null;
 
-      // Upload new photo if selected
       if (photoFile) {
         setUploadingPhoto(true);
         try {
-          const uploadResult = await uploadImage(photoFile);
-          photoURL = uploadResult;
+          photoURL = await uploadImage(photoFile);
         } catch (uploadErr) {
-          console.error('Erro no upload da foto:', uploadErr);
-          toast.error('Não foi possível enviar a foto. Salvando sem ela.');
+          toast.error('Erro ao enviar foto. Salvando dados básicos.');
         } finally {
           setUploadingPhoto(false);
         }
       } else if (!photoPreview && user?.photoURL) {
-        // User removed photo
         photoURL = '';
       }
 
@@ -169,12 +156,10 @@ const ProfileModal = ({ isOpen, onClose }) => {
       hapticSuccess();
       setSuccess(true);
       toast.success('Perfil atualizado! ✨');
-      setTimeout(() => onClose(), 1500);
+      setTimeout(() => onClose(), 1200);
     } catch (err) {
-      console.error('Erro ao atualizar perfil:', err);
       hapticError();
-      setError('Ops, não conseguimos salvar. Tente novamente.');
-      toast.error('Erro ao atualizar perfil.');
+      setError('Não foi possível salvar as alterações.');
     } finally {
       setLoading(false);
     }
@@ -182,239 +167,198 @@ const ProfileModal = ({ isOpen, onClose }) => {
 
   const getInitials = () => {
     if (displayName) return displayName[0]?.toUpperCase();
-    if (user?.email) return user.email[0]?.toUpperCase();
     return 'U';
   };
-
-  const createdAt = user?.metadata?.creationTime
-    ? new Date(user.metadata.creationTime).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-    : null;
 
   const themeOptions = [
     { key: 'light',  icon: Sun,     label: 'Claro' },
     { key: 'dark',   icon: Moon,    label: 'Escuro' },
-    { key: 'system', icon: Monitor, label: 'Sistema' },
+    { key: 'system', icon: Monitor, label: 'Auto' },
   ];
 
-  const hasPhotoChange = (photoFile !== null) || (!photoPreview && user?.photoURL);
+  const createdAt = user?.metadata?.creationTime
+    ? new Date(user.metadata.creationTime).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-1000 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Backdrop */}
-          <motion.div className="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-[3px]" onClick={onClose} />
+          {/* Backdrop Glass */}
+          <motion.div 
+            className="absolute inset-0 bg-slate-950/40 dark:bg-black/70 backdrop-blur-md" 
+            onClick={onClose} 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          />
 
-          {/* Modal */}
+          {/* Modal Container */}
           <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="profile-modal-title"
-            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col"
-            initial={{ opacity: 0, scale: 0.92, y: 24 }}
-            animate={{ opacity: 1, scale: 1, y: 0, transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } }}
-            exit={{ opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.2 } }}
+            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-white/20 dark:border-slate-800"
+            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 40 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* ─── Header with Photo Upload ─── */}
+            {/* ─── Header: Photo Section Premium ─── */}
             <div
-              className={`relative bg-linear-to-br from-primary-600 to-primary-700 px-6 py-7 text-center shrink-0 transition-colors ${dragOver ? 'ring-4 ring-inset ring-white/40' : ''}`}
+              className={`relative h-44 flex flex-col items-center justify-center shrink-0 transition-all duration-300 ${
+                dragOver ? 'bg-indigo-600' : 'bg-slate-900 dark:bg-slate-800'
+              }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
+              {/* Background Orbs */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+                <div className="absolute top-[-20%] left-[-10%] w-40 h-40 bg-indigo-500 rounded-full blur-3xl" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-40 h-40 bg-teal-500 rounded-full blur-3xl" />
+              </div>
+
               <button
                 onClick={onClose}
-                aria-label="Fechar perfil"
-                className="absolute top-3.5 right-3.5 p-1.5 bg-white/15 hover:bg-white/25 rounded-full transition-colors"
+                className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all z-20"
               >
-                <X className="w-4 h-4 text-white" />
+                <X size={18} strokeWidth={2.5} />
               </button>
 
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                onChange={handleFileChange}
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-              <motion.div
-                className="relative inline-block"
-                animate={{ scale: success ? [1, 1.08, 1] : 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Avatar */}
-                <button
-                  type="button"
+              <div className="relative z-10 group">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => fileInputRef.current?.click()}
-                  className="group relative w-20 h-20 mx-auto rounded-full border-[3px] border-white/30 ring-4 ring-white/10 overflow-hidden focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 transition-all"
-                  title="Clique para alterar sua foto"
-                  disabled={loading || success}
+                  className={`relative w-24 h-24 rounded-full border-4 border-white dark:border-slate-900 shadow-2xl overflow-hidden bg-slate-800 flex items-center justify-center transition-all ${
+                    dragOver ? 'ring-8 ring-white/20' : ''
+                  }`}
                 >
                   {photoPreview ? (
-                    <img
-                      src={photoPreview}
-                      alt="Foto de perfil"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={photoPreview} alt="Perfil" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-white/15 flex items-center justify-center">
-                      <span className="text-3xl font-bold text-white">{getInitials()}</span>
-                    </div>
+                    <span className="text-4xl font-black text-white">{getInitials()}</span>
                   )}
-
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                    <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="text-white" size={24} />
                   </div>
 
-                  {/* Uploading spinner */}
                   {uploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="text-white animate-spin" size={24} />
                     </div>
                   )}
-                </button>
+                </motion.button>
 
-                {/* Camera badge */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary-500 hover:bg-primary-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg transition-colors"
-                  title="Alterar foto"
-                  disabled={loading || success}
-                >
-                  {success ? (
-                    <Check className="w-4 h-4 text-white" />
-                  ) : (
-                    <Camera className="w-3.5 h-3.5 text-white" />
-                  )}
-                </button>
+                {/* Edit Badge */}
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-500 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg text-white pointer-events-none">
+                  {success ? <Check size={14} strokeWidth={3} /> : <Camera size={14} strokeWidth={2.5} />}
+                </div>
 
-                {/* Remove photo button */}
+                {/* Remove Button */}
                 {photoPreview && !success && (
                   <button
-                    type="button"
-                    onClick={handleRemovePhoto}
-                    className="absolute -bottom-1 -left-1 w-7 h-7 bg-red-500 hover:bg-red-400 rounded-full flex items-center justify-center border-2 border-white shadow-lg transition-colors"
-                    title="Remover foto"
-                    disabled={loading}
+                    onClick={(e) => { e.stopPropagation(); handleRemovePhoto(); }}
+                    className="absolute -top-1 -right-1 w-7 h-7 bg-red-500 hover:bg-red-600 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-lg text-white transition-transform hover:scale-110"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                    <Trash2 size={12} strokeWidth={2.5} />
                   </button>
                 )}
-              </motion.div>
-
-              <h2 id="profile-modal-title" className="mt-3 text-lg font-bold text-white">Meu Perfil</h2>
-              <p className="text-white/70 text-xs mt-0.5">
-                {dragOver ? 'Solte a imagem aqui!' : 'Toque na foto para alterar'}
-              </p>
+              </div>
             </div>
 
-            {/* ─── Scrollable Content ─── */}
-            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-              {/* Seção: Dados Pessoais */}
-              <Section icon={User} title="Dados Pessoais">
-                <div className="space-y-3">
+            {/* ─── Scrollable Body ─── */}
+            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8 custom-scrollbar">
+              
+              {/* Seção: Identidade */}
+              <Section icon={User} title="Identidade">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5 block">Nome de exibição</label>
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2 block ml-1">Como você quer ser chamado?</label>
                     <Input
-                      type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Ex: Dr. João, Maria, Prof. Silva..."
+                      placeholder="Seu nome ou apelido"
                       leftIcon={User}
                       disabled={loading || success}
-                      className="py-3 h-auto"
+                      className="h-12 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-bold text-[15px]"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 dark:text-slate-500 mb-1.5 block">Email</label>
-                    <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl">
-                      <Mail size={14} className="text-slate-400 dark:text-slate-500 shrink-0" />
-                      <span className="text-sm text-slate-500 dark:text-slate-400 truncate">{user?.email || '—'}</span>
-                    </div>
+                  <div className="flex items-center gap-3 px-4 py-3 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                    <Mail size={16} className="text-slate-400" />
+                    <span className="text-[14px] font-medium text-slate-500 dark:text-slate-400 truncate">{user?.email || 'Sem email'}</span>
                   </div>
                 </div>
               </Section>
 
-              {/* Seção: Aparência */}
-              <Section icon={Palette} title="Aparência">
-                <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-700/60 rounded-xl">
-                  {themeOptions.map(({ key, icon: ThIcon, label }) => {
-                    const active = mode === key;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => setMode(key)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
-                          active
-                            ? 'bg-white dark:bg-slate-600 text-primary-600 dark:text-primary-300 shadow-sm'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                        }`}
-                      >
-                        <ThIcon size={13} />
-                        {label}
-                      </button>
-                    );
-                  })}
+              {/* Seção: Interface */}
+              <Section icon={Palette} title="Customização">
+                <div className="space-y-6">
+                  <div className="relative flex p-1 bg-slate-200/50 dark:bg-slate-950/50 rounded-[14px] border border-slate-200/50 dark:border-slate-800">
+                    {themeOptions.map(({ key, icon: ThIcon, label }) => {
+                      const active = mode === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => setMode(key)}
+                          className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-bold transition-all duration-300 z-10 ${
+                            active ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-500'
+                          }`}
+                        >
+                          {active && (
+                            <motion.div 
+                              layoutId="profileTheme"
+                              className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-700"
+                              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <ThIcon size={14} className="relative z-20" strokeWidth={2.5} />
+                          <span className="relative z-20">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                    <FontSizeControl variant="compact" />
+                  </div>
                 </div>
               </Section>
 
-              {/* Seção: Acessibilidade */}
-              <Section icon={Eye} title="Acessibilidade">
-                <FontSizeControl />
-              </Section>
-
-              {/* Seção: Conta */}
+              {/* Seção: Segurança e Datas */}
               {createdAt && (
-                <Section icon={Shield} title="Informações da Conta">
-                  <div className="flex items-center gap-3 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    <Calendar size={14} className="text-slate-400 dark:text-slate-500 shrink-0" />
+                <Section icon={Shield} title="Segurança">
+                  <div className="flex items-center gap-4 text-slate-500">
+                    <Calendar size={18} className="text-slate-300 dark:text-slate-600" />
                     <div>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Membro desde</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-300">{createdAt}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Início da Jornada</p>
+                      <p className="text-[13px] font-bold text-slate-700 dark:text-slate-300">{createdAt}</p>
                     </div>
                   </div>
                 </Section>
               )}
 
-              {/* Mensagens de erro/sucesso */}
-              <AnimatePresence mode="wait">
+              {/* Feedback Messages */}
+              <AnimatePresence>
                 {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center gap-2 px-3.5 py-2.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 rounded-xl text-red-600 dark:text-red-400 text-xs"
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl text-red-600 dark:text-red-400 text-[13px] font-bold flex items-center gap-2"
                   >
-                    <X className="w-3.5 h-3.5 shrink-0" />
-                    {error}
-                  </motion.div>
-                )}
-                {success && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                    Perfil atualizado com sucesso!
+                    <AlertTriangle size={16} /> {error}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* ─── Footer ─── */}
-            <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-700 flex gap-3 shrink-0 bg-slate-50/80 dark:bg-slate-800/80">
-              <Button variant="secondary" fullWidth onClick={onClose} disabled={loading}>
+            {/* ─── Footer Premium ─── */}
+            <div className="px-6 py-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-3 shrink-0">
+              <Button variant="secondary" fullWidth onClick={onClose} disabled={loading} className="h-12 rounded-xl font-bold">
                 Cancelar
               </Button>
               <Button
@@ -423,9 +367,12 @@ const ProfileModal = ({ isOpen, onClose }) => {
                 onClick={handleSave}
                 loading={loading}
                 disabled={success}
-                leftIcon={success ? <Check className="w-4 h-4" /> : null}
+                className={`h-12 rounded-xl font-bold border-none shadow-lg transition-all ${
+                  success ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-indigo-600 shadow-indigo-500/20'
+                }`}
+                leftIcon={success ? <Check size={18} strokeWidth={3} /> : null}
               >
-                {success ? 'Salvo!' : 'Salvar'}
+                {success ? 'Concluído!' : 'Salvar Mudanças'}
               </Button>
             </div>
           </motion.div>
@@ -435,4 +382,10 @@ const ProfileModal = ({ isOpen, onClose }) => {
   );
 };
 
-export default ProfileModal;
+const AlertTriangle = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+);
+
+export default ProfileModal;  

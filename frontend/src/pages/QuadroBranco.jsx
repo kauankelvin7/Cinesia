@@ -1,14 +1,15 @@
 /**
- * 🎨 QUADRO DIGITAL DE ANATOMIA - v3.5
- * Responsivo automaticamente com o Layout
- * Dark mode aware, proper screen fit
- * Fix: Trata erro de migração de schema do IndexedDB
+ * 🎨 QUADRO DIGITAL DE ANATOMIA - v3.8
+ * Responsivo, Premium UI, Dark Mode Integrado
+ * Fix: Tratamento de schema e persistência robusta
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { useTheme } from '../contexts/ThemeContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Sparkles, Trash2, Maximize2 } from 'lucide-react';
 
 const PERSISTENCE_KEY = 'quadro-anatomia-cinesia';
 
@@ -16,6 +17,7 @@ export default function QuadroBranco() {
   const [isMobile, setIsMobile] = useState(false);
   const [storeKey, setStoreKey] = useState(PERSISTENCE_KEY);
   const [hasError, setHasError] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const { isDarkMode } = useTheme();
 
   useEffect(() => {
@@ -25,32 +27,24 @@ export default function QuadroBranco() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Limpa dados corrompidos do IndexedDB se houver erro de migração
-  const getDatabases = async () => {
-    if (typeof window.indexedDB?.databases === 'function') {
-      return window.indexedDB.databases();
-    }
-    return []; // Firefox fallback
-  };
-
+  // Limpa dados corrompidos do IndexedDB
   const handleStoreError = async () => {
     try {
-      const databases = await getDatabases();
-      for (const db of databases) {
+      if (typeof window.indexedDB?.databases === 'function') {
+        const databases = await window.indexedDB.databases();
+        for (const db of databases) {
           if (db.name && db.name.includes('TLDRAW')) {
             window.indexedDB.deleteDatabase(db.name);
           }
+        }
       }
-      // Força remount com nova key
       setStoreKey(`${PERSISTENCE_KEY}-${Date.now()}`);
       setHasError(false);
     } catch {
-      // Fallback: desabilita persistência
       setStoreKey(`temp-${Date.now()}`);
     }
   };
 
-  // Error boundary inline para tldraw
   useEffect(() => {
     const handler = (event) => {
       if (event.message?.includes('migration-error') || event.message?.includes('Failed to migrate store')) {
@@ -65,87 +59,129 @@ export default function QuadroBranco() {
 
   return (
     <div
-      className="w-full flex flex-col transition-colors duration-200 bg-slate-50 dark:bg-slate-900 overflow-hidden"
+      className="w-full flex flex-col relative transition-colors duration-500 bg-slate-50 dark:bg-slate-950 overflow-hidden"
       style={{
         height: isMobile ? 'calc(100dvh - 64px)' : 'calc(100dvh - 56px)',
         minHeight: 0,
       }}
     >
+      {/* ── Overlay de Carregamento Premium ── */}
+      <AnimatePresence>
+        {!isReady && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950"
+          >
+            <div className="relative mb-6">
+              <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 border-4 border-indigo-100 dark:border-indigo-900/30 border-t-indigo-500 rounded-full"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Sparkles size={24} className="text-indigo-500" />
+              </div>
+            </div>
+            <p className="text-[15px] font-bold text-slate-500 dark:text-slate-400 tracking-tight">
+              Preparando seu Quadro Digital...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Notificação de Reset ── */}
       {hasError && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm px-4 py-2 rounded-xl shadow-sm">
-          Dados do quadro foram resetados por incompatibilidade.
-        </div>
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-[110] bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 text-amber-800 dark:text-amber-200 text-xs font-bold px-5 py-3 rounded-[16px] shadow-2xl flex items-center gap-3 backdrop-blur-xl"
+        >
+          <Trash2 size={16} />
+          Dados do quadro resetados por incompatibilidade.
+        </motion.div>
       )}
-      <div className="flex-1 min-h-0 relative">
-      <Tldraw
-        key={storeKey}
-        inferDarkMode={false}
-        persistenceKey={storeKey}
-        autoFocus
-        onMount={(editor) => {
-          try {
-            editor.updateInstanceState({ isGridMode: true });
-          } catch (error) {
-            // silently ignore grid config errors
-          }
-        }}
-      />
+
+      {/* ── Canvas tldraw ── */}
+      <div className="flex-1 min-h-0 relative z-10">
+        <Tldraw
+          key={storeKey}
+          persistenceKey={storeKey}
+          autoFocus
+          inferDarkMode={isDarkMode}
+          onMount={(editor) => {
+            try {
+              editor.updateInstanceState({ isGridMode: true });
+              setIsReady(true);
+            } catch (error) {
+              setIsReady(true);
+            }
+          }}
+        />
       </div>
 
+      {/* ── Estilização Injetada (Override da UI nativa do tldraw) ── */}
       <style>{`
-        /* === CORREÇÕES DE LAYOUT === */
-        .tl-ui-layout__bottom__main {
-          margin-bottom: 0px !important;
-          margin-right: 20px !important;
+        /* Remove o fundo padrão para usar o do sistema */
+        .tl-canvas {
+          background-color: transparent !important;
         }
 
+        /* Watermark oculta */
         .tl-watermark {
           display: none !important;
         }
 
-        /* === VISUAL === */
-        .tl-toolbar {
-          backdrop-filter: blur(12px) !important;
-          background: ${isDarkMode ? 'rgba(30, 41, 59, 0.98)' : 'rgba(255, 255, 255, 0.98)'} !important;
-          border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} !important;
-          box-shadow: 0 4px 16px ${isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'} !important;
-          border-radius: 12px !important;
+        /* Estilo Premium para Toolbars */
+        .tl-ui-layout {
+          padding: 8px !important;
         }
 
-        .tl-toolbar button {
-          color: ${isDarkMode ? '#e2e8f0' : 'inherit'} !important;
+        .tl-toolbar, .tl-menu, .tl-ui-button, .tl-popover {
+          backdrop-filter: blur(16px) saturate(180%) !important;
+          background: ${isDarkMode ? 'rgba(30, 41, 59, 0.85)' : 'rgba(255, 255, 255, 0.85)'} !important;
+          border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'} !important;
+          box-shadow: 0 12px 24px -10px rgba(0,0,0,0.2) !important;
+          border-radius: 16px !important;
+          transition: all 0.2s ease !important;
         }
 
-        .tl-toolbar button[data-state="selected"] {
-          background: linear-gradient(135deg, #0EA5E9 0%, #10B981 100%) !important;
+        /* Botão selecionado com gradiente Cinesia */
+        .tl-toolbar button[data-state="selected"], 
+        .tl-ui-button[data-state="selected"] {
+          background: linear-gradient(135deg, #6366f1 0%, #0d9488 100%) !important;
           color: white !important;
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
         }
 
-        .tl-menu {
-          backdrop-filter: blur(12px) !important;
-          background: ${isDarkMode ? 'rgba(30, 41, 59, 0.98)' : 'rgba(255, 255, 255, 0.98)'} !important;
-          border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} !important;
-          box-shadow: 0 8px 24px ${isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.12)'} !important;
-          color: ${isDarkMode ? '#e2e8f0' : 'inherit'} !important;
+        /* Melhoria de tipografia e botões */
+        .tl-ui-button {
+          font-weight: 600 !important;
+          color: ${isDarkMode ? '#cbd5e1' : '#475569'} !important;
         }
 
-        /* === MOBILE === */
+        .tl-ui-button:hover {
+          background: ${isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'} !important;
+        }
+
+        /* Ajustes Mobile */
         @media (max-width: 768px) {
           .tl-toolbar {
-            bottom: 16px !important;
+            bottom: 24px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
+            width: fit-content !important;
           }
-
+          
           .tl-ui-layout__bottom__main {
-            margin-right: 10px !important;
+            margin-right: 0 !important;
+            margin-bottom: 0 !important;
           }
         }
 
-        .tl-container {
-          width: 100% !important;
-          height: 100% !important;
-        }
+        /* Foco no desenho: Esconde menus laterais excessivos se desejar um look mais clean */
+        /* .tl-ui-layout__top__left, .tl-ui-layout__top__right { opacity: 0.5; transition: opacity 0.2s; } */
+        /* .tl-ui-layout__top__left:hover, .tl-ui-layout__top__right:hover { opacity: 1; } */
       `}</style>
     </div>
   );

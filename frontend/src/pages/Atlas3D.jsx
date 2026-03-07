@@ -1,6 +1,7 @@
 /**
  * ATLAS 3D MELHORADO — Anatomia com proporções humanas reais
  * Geometrias orgânicas, proporções corretas, aparência realista
+ * UI Premium com Glassmorphism e tipografia refinada.
  */
 
 import React, { useState, useRef, useCallback, Suspense, useMemo, useEffect } from 'react';
@@ -11,7 +12,7 @@ import * as THREE from 'three';
 import {
   X, RotateCcw, Info, ChevronRight, Search,
   Eye, Layers, ChevronDown, Filter, ZoomIn, ZoomOut,
-  Activity, Bone, Brain, Heart
+  Activity, Bone, Brain, Heart, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -1230,12 +1231,7 @@ const CATEGORY_CONFIG = {
 
 /* ═══════════════════════════════════════════════════════
    DATABASE (mantida a mesma do original - posições e dados)
-   ATENÇÃO: mantenha a mesma STRUCTURES do seu código original
-   — apenas as geometries foram melhoradas
 ═══════════════════════════════════════════════════════ */
-
-// ▼▼▼ Cole aqui sua STRUCTURES original — os geometry ids são compatíveis ▼▼▼
-// Para este arquivo, usamos uma versão condensada com as estruturas principais
 
 const STRUCTURES = [
   /* ESQUELETO AXIAL */
@@ -1858,10 +1854,6 @@ const STRUCTURES = [
 const CATEGORIES = [...new Set(STRUCTURES.map(s => s.category))];
 
 /* ═══════════════════════════════════════════════════════
-   COMPONENTES 3D
-═══════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════
    IMAGENS EDUCATIVAS (Domínio Público — Wikimedia Commons)
 ═══════════════════════════════════════════════════════ */
 
@@ -2021,13 +2013,12 @@ const STRUCTURE_IMAGES = {
   wristR:        WP_IMG('Gray334.png'),
 };
 
-/* ─── Card de imagem educativa (overlay 2D) ─── */
+/* ─── Card de imagem educativa (overlay 2D) Premium ─── */
 function HoverImageCard({ hoveredId, isDarkMode }) {
   const [imgOk, setImgOk] = useState(true);
   const structure = useMemo(() => STRUCTURES.find(s => s.id === hoveredId), [hoveredId]);
   const imgUrl = hoveredId ? STRUCTURE_IMAGES[hoveredId] : null;
 
-  // Reset quando a estrutura muda
   useEffect(() => { setImgOk(true); }, [hoveredId]);
 
   if (!structure || !imgUrl) return null;
@@ -2039,45 +2030,45 @@ function HoverImageCard({ hoveredId, isDarkMode }) {
     <AnimatePresence mode="wait">
       <motion.div
         key={hoveredId}
-        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+        initial={{ opacity: 0, y: 15, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 10, scale: 0.96 }}
-        transition={{ duration: 0.16, ease: 'easeOut' }}
-        className="absolute bottom-4 left-3 z-20 w-52 rounded-2xl overflow-hidden shadow-2xl pointer-events-none select-none backdrop-blur-xl"
-        style={{ backgroundColor: isDarkMode ? 'rgba(12,21,38,0.92)' : 'rgba(255,255,255,0.92)', border: '1px solid var(--border)' }}
+        exit={{ opacity: 0, y: 15, scale: 0.96 }}
+        transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
+        className="absolute bottom-6 left-6 z-20 w-64 rounded-2xl overflow-hidden shadow-2xl pointer-events-none select-none backdrop-blur-2xl border"
+        style={{
+          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+          borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+        }}
       >
-        {/* Barra de cor da categoria */}
-        <div className="h-0.5 w-full" style={{ background: cfg?.color || '#0EA5E9' }} />
+        {/* Barra de cor superior brilhante */}
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${cfg?.color}, transparent)` }} />
 
         {/* Imagem anatômica */}
         {imgOk && (
-          <div className="relative w-full h-32 overflow-hidden" style={{ backgroundColor: 'var(--bg-elevated)' }}>
+          <div className="relative w-full h-36 overflow-hidden bg-slate-50 dark:bg-slate-900/50">
             <img
               src={imgUrl}
               alt={structure.name}
-              className="w-full h-full object-contain p-2"
+              className="w-full h-full object-contain p-3"
               onError={() => setImgOk(false)}
             />
-            <span className="absolute bottom-1 right-1.5 text-[8px] bg-black/40 text-white/60 rounded px-1 backdrop-blur-sm">
-              Wikimedia Commons · PD
+            <span className="absolute bottom-1.5 right-2 text-[9px] font-medium bg-black/50 text-white/80 rounded px-1.5 py-0.5 backdrop-blur-md">
+              Wikimedia Commons
             </span>
           </div>
         )}
 
         {/* Nome e categoria */}
-        <div className="px-3 py-2.5">
-          <div className="flex items-start justify-between gap-1.5 mb-1.5">
-            <p className={`text-[12px] font-bold leading-snug ${
-              isDarkMode ? 'text-white' : 'text-slate-900'
-            }`}>
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-2.5">
+            <p className={`text-[14px] font-bold leading-snug tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {structure.name}
             </p>
             <span
-              className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 leading-tight mt-0.5 whitespace-nowrap"
+              className="text-[10px] px-2 py-0.5 rounded-md font-bold shrink-0 shadow-sm"
               style={{
-                background: `${cfg?.color || '#0EA5E9'}22`,
+                background: `${cfg?.color || '#0EA5E9'}25`,
                 color: cfg?.color || '#0EA5E9',
-                border: `1px solid ${cfg?.color || '#0EA5E9'}44`,
               }}
             >
               {cfg?.icon}
@@ -2085,15 +2076,11 @@ function HoverImageCard({ hoveredId, isDarkMode }) {
           </div>
 
           {firstDetail && (
-            <div className={`rounded-lg px-2 py-1.5 ${
-              isDarkMode ? 'bg-slate-800/70' : 'bg-slate-50'
-            }`}>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-sky-500 mb-0.5">
+            <div className={`rounded-xl px-3 py-2.5 ${isDarkMode ? 'bg-slate-800/60' : 'bg-slate-100/60'} border border-transparent dark:border-slate-700/50`}>
+              <p className="text-[10px] font-extrabold uppercase tracking-widest mb-1 opacity-90" style={{ color: cfg?.color }}>
                 {firstDetail[0]}
               </p>
-              <p className={`text-[10px] leading-relaxed line-clamp-2 ${
-                isDarkMode ? 'text-slate-300' : 'text-slate-600'
-              }`}>
+              <p className={`text-[12px] leading-relaxed font-medium line-clamp-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                 {firstDetail[1]}
               </p>
             </div>
@@ -2109,26 +2096,23 @@ function AnatomyMesh({ structure, isSelected, isHovered, onSelect, onHover }) {
   const mat = MAT[structure.material] || MAT.bone;
   const geo = useMemo(() => buildGeo(structure.geometry), [structure.geometry]);
 
-  // BUG-003: dispose geometry when AnatomyMesh unmounts to avoid GPU memory leak
   useEffect(() => {
     return () => { geo?.dispose(); };
   }, [geo]);
 
-  // Derive color directly from selection state — no per-frame lerp on 100+ idle meshes
   const activeColor = useMemo(() => {
-    if (isSelected) return '#00BFFF';
+    if (isSelected) return '#38BDF8'; // Sky 400 for selection
     if (isHovered) {
       const c = new THREE.Color(mat.color);
-      c.lerp(new THREE.Color('#60D8FF'), 0.4);
+      c.lerp(new THREE.Color('#BAE6FD'), 0.3); // Sky 200 for hover
       return '#' + c.getHexString();
     }
     return mat.color;
   }, [isSelected, isHovered, mat.color]);
 
-  // Only run useFrame when THIS mesh is selected (pulse glow) — skips all 100+ idle meshes
   useFrame(({ clock }) => {
     if (!isSelected || !meshRef.current) return;
-    meshRef.current.material.emissiveIntensity = 0.14 + Math.sin(clock.elapsedTime * 2.5) * 0.06;
+    meshRef.current.material.emissiveIntensity = 0.2 + Math.sin(clock.elapsedTime * 3) * 0.1;
   });
 
   return (
@@ -2147,42 +2131,35 @@ function AnatomyMesh({ structure, isSelected, isHovered, onSelect, onHover }) {
         metalness={mat.metalness ?? 0.0}
         transparent={mat.transparent ?? false}
         opacity={mat.opacity ?? 1}
-        emissive={isSelected ? '#0080FF' : '#000000'}
-        emissiveIntensity={isSelected ? 0.14 : 0}
+        emissive={isSelected ? '#0284C7' : '#000000'}
+        emissiveIntensity={isSelected ? 0.2 : 0}
         side={mat.transparent ? THREE.DoubleSide : THREE.FrontSide}
       />
     </mesh>
   );
 }
 
-// Label flutuante
+// Label flutuante 3D (Estilo Tooltip Premium)
 function StructureLabel({ structure, isSelected, isHovered }) {
   if (!isSelected && !isHovered) return null;
-  const labelY = structure.position[1] + 0.7;
+  const labelY = structure.position[1] + 0.8;
   return (
     <Html position={[structure.position[0], labelY, structure.position[2]]} center style={{ pointerEvents: 'none' }}>
       <div style={{
-        background: isSelected
-          ? 'linear-gradient(135deg, #0369A1CC, #0284C7CC)'
-          : 'rgba(15,23,42,0.88)',
-        backdropFilter: 'blur(8px)',
-        border: `1px solid ${isSelected ? '#38BDF8' : '#334155'}`,
-        borderRadius: 8,
-        padding: '5px 10px',
-        color: isSelected ? '#E0F7FF' : '#CBD5E1',
-        fontSize: 11,
-        fontWeight: 600,
+        background: isSelected ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(12px)',
+        border: `1px solid ${isSelected ? '#38BDF8' : 'rgba(0,0,0,0.1)'}`,
+        borderRadius: 12,
+        padding: '6px 12px',
+        color: isSelected ? '#F8FAFC' : '#0F172A',
+        fontSize: 13,
+        fontWeight: 700,
         whiteSpace: 'nowrap',
-        boxShadow: isSelected ? '0 0 16px #38BDF840' : '0 2px 8px #00000060',
-        letterSpacing: 0.3,
+        boxShadow: isSelected ? '0 0 20px rgba(56, 189, 248, 0.4)' : '0 4px 15px rgba(0, 0, 0, 0.1)',
+        letterSpacing: '-0.01em',
         transform: 'translateY(-4px)',
       }}>
         {structure.name}
-        {isSelected && (
-          <div style={{ fontSize: 9, fontWeight: 400, color: '#7DD3FC', marginTop: 2 }}>
-            {structure.category}
-          </div>
-        )}
       </div>
     </Html>
   );
@@ -2193,17 +2170,17 @@ function BaseRing() {
   const ref = useRef();
   useFrame(({ clock }) => {
     if (!ref.current) return;
-    ref.current.rotation.y = clock.elapsedTime * 0.25;
+    ref.current.rotation.y = clock.elapsedTime * 0.15;
   });
   return (
     <group ref={ref} position={[0, -7.5, 0]}>
       {[2.8, 3.5, 4.2].map((r, i) => (
         <mesh key={r} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[r - 0.04, r, 80]} />
+          <ringGeometry args={[r - 0.03, r, 80]} />
           <meshBasicMaterial
-            color="#0EA5E9"
+            color="#38BDF8"
             transparent
-            opacity={0.06 - i * 0.015}
+            opacity={0.08 - i * 0.02}
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -2220,16 +2197,18 @@ function Scene({ selectedId, hoveredId, onSelect, onHover, visCats }) {
     [visCats]
   );
 
-  const bgColor = isDarkMode ? '#0a1628' : '#f0f4f8';
+  const bgColor = isDarkMode ? '#0B1120' : '#F8FAFC'; // Cores sólidas de fundo do Tailwind (slate-950 / slate-50)
+  
   return (
     <>
-      {/* Fundo correto no contexto WebGL — sem o preto padrão do clearColor */}
       <color attach="background" args={[bgColor]} />
-      {/* Iluminação médica calibrada */}
-      <ambientLight intensity={isDarkMode ? 0.40 : 0.55} color="#E8EFF5" />
+      {/* Fog suave para integrar com o fundo */}
+      <fog attach="fog" args={[bgColor, 15, 45]} />
+      
+      <ambientLight intensity={isDarkMode ? 0.4 : 0.6} color="#E8EFF5" />
       <directionalLight
-        position={[6, 14, 8]}
-        intensity={isDarkMode ? 0.9 : 1.2}
+        position={[8, 15, 10]}
+        intensity={isDarkMode ? 1.0 : 1.3}
         color="#FFF5E8"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -2239,12 +2218,12 @@ function Scene({ selectedId, hoveredId, onSelect, onHover, visCats }) {
         shadow-camera-right={10}
         shadow-camera-top={15}
         shadow-camera-bottom={-10}
-        shadow-bias={-0.0008}
+        shadow-bias={-0.0005}
       />
-      <directionalLight position={[-5, 8, -6]} intensity={0.28} color="#C8D8F5" />
-      <pointLight position={[0, 5, 7]} intensity={0.5} color="#1EBBFF" distance={20} decay={2} />
+      <directionalLight position={[-6, 8, -6]} intensity={0.3} color="#C8D8F5" />
+      <pointLight position={[0, 6, 8]} intensity={0.6} color="#38BDF8" distance={25} decay={2} />
 
-      <ContactShadows position={[0, -7.55, 0]} opacity={0.30} scale={12} blur={1.5} far={10} />
+      <ContactShadows position={[0, -7.55, 0]} opacity={isDarkMode ? 0.4 : 0.2} scale={15} blur={2} far={10} color="#0F172A" />
 
       {filtered.map(s => (
         <React.Fragment key={s.id}>
@@ -2269,19 +2248,19 @@ function Scene({ selectedId, hoveredId, onSelect, onHover, visCats }) {
         enablePan
         enableZoom
         enableRotate
-        minDistance={3}
-        maxDistance={28}
-        target={[0, 1.5, 0]}
+        minDistance={4}
+        maxDistance={30}
+        target={[0, 1.0, 0]}
         makeDefault
         enableDamping
-        dampingFactor={0.07}
+        dampingFactor={0.05}
       />
     </>
   );
 }
 
 /* ═══════════════════════════════════════════════════════
-   COMPONENTE PRINCIPAL — Layout com painel colapsável
+   COMPONENTE PRINCIPAL — Layout com painel
 ═══════════════════════════════════════════════════════ */
 
 function useMediaQuery(query) {
@@ -2305,23 +2284,21 @@ export default function Atlas3D() {
   const [showFilters, setShowFilters] = useState(false);
   const { isDarkMode } = useTheme?.() ?? { isDarkMode: true };
 
-  // Panel collapse state — persisted in localStorage
   const [painelAberto, setPainelAberto] = useState(() => {
     try { return localStorage.getItem('atlas-panel') !== 'closed'; } catch { return true; }
   });
+  
   useEffect(() => {
     try { localStorage.setItem('atlas-panel', painelAberto ? 'open' : 'closed'); } catch { /* ignore */ }
   }, [painelAberto]);
 
-  // Mobile-specific state
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [mobileListOpen, setMobileListOpen] = useState(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
-  // Refs for canvas resize
   const canvasWrapperRef = useRef(null);
-  // FIX-006: store ResizeObserver ref so we can disconnect on unmount
   const roRef = useRef(null);
+  
   useEffect(() => {
     return () => {
       if (roRef.current) {
@@ -2357,58 +2334,63 @@ export default function Atlas3D() {
       );
     }), [searchTerm, visCats]);
 
-  // Close mobile sheets
   const closeMobileList = useCallback(() => setMobileListOpen(false), []);
   const closeMobileDetail = useCallback(() => setMobileDetailOpen(false), []);
 
   return (
     <div className="atlas-layout">
-
-      {/* ── PAINEL ESQUERDO ── */}
-      <div className={`atlas-panel ${!painelAberto && !isMobile ? 'collapsed' : ''} ${isMobile && mobileListOpen ? 'mobile-open' : ''}`}>
-        {/* Header */}
-        <div className="px-3 pt-3 pb-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-2.5 mb-2.5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #0EA5E9, #06B6D4)', boxShadow: '0 4px 12px rgba(14,165,233,0.25)' }}>
-              <Bone size={17} className="text-white" />
+      {/* ── PAINEL ESQUERDO (Glassmorphism Premium) ── */}
+      <div 
+        className={`atlas-panel flex flex-col z-30 transition-transform duration-300 ease-in-out ${!painelAberto && !isMobile ? 'collapsed -translate-x-full' : 'translate-x-0'} ${isMobile && mobileListOpen ? 'mobile-open translate-y-0' : (isMobile ? 'translate-y-full' : '')}`}
+        style={{
+          width: isMobile ? '100%' : '320px',
+          height: '100%',
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(20px)',
+          borderRight: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
+          boxShadow: '10px 0 30px rgba(0,0,0,0.1)'
+        }}
+      >
+        {/* Header do Painel */}
+        <div className="px-5 pt-6 pb-4 shrink-0 border-b border-slate-200/50 dark:border-slate-800/50">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shadow-lg bg-gradient-to-br from-indigo-500 to-sky-500 shadow-sky-500/20">
+              <Bone size={20} className="text-white" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold leading-tight" style={{ color: 'var(--text-1)' }}>Atlas 3D</h1>
-              <p className="text-[10px]" style={{ color: 'var(--text-4)' }}>{filtered.length} estrutura{filtered.length !== 1 ? 's' : ''}</p>
+              <h1 className="text-[18px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-none mb-1">Atlas 3D</h1>
+              <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400">{filtered.length} estruturas visíveis</p>
             </div>
             {isMobile && (
-              <button onClick={closeMobileList} className="flex items-center justify-center p-1.5 rounded-lg" style={{ color: 'var(--text-3)' }}>
-                <X size={16} />
+              <button onClick={closeMobileList} className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 transition-colors">
+                <X size={18} />
               </button>
             )}
           </div>
 
-          {/* Search */}
-          <div className="relative mb-2">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-4)' }} />
+          {/* Search Input Sleek */}
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar estrutura, músculo, teste..."
+              placeholder="Buscar músculo, osso..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-3 py-1.5 text-xs rounded-lg outline-none transition-all"
-              style={{
-                backgroundColor: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-1)',
-              }}
+              className="w-full pl-10 pr-4 py-3 text-[13px] font-medium rounded-xl outline-none transition-all bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400"
             />
           </div>
 
-          {/* Layer filters */}
+          {/* Layer filters Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-1.5 text-[11px] font-medium transition-colors mb-0.5"
-            style={{ color: 'var(--text-3)' }}
+            className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
           >
-            <Filter size={10} />
-            Camadas
-            <ChevronDown size={10} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            <Filter size={14} />
+            Camadas Ativas
+            <ChevronDown size={14} className={`transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
           </button>
 
           <AnimatePresence>
@@ -2419,7 +2401,7 @@ export default function Atlas3D() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="flex gap-1 flex-wrap py-1.5">
+                <div className="flex gap-2 flex-wrap pt-3 pb-1">
                   {CATEGORIES.map(cat => {
                     const active = visCats.includes(cat);
                     const cfg = CATEGORY_CONFIG[cat];
@@ -2427,16 +2409,11 @@ export default function Atlas3D() {
                       <button
                         key={cat}
                         onClick={() => toggleCat(cat)}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-medium transition-all ${
-                          active ? 'ring-1' : 'opacity-40 line-through'
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          active ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-sm border border-slate-200 dark:border-slate-700' : 'opacity-40 line-through text-slate-500 border border-transparent'
                         }`}
-                        style={{
-                          backgroundColor: active ? 'var(--bg-elevated)' : 'transparent',
-                          color: active ? 'var(--text-2)' : 'var(--text-4)',
-                          ...(active ? { ringColor: 'var(--border-strong)' } : {}),
-                        }}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: active ? cfg?.color : 'var(--text-4)' }} />
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: active ? cfg?.color : 'var(--text-4)' }} />
                         {cat}
                       </button>
                     );
@@ -2448,57 +2425,55 @@ export default function Atlas3D() {
         </div>
 
         {/* Structure list */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-24" style={{ color: 'var(--text-4)' }}>
-              <Search size={18} className="mb-1.5 opacity-40" />
-              <p className="text-xs">Nenhuma estrutura encontrada</p>
+            <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+              <Search size={24} className="mb-2 opacity-30" />
+              <p className="text-[13px] font-medium">Nenhuma estrutura encontrada</p>
             </div>
           ) : (
-            filtered.map(s => {
-              const cfg = CATEGORY_CONFIG[s.category];
-              const isActive = selectedId === s.id;
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    handleSelect(s.id);
-                    if (isMobile) setMobileListOpen(false);
-                  }}
-                  className="w-full px-3 py-2 flex items-center gap-2.5 text-left transition-all border-l-2"
-                  style={{
-                    backgroundColor: isActive ? 'var(--primary-bg)' : 'transparent',
-                    borderLeftColor: isActive ? 'var(--primary)' : 'transparent',
-                  }}
-                >
-                  <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-[10px]"
-                    style={{
-                      background: `${cfg?.color || '#64748b'}${isActive ? '30' : '15'}`,
-                      border: `1.5px solid ${isActive ? 'var(--primary)' : (cfg?.color || '#64748b') + '55'}`,
+            <div className="px-3 py-2 space-y-1">
+              {filtered.map(s => {
+                const cfg = CATEGORY_CONFIG[s.category];
+                const isActive = selectedId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      handleSelect(s.id);
+                      if (isMobile) setMobileListOpen(false);
                     }}
+                    className={`w-full px-3 py-2.5 flex items-center gap-3 text-left transition-all rounded-xl ${
+                      isActive ? 'bg-sky-50 dark:bg-sky-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    }`}
                   >
-                    {cfg?.icon || '●'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold truncate leading-tight" style={{
-                      color: isActive ? 'var(--primary)' : 'var(--text-1)',
-                    }}>
-                      {s.name}
-                    </p>
-                    <p className="text-[9px] truncate" style={{ color: 'var(--text-4)' }}>{s.category}</p>
-                  </div>
-                  <ChevronRight size={10} style={{ color: isActive ? 'var(--primary)' : 'var(--text-4)' }} />
-                </button>
-              );
-            })
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[14px] shadow-sm"
+                      style={{
+                        background: isActive ? cfg?.color : `${cfg?.color}15`,
+                        color: isActive ? '#fff' : cfg?.color,
+                      }}
+                    >
+                      {cfg?.icon || '●'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[13px] font-bold truncate leading-snug ${isActive ? 'text-sky-700 dark:text-sky-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                        {s.name}
+                      </p>
+                      <p className="text-[10px] font-medium text-slate-400 truncate mt-0.5 uppercase tracking-wider">{s.category}</p>
+                    </div>
+                    <ChevronRight size={14} className={isActive ? 'text-sky-500' : 'text-slate-300 opacity-0 group-hover:opacity-100'} />
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
 
-      {/* ── TOGGLE BUTTON ── */}
+      {/* ── TOGGLE BUTTON (Floating Action Button) ── */}
       <button
-        className="atlas-toggle-btn"
+        className="absolute z-40 flex items-center justify-center rounded-full shadow-xl backdrop-blur-md transition-all hover:scale-105 active:scale-95"
         onClick={() => {
           if (isMobile) {
             setMobileListOpen(p => !p);
@@ -2507,18 +2482,27 @@ export default function Atlas3D() {
           }
         }}
         title={painelAberto ? 'Ocultar painel' : 'Mostrar painel'}
-        aria-label={painelAberto ? 'Ocultar painel' : 'Mostrar painel'}
-        style={!painelAberto && !isMobile ? { left: 0 } : undefined}
+        style={{
+          bottom: isMobile ? '20px' : '30px',
+          left: isMobile ? '50%' : (painelAberto ? '340px' : '30px'),
+          transform: isMobile ? 'translateX(-50%)' : 'none',
+          width: isMobile ? 'auto' : '48px',
+          height: '48px',
+          padding: isMobile ? '0 20px' : '0',
+          backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+          border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+          color: isDarkMode ? '#F8FAFC' : '#0F172A',
+        }}
       >
         {isMobile ? (
-          <>☰ Ver estruturas</>
+          <span className="text-[13px] font-bold flex items-center gap-2"><Layers size={16}/> Lista de Estruturas</span>
         ) : (
-          painelAberto ? '◀' : '▶'
+          painelAberto ? <ChevronLeft size={20} /> : <Layers size={20} />
         )}
       </button>
 
       {/* ── CANVAS 3D ── */}
-      <div className="atlas-canvas-wrapper" ref={canvasWrapperRef}>
+      <div className="absolute inset-0 z-0" ref={canvasWrapperRef}>
         <Canvas
           shadows
           camera={{ position: [5.5, 3.5, 11], fov: 44, near: 0.1, far: 100 }}
@@ -2526,7 +2510,6 @@ export default function Atlas3D() {
           dpr={[1, 1.5]}
           resize={{ scroll: false, debounce: { scroll: 0, resize: 0 } }}
           onCreated={({ gl, camera }) => {
-            // ResizeObserver for correct canvas sizing after panel collapse
             if (canvasWrapperRef.current) {
               let rafId;
               const ro = new ResizeObserver(entries => {
@@ -2561,220 +2544,237 @@ export default function Atlas3D() {
         {/* Imagem educativa ao hover */}
         <HoverImageCard hoveredId={hoveredId} isDarkMode={isDarkMode} />
 
-        {/* Legenda de camadas (desktop only) */}
-        <div className="absolute top-3 left-3 hidden sm:flex flex-col gap-0.5 pointer-events-none">
+        {/* Legenda de camadas flutuante (desktop only) */}
+        <div className="absolute top-6 left-[350px] hidden lg:flex gap-2 pointer-events-none transition-all duration-300" style={{ left: painelAberto ? '350px' : '30px' }}>
           {CATEGORIES.filter(c => visCats.includes(c)).map(cat => (
             <div
               key={cat}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[9.5px] font-medium backdrop-blur-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold backdrop-blur-md shadow-sm border border-white/10 dark:border-slate-700/50"
               style={{
-                backgroundColor: isDarkMode ? 'rgba(13,21,38,0.7)' : 'rgba(255,255,255,0.7)',
-                color: 'var(--text-2)',
+                backgroundColor: isDarkMode ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.8)',
+                color: isDarkMode ? '#CBD5E1' : '#475569',
               }}
             >
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CATEGORY_CONFIG[cat]?.color }} />
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CATEGORY_CONFIG[cat]?.color }} />
               {cat}
             </div>
           ))}
         </div>
 
-        {/* Botões de controle */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+        {/* Botões de controle 3D */}
+        <div className="absolute top-6 right-6 flex flex-col gap-3 z-20">
           <button
             onClick={() => { setSelectedId(null); setMobileDetailOpen(false); }}
-            className="p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md border transition-all hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.9)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-3)',
+              backgroundColor: isDarkMode ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.9)',
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              color: isDarkMode ? '#94A3B8' : '#64748B',
             }}
             title="Limpar seleção"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={16} strokeWidth={2.5} />
           </button>
           <button
             onClick={() => setVisCats([...CATEGORIES])}
-            className="p-2 rounded-xl shadow-lg backdrop-blur-sm border transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg backdrop-blur-md border transition-all hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.9)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-3)',
+              backgroundColor: isDarkMode ? 'rgba(15,23,42,0.8)' : 'rgba(255,255,255,0.9)',
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              color: isDarkMode ? '#94A3B8' : '#64748B',
             }}
-            title="Mostrar tudo"
+            title="Mostrar todas as camadas"
           >
-            <Layers size={14} />
+            <Eye size={16} strokeWidth={2.5} />
           </button>
         </div>
 
         {/* Hint de interação (desktop) */}
         {!selectedId && !hoveredId && !isMobile && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full text-xs backdrop-blur-sm shadow-xl pointer-events-none border"
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-full text-[13px] font-bold backdrop-blur-xl shadow-2xl pointer-events-none border"
             style={{
-              backgroundColor: isDarkMode ? 'rgba(13,21,38,0.8)' : 'rgba(255,255,255,0.8)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-3)',
+              backgroundColor: isDarkMode ? 'rgba(15,23,42,0.75)' : 'rgba(255,255,255,0.85)',
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              color: isDarkMode ? '#F8FAFC' : '#0F172A',
             }}
           >
-            <Eye size={13} style={{ color: 'var(--primary)' }} />
-            Clique em uma estrutura para detalhes
-          </div>
+            <Sparkles size={16} className="text-sky-500" />
+            Clique em uma estrutura para explorar
+          </motion.div>
         )}
 
-        {/* ── PAINEL DE DETALHES — Desktop: overlay, Mobile: bottom sheet ── */}
+        {/* ── PAINEL DE DETALHES — Desktop: Overlay Glassmorphism ── */}
         <AnimatePresence>
-          {selected && (
-            <>
-              {/* Desktop detail panel */}
-              {!isMobile && (
-                <>
-                  <motion.div
-                    className="absolute bottom-4 right-4 w-96 z-10"
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 20, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-                  >
-                    <div className="rounded-2xl shadow-2xl border overflow-hidden flex flex-col max-h-[78vh]"
+          {selected && !isMobile && (
+            <motion.div
+              className="absolute bottom-8 right-8 w-[400px] z-30"
+              initial={{ y: 30, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 30, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <div 
+                className="rounded-[24px] shadow-2xl border overflow-hidden flex flex-col max-h-[75vh] backdrop-blur-2xl"
+                style={{
+                  backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                }}
+              >
+                {/* Header do Detalhe */}
+                <div className="px-6 py-5 flex items-start justify-between shrink-0 border-b border-slate-200/50 dark:border-slate-700/50">
+                  <div className="flex gap-4">
+                    <div
+                      className="w-12 h-12 rounded-[14px] flex items-center justify-center text-xl shadow-sm shrink-0"
                       style={{
-                        backgroundColor: 'var(--bg-card)',
-                        borderColor: 'var(--border)',
+                        background: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
+                        color: '#fff',
                       }}
                     >
-                      {/* Header */}
-                      <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm"
-                            style={{
-                              background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
-                              border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
-                            }}
-                          >
-                            {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-sm leading-tight" style={{ color: 'var(--text-1)' }}>{selected.name}</h3>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                              style={{
-                                background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
-                                color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
-                              }}
-                            >{selected.category}</span>
-                          </div>
+                      {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-[18px] leading-tight mb-1 text-slate-900 dark:text-white tracking-tight">{selected.name}</h3>
+                      <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: CATEGORY_CONFIG[selected.category]?.color }}>
+                        {selected.category}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedId(null)} className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
+                    <X size={16} strokeWidth={2.5} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                  {STRUCTURE_IMAGES[selected.id] && (
+                    <div className="bg-slate-50 dark:bg-slate-900/50 p-4 border-b border-slate-200/50 dark:border-slate-700/50">
+                      <img
+                        src={STRUCTURE_IMAGES[selected.id]}
+                        alt={selected.name}
+                        className="w-full h-40 object-contain rounded-xl"
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-6 space-y-6">
+                    <p className="text-[14px] leading-relaxed font-medium text-slate-600 dark:text-slate-300">
+                      {selected.description}
+                    </p>
+                    
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="p-1.5 rounded-md bg-sky-50 dark:bg-sky-900/30">
+                          <Activity size={14} className="text-sky-500" strokeWidth={2.5} />
                         </div>
-                        <button onClick={() => setSelectedId(null)} className="flex items-center justify-center p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-3)' }}>
-                          <X size={15} />
-                        </button>
+                        <h4 className="text-[13px] font-extrabold uppercase tracking-widest text-slate-800 dark:text-slate-200">
+                          Aplicação Clínica
+                        </h4>
                       </div>
-
-                      {/* Image */}
-                      {STRUCTURE_IMAGES[selected.id] && (
-                        <div style={{ background: 'var(--bg-elevated)' }}>
-                          <img
-                            src={STRUCTURE_IMAGES[selected.id]}
-                            alt={selected.name}
-                            className="w-full h-32 object-contain p-2"
-                            onError={e => { e.target.style.display = 'none'; }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Content */}
-                      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-                        <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>{selected.description}</p>
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <Info size={10} style={{ color: 'var(--primary)' }} />
-                            <h4 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-4)' }}>
-                              Informações Clínicas
-                            </h4>
+                      
+                      <div className="space-y-3">
+                        {Object.entries(selected.details).map(([k, v]) => (
+                          <div key={k} className="rounded-[16px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                            <p className="text-[12px] font-bold mb-1" style={{ color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9' }}>{k}</p>
+                            <p className="text-[13.5px] font-medium leading-relaxed text-slate-700 dark:text-slate-300">{v}</p>
                           </div>
-                          <div className="space-y-1.5">
-                            {Object.entries(selected.details).map(([k, v]) => (
-                              <div key={k} className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                                <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--primary)' }}>{k}</p>
-                                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-2)' }}>{v}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
-                  </motion.div>
-                </>
-              )}
-            </>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── MOBILE: Overlay for bottom sheets ── */}
-      <div
-        className={`atlas-overlay ${(mobileListOpen || (mobileDetailOpen && selected)) ? 'visible' : ''}`}
-        onClick={() => { closeMobileList(); closeMobileDetail(); }}
-      />
+      {/* ── MOBILE: Overlay and Bottom Sheet ── */}
+      <AnimatePresence>
+        {(mobileListOpen || (mobileDetailOpen && selected)) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => { closeMobileList(); closeMobileDetail(); }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* ── MOBILE: Detail bottom sheet ── */}
-      {isMobile && selected && (
-        <div className={`atlas-bottom-sheet ${mobileDetailOpen ? 'open' : ''}`}>
-          <div className="atlas-bottom-sheet-handle" />
-          <button
-            onClick={closeMobileDetail}
-            className="absolute top-3 right-3 flex items-center justify-center p-1.5 rounded-lg"
-            style={{ color: 'var(--text-3)', zIndex: 5 }}
+      <AnimatePresence>
+        {isMobile && selected && mobileDetailOpen && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 rounded-t-[32px] shadow-2xl flex flex-col max-h-[85vh]"
           >
-            <X size={16} />
-          </button>
-
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-3 pr-8">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-sm shrink-0"
-              style={{
-                background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}18`,
-                border: `2px solid ${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}60`,
-              }}
+            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto my-4" />
+            
+            <button
+              onClick={closeMobileDetail}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"
             >
-              {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
-            </div>
-            <div>
-              <h3 className="font-bold text-sm leading-tight" style={{ color: 'var(--text-1)' }}>{selected.name}</h3>
-              <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                style={{
-                  background: `${CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9'}20`,
-                  color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9',
-                }}
-              >{selected.category}</span>
-            </div>
-          </div>
+              <X size={16} strokeWidth={2.5} />
+            </button>
 
-          {/* Image */}
-          {STRUCTURE_IMAGES[selected.id] && (
-            <div className="atlas-estrutura-img-wrap">
-              <img src={STRUCTURE_IMAGES[selected.id]} alt={selected.name} loading="lazy" />
-            </div>
-          )}
-
-          {/* Description */}
-          <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--text-2)' }}>{selected.description}</p>
-
-          {/* Clinical details */}
-          <div className="flex items-center gap-1.5 mb-2">
-            <Info size={10} style={{ color: 'var(--primary)' }} />
-            <h4 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-4)' }}>
-              Informações Clínicas
-            </h4>
-          </div>
-          <div className="space-y-1.5 pb-4">
-            {Object.entries(selected.details).map(([k, v]) => (
-              <div key={k} className="rounded-lg px-3 py-2" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--primary)' }}>{k}</p>
-                <p className="text-[11px] leading-relaxed" style={{ color: 'var(--text-2)' }}>{v}</p>
+            {/* Header Mobile */}
+            <div className="flex items-center gap-4 px-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div
+                className="w-12 h-12 rounded-[14px] flex items-center justify-center text-xl shadow-sm shrink-0"
+                style={{ background: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9', color: '#fff' }}
+              >
+                {CATEGORY_CONFIG[selected.category]?.icon || '🔬'}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <div>
+                <h3 className="font-extrabold text-[18px] text-slate-900 dark:text-white leading-tight mb-1">{selected.name}</h3>
+                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: CATEGORY_CONFIG[selected.category]?.color }}>{selected.category}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {STRUCTURE_IMAGES[selected.id] && (
+                <div className="mb-6 bg-slate-50 dark:bg-slate-800/50 rounded-[20px] p-4 border border-slate-100 dark:border-slate-700/50">
+                  <img src={STRUCTURE_IMAGES[selected.id]} alt={selected.name} loading="lazy" className="w-full h-40 object-contain" />
+                </div>
+              )}
+
+              <p className="text-[14px] leading-relaxed font-medium text-slate-600 dark:text-slate-300 mb-6">
+                {selected.description}
+              </p>
+
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 rounded-md bg-sky-50 dark:bg-sky-900/30">
+                  <Activity size={14} className="text-sky-500" strokeWidth={2.5} />
+                </div>
+                <h4 className="text-[13px] font-extrabold uppercase tracking-widest text-slate-800 dark:text-slate-200">
+                  Aplicação Clínica
+                </h4>
+              </div>
+              <div className="space-y-3 pb-8">
+                {Object.entries(selected.details).map(([k, v]) => (
+                  <div key={k} className="rounded-[16px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50">
+                    <p className="text-[12px] font-bold mb-1" style={{ color: CATEGORY_CONFIG[selected.category]?.color || '#0EA5E9' }}>{k}</p>
+                    <p className="text-[13.5px] font-medium leading-relaxed text-slate-700 dark:text-slate-300">{v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(148, 163, 184, 0.3); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(148, 163, 184, 0.5); }
+      `}</style>
     </div>
   );
 }

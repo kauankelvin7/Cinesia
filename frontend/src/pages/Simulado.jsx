@@ -34,7 +34,8 @@ import {
   File,
   RefreshCw,
   History,
-  Clock
+  Clock,
+  Sparkles
 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -360,7 +361,6 @@ function Simulado() {
   const generateWithFallback = async (prompt) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    
     if (!apiKey) {
       throw new Error('API Key do Gemini não configurada. Adicione VITE_GEMINI_API_KEY no Vercel (Settings → Environment Variables) e faça Redeploy.');
     }
@@ -370,8 +370,6 @@ function Simulado() {
     
     for (const modelName of MODEL_CANDIDATES) {
       try {
-        // console.log removido por segurança
-        
         const model = genAI.getGenerativeModel({ 
           model: modelName,
           generationConfig: {
@@ -386,7 +384,6 @@ function Simulado() {
         const response = await result.response;
         const text = response.text();
         
-    
         return text;
         
       } catch (err) {
@@ -439,8 +436,6 @@ function Simulado() {
       
       const responseText = await generateWithFallback(prompt);
       
-      // console.log removido por segurança
-      
       // 🧹 LIMPEZA INTELIGENTE: remover apenas marcadores markdown
       let cleanedResponse = responseText
         .replace(/```json\s*/gi, '')
@@ -463,34 +458,22 @@ function Simulado() {
         cleanedResponse = cleanedResponse.substring(0, lastBracket + 1);
       }
       
-      // console.log removido por segurança
-      
       // 🔍 PARSING COM MÚLTIPLAS TENTATIVAS
       let parsedQuestions;
       
       // Tentativa 1: Parse direto (caso mais comum)
       try {
         parsedQuestions = JSON.parse(cleanedResponse);
-        // console.log removido por segurança
       } catch (parseError) {
-        // console.log removido por segurança
-        // console.log removido por segurança
-        // console.log removido por segurança
-        // console.log removido por segurança
-        
         // Tentativa 2: Extrair array JSON completo
         try {
           // Encontrar início e fim do array
           const arrayStart = cleanedResponse.indexOf('[');
           const arrayEnd = cleanedResponse.lastIndexOf(']');
           
-          // console.log removido por segurança
-          
           if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
             const jsonArray = cleanedResponse.substring(arrayStart, arrayEnd + 1);
-            // console.log removido por segurança
             parsedQuestions = JSON.parse(jsonArray);
-            // console.log removido por segurança
           } else {
             throw new Error('Nenhum array JSON encontrado');
           }
@@ -501,8 +484,6 @@ function Simulado() {
           throw new Error('A IA retornou um formato inválido. Tente novamente.');
         }
       }
-
-      // console.log removido por segurança
 
       // Validar estrutura
       if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
@@ -533,8 +514,6 @@ function Simulado() {
       if (validQuestions.length === 0) {
         throw new Error('As questões geradas estão em formato inválido. Tente novamente.');
       }
-
-      // console.log removido por segurança
 
       setQuestoes(validQuestions);
       setFase('quiz');
@@ -644,27 +623,36 @@ function Simulado() {
   const percentual = fase === 'resultado' ? Math.round((acertos / questoes.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen pb-32 pt-8 px-4">
-      <div className="max-w-4xl ipad:max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen pb-32 pt-8 px-4 relative overflow-hidden">
+      {/* Background dinâmico global sutil */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-400/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-teal-400/20 rounded-full blur-[100px]" />
+      </div>
+
+      <div className="max-w-4xl ipad:max-w-6xl mx-auto relative z-10">
+        {/* Header Premium */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-5 mb-4">
             <motion.div 
-              className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center"
+              className="w-16 h-16 rounded-[18px] bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-500/20"
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <BookOpen size={32} className="text-indigo-600 dark:text-indigo-400" />
+              <BookOpen size={30} className="text-white" strokeWidth={1.8} />
             </motion.div>
             <div>
-              <h1 className="text-2xl ipad:text-3xl font-semibold text-slate-900 dark:text-white">
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Simulado Infinito
               </h1>
-              <p className="text-slate-600 dark:text-slate-300 flex items-center gap-2">
+              <p className="text-slate-600 dark:text-slate-300 font-medium flex items-center gap-2 mt-1 text-[15px]">
                 <Zap size={16} className="text-amber-500" />
-                Questões geradas por IA para seu estudo
+                Provas geradas por Inteligência Artificial
               </p>
             </div>
           </div>
@@ -678,92 +666,95 @@ function Simulado() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-8"
+              className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[24px] border border-slate-200/50 dark:border-slate-700/50 shadow-xl p-6 sm:p-10"
             >
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <Target size={40} className="text-indigo-600 dark:text-indigo-400" />
+              <div className="text-center mb-10">
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  <div className="absolute inset-0 bg-indigo-500 blur-xl opacity-20 rounded-full" />
+                  <div className="relative w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-[20px] flex items-center justify-center border border-indigo-100 dark:border-indigo-800/50 shadow-inner">
+                    <Target size={36} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                  Gere Questões com IA
+                  Configure seu Teste
                 </h2>
-                <p className="text-slate-600 dark:text-slate-300">
-                  Escolha um tema ou faça upload de um PDF
+                <p className="text-[15px] text-slate-500 dark:text-slate-400">
+                  Escolha um tema livre ou faça upload do seu material de estudo.
                 </p>
               </div>
 
-              {/* 📑 ABAS: Por Tema / Por Arquivo */}
-              <div className="flex mb-6 bg-slate-100 dark:bg-slate-700 rounded-xl p-1">
+              {/* 📑 ABAS: Por Tema / Por Arquivo (iOS Style) */}
+              <div className="flex mb-8 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1.5 border border-slate-200/50 dark:border-slate-700/50 max-w-lg mx-auto">
                 <button
                   onClick={() => setActiveTab('tema')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-[14px] font-bold transition-all duration-300 ${
                     activeTab === 'tema'
-                      ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
-                  <BookOpen size={18} />
+                  <BookOpen size={18} strokeWidth={2.5} />
                   Por Tema
                 </button>
                 <button
                   onClick={() => setActiveTab('arquivo')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-[14px] font-bold transition-all duration-300 ${
                     activeTab === 'arquivo'
-                      ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-md'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
                 >
-                  <FileText size={18} />
+                  <FileText size={18} strokeWidth={2.5} />
                   Por Arquivo PDF
                 </button>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-8 max-w-2xl mx-auto">
                 {/* === CONTEÚDO DA ABA TEMA === */}
                 {activeTab === 'tema' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                        Tema do Simulado
+                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+                    <div className="mb-6">
+                      <label className="block text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-3">
+                        O que você quer estudar hoje?
                       </label>
                       <Input
                         type="text"
-                        placeholder="Ex: Anatomia do Quadril, Propriocepção, AVE..."
+                        placeholder="Ex: Anatomia do Joelho, Fisiologia Pulmonar..."
                         value={tema}
                         onChange={(e) => setTema(e.target.value)}
-                        className="text-lg"
+                        className="text-lg h-14 rounded-[16px] bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-indigo-500/10 shadow-inner"
                       />
                     </div>
 
-                    {/* Temas Sugeridos */}
+                    {/* Temas Sugeridos Premium */}
                     <div>
-                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">
-                        Sugestões populares:
+                      <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-1.5">
+                        <Sparkles size={14} /> Sugestões Rápidas
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {temasSugeridos.map((t, idx) => (
                           <motion.button
                             key={idx}
                             onClick={() => setTema(t)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                            className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all border ${
                               tema === t
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-300'
+                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-400 shadow-sm'
+                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600'
                             }`}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
                           >
                             {t}
                           </motion.button>
                         ))}
                       </div>
                     </div>
-                  </>
+                  </motion.div>
                 )}
 
                 {/* === CONTEÚDO DA ABA ARQUIVO PDF === */}
                 {activeTab === 'arquivo' && (
-                  <div className="space-y-4">
+                  <motion.div className="space-y-4" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -773,45 +764,45 @@ function Simulado() {
                     />
 
                     {!pdfFile ? (
-                      /* Dropzone */
+                      /* Dropzone Premium */
                       <div
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                        className={`relative overflow-hidden border-2 border-dashed rounded-[20px] p-10 text-center cursor-pointer transition-all duration-300 ${
                           isDragOver
-                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-400'
-                            : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20'
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20'
+                            : 'border-slate-300 dark:border-slate-600 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                         }`}
                       >
-                        <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <Upload size={32} className="text-indigo-600 dark:text-indigo-400" />
+                        <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+                          <Upload size={28} className="text-indigo-500 dark:text-indigo-400" />
                         </div>
-                        <p className="text-slate-700 dark:text-slate-200 font-semibold mb-2">
-                          Arraste um PDF aqui ou clique para selecionar
+                        <p className="text-slate-800 dark:text-slate-200 font-bold text-[16px] mb-2">
+                          Arraste seu PDF aqui ou clique
                         </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          Apostilas, capítulos de livros, artigos... (máx. 20MB)
+                        <p className="text-[14px] text-slate-500 dark:text-slate-400 font-medium">
+                          Artigos, resumos ou apostilas (máx. 20MB)
                         </p>
                       </div>
                     ) : (
                       /* Arquivo selecionado */
-                      <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800 rounded-xl p-4">
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-[20px] p-5 shadow-inner">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center shadow-sm">
-                              <File size={24} className="text-indigo-600" />
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-[14px] flex items-center justify-center shadow-sm">
+                              <File size={24} className="text-indigo-600 dark:text-indigo-400" strokeWidth={2} />
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-none">
+                              <p className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs text-[15px]">
                                 {pdfFile.name}
                               </p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                              <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                 {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                                 {pdfText && (
-                                  <span className="text-green-600 ml-2">
-                                    ✓ {pdfText.length.toLocaleString()} caracteres extraídos
+                                  <span className="text-emerald-600 dark:text-emerald-400 ml-2">
+                                    ✓ Pronto para uso
                                   </span>
                                 )}
                               </p>
@@ -819,45 +810,49 @@ function Simulado() {
                           </div>
                           <button
                             onClick={removeFile}
-                            className="flex items-center justify-center p-2 hover:bg-red-100 rounded-lg transition-colors"
+                            className="flex items-center justify-center p-2.5 bg-white dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors shadow-sm"
                             title="Remover arquivo"
                           >
-                            <X size={20} className="text-red-500" />
+                            <X size={18} className="text-red-500" strokeWidth={2.5} />
                           </button>
                         </div>
                         
                         {isExtractingPdf && (
-                          <div className="mt-4 flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span className="text-sm">Extraindo texto do PDF...</span>
+                          <div className="mt-5 flex items-center justify-center gap-2 text-indigo-600 dark:text-indigo-400 font-semibold text-[14px]">
+                            <Loader2 size={18} className="animate-spin" />
+                            Lendo conteúdo do PDF...
                           </div>
                         )}
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
+
+                <div className="h-px w-full bg-slate-100 dark:bg-slate-800" />
 
                 {/* === SELEÇÃO DE TEMPO === */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                    <Clock size={16} className="inline mr-1.5 -mt-0.5" />
+                  <label className="block text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                    <Clock size={18} className="text-indigo-500" />
                     Tempo do Simulado
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                     {TIMER_OPTIONS.map((opt) => (
                       <motion.button
                         key={opt.value}
                         onClick={() => setTimerDuration(opt.value)}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                        className={`flex flex-col items-center justify-center p-3 rounded-[16px] border-2 transition-all ${
                           timerDuration === opt.value
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 dark:shadow-indigo-900/40'
-                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 shadow-md shadow-indigo-500/10'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-600'
                         }`}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <span className="block font-semibold">{opt.label}</span>
-                        <span className={`block text-xs mt-0.5 ${timerDuration === opt.value ? 'text-indigo-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                        <span className={`text-[15px] font-bold ${timerDuration === opt.value ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {opt.label}
+                        </span>
+                        <span className={`text-[11px] font-medium mt-1 ${timerDuration === opt.value ? 'text-indigo-500/80 dark:text-indigo-400/80' : 'text-slate-400 dark:text-slate-500'}`}>
                           {opt.desc}
                         </span>
                       </motion.button>
@@ -869,10 +864,10 @@ function Simulado() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400"
+                    className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-[16px] text-red-700 dark:text-red-400 shadow-sm"
                   >
                     <AlertTriangle size={20} className="flex-shrink-0 mt-0.5" />
-                    <p className="text-sm">{error}</p>
+                    <p className="text-[14px] font-medium">{error}</p>
                   </motion.div>
                 )}
 
@@ -881,10 +876,10 @@ function Simulado() {
                   size="lg"
                   onClick={gerarQuestoes}
                   disabled={isLoading || isExtractingPdf || (activeTab === 'tema' ? !tema.trim() : !pdfText)}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700"
-                  leftIcon={isLoading ? <Loader2 size={20} className="animate-spin" /> : <Play size={20} />}
+                  className="w-full h-14 text-[16px] font-bold bg-gradient-to-r from-indigo-600 to-teal-500 hover:from-indigo-700 hover:to-teal-600 border-none shadow-lg shadow-indigo-500/25"
+                  leftIcon={isLoading ? <Loader2 size={22} className="animate-spin" /> : <Play size={22} />}
                 >
-                  {isLoading ? 'Gerando Questões...' : 'Iniciar Simulado'}
+                  {isLoading ? 'Preparando Prova...' : 'Iniciar Simulado'}
                 </Button>
               </div>
             </motion.div>
@@ -894,107 +889,67 @@ function Simulado() {
           {isLoading && (
             <motion.div
               key="loading"
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-12"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[24px] border border-slate-200/50 dark:border-slate-700/50 shadow-xl p-12 text-center"
             >
-              <div className="text-center">
-                {/* Animação de loading */}
-                <div className="relative w-32 h-32 mx-auto mb-8">
-                  {/* Círculo externo girando */}
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-4 border-indigo-200 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  />
-                  
-                  {/* Círculo interno girando */}
-                  <motion.div
-                    className="absolute inset-4 rounded-full border-4 border-purple-200 dark:border-purple-900 border-t-purple-600 dark:border-t-purple-400"
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                  />
-                  
-                  {/* Ícone central pulsando */}
-                  <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <Zap size={40} className="text-indigo-600 dark:text-indigo-400" />
-                  </motion.div>
-                </div>
-
-                {/* Textos animados */}
+              {/* Animação de loading Premium */}
+              <div className="relative w-32 h-32 mx-auto mb-10">
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
+                  className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-slate-800 border-t-indigo-500"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute inset-3 rounded-full border-4 border-slate-100 dark:border-slate-800 border-t-teal-400"
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+                />
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">
-                    Gerando suas questões...
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-300 mb-6">
-                    A IA está criando questões personalizadas sobre{' '}
-                    <span className="font-semibold text-indigo-600">{tema || 'seu conteúdo'}</span>
-                  </p>
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-teal-400 rounded-xl flex items-center justify-center shadow-lg">
+                    <Zap size={24} className="text-white" fill="white" />
+                  </div>
                 </motion.div>
+              </div>
 
-                {/* Etapas do processo (animadas sequencialmente) */}
-                <div className="space-y-3 max-w-md mx-auto">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-3">
+                  A IA está trabalhando...
+                </h3>
+                <p className="text-[15px] font-medium text-slate-500 dark:text-slate-400 mb-8">
+                  Criando questões exclusivas sobre <span className="text-indigo-600 dark:text-indigo-400">{tema || 'seu conteúdo'}</span>
+                </p>
+              </motion.div>
+
+              {/* Etapas do processo */}
+              <div className="space-y-3 max-w-sm mx-auto text-left">
+                {[
+                  { text: 'Analisando o contexto do tema...', delay: 0.4 },
+                  { text: 'Formulando enunciados de nível universitário...', delay: 0.8 },
+                  { text: 'Gerando alternativas e explicações didáticas...', delay: 1.2 }
+                ].map((step, i) => (
                   <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
+                    key={i}
+                    className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
+                    transition={{ delay: step.delay }}
                   >
                     <motion.div
-                      className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="w-2.5 h-2.5 rounded-full bg-indigo-500"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1.5, repeat: Infinity, delay: step.delay }}
                     />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Analisando o tema...</span>
+                    <span className="text-[14px] font-semibold text-slate-700 dark:text-slate-300">
+                      {step.text}
+                    </span>
                   </motion.div>
-
-                  <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 }}
-                  >
-                    <motion.div
-                      className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Criando perguntas relevantes...</span>
-                  </motion.div>
-
-                  <motion.div
-                    className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.8 }}
-                  >
-                    <motion.div
-                      className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-400"
-                      animate={{ scale: [1, 1.5, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
-                    />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Gerando alternativas e explicações...</span>
-                  </motion.div>
-                </div>
-
-                {/* Mensagem de paciência */}
-                <motion.p
-                  className="text-xs text-slate-500 dark:text-slate-400 mt-8"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 }}
-                >
-                  Isso pode levar alguns segundos... ⏱️
-                </motion.p>
+                ))}
               </div>
             </motion.div>
           )}
@@ -1006,84 +961,89 @@ function Simulado() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
+              className="max-w-3xl mx-auto"
             >
-              {/* Barra de Progresso */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+              {/* Barra Superior */}
+              <div className="flex items-center justify-between mb-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-4 rounded-[20px] shadow-sm border border-slate-200/50 dark:border-slate-700/50">
+                <div>
+                  <span className="text-[13px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
+                    Progresso
+                  </span>
+                  <span className="text-[16px] font-bold text-indigo-600 dark:text-indigo-400">
                     Questão {currentIndex + 1} de {questoes.length}
                   </span>
-                  <div className="flex items-center gap-3">
-                    {timeLeft !== null && (
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-sm font-bold font-mono tabular-nums px-2.5 py-1 rounded-lg ${
-                          timeLeft < 60 
-                            ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/40 animate-pulse' 
-                            : timeLeft < 180 
-                              ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40'
-                              : 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950/40'
-                        }`}>
-                          ⏱ {formatTime(timeLeft)}
-                        </span>
-                        <button
-                          onClick={togglePauseTimer}
-                          className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400"
-                          title={timerPaused ? 'Retomar' : 'Pausar'}
-                        >
-                          {timerPaused ? <Play size={14} /> : <Clock size={14} />}
-                        </button>
-                      </div>
-                    )}
-                    <span className="text-sm font-bold text-indigo-600">
-                      {tema}
-                    </span>
-                  </div>
                 </div>
-                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-indigo-500"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((currentIndex + 1) / questoes.length) * 100}%` }}
-                    transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                  />
+
+                <div className="flex items-center gap-4">
+                  <span className="hidden sm:block text-[15px] font-bold text-slate-700 dark:text-slate-200">
+                    {tema}
+                  </span>
+                  {timeLeft !== null && (
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                        timeLeft < 60 
+                          ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/20' 
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200'
+                      }`}>
+                        <Clock size={16} strokeWidth={2.5} />
+                        <span className="text-[15px] font-bold font-mono tabular-nums tracking-tight">
+                          {formatTime(timeLeft)}
+                        </span>
+                      </div>
+                      <button
+                        onClick={togglePauseTimer}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400"
+                        title={timerPaused ? 'Retomar' : 'Pausar'}
+                      >
+                        {timerPaused ? <Play size={18} fill="currentColor" /> : <div className="flex gap-1"><div className="w-1.5 h-4 bg-currentColor rounded-sm" /><div className="w-1.5 h-4 bg-currentColor rounded-sm" /></div>}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Progress Line */}
+              <div className="h-1.5 bg-slate-200/50 dark:bg-slate-700/50 rounded-full overflow-hidden mb-8">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-teal-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentIndex + 1) / questoes.length) * 100}%` }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                />
+              </div>
+
               {/* Card da Questão */}
-              <motion.div
-                className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden"
-                layout
-              >
+              <div className="bg-white dark:bg-slate-800 rounded-[24px] border border-slate-200/80 dark:border-slate-700/80 shadow-xl overflow-hidden mb-6">
                 {/* Pergunta */}
-                <div className="p-6 ipad:p-8 border-b border-slate-100 dark:border-slate-700">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center flex-shrink-0">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">{currentIndex + 1}</span>
-                    </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white leading-relaxed">
-                      {questaoAtual.pergunta}
-                    </h3>
-                  </div>
+                <div className="p-8 sm:p-10 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/20">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white leading-relaxed">
+                    {questaoAtual.pergunta}
+                  </h3>
                 </div>
 
                 {/* Opções */}
-                <div className="p-6 ipad:p-8 space-y-3">
+                <div className="p-8 sm:p-10 space-y-4">
                   {questaoAtual.opcoes.map((opcao, idx) => {
                     const isSelected = selectedOption === idx;
                     const isCorrect = questaoAtual.correta === idx;
                     const showFeedback = hasAnswered;
                     
-                    let optionStyle = 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30';
+                    let optionClass = "border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300";
+                    let letterClass = "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400";
+
                     if (showFeedback) {
                       if (isCorrect) {
-                        optionStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-400';
+                        optionClass = "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-500 text-emerald-900 dark:text-emerald-100 shadow-sm";
+                        letterClass = "bg-emerald-500 text-white shadow-md shadow-emerald-500/20";
                       } else if (isSelected && !isCorrect) {
-                        optionStyle = 'border-red-500 bg-red-50 dark:bg-red-950/30 dark:border-red-400';
+                        optionClass = "border-red-400 bg-red-50 dark:bg-red-900/20 dark:border-red-500 text-red-900 dark:text-red-100";
+                        letterClass = "bg-red-500 text-white";
                       } else {
-                        optionStyle = 'border-slate-200 dark:border-slate-700 opacity-60';
+                        optionClass = "border-slate-200 dark:border-slate-700 opacity-50";
                       }
                     } else if (isSelected) {
-                      optionStyle = 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-400';
+                      optionClass = "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500/20 text-indigo-900 dark:text-indigo-100";
+                      letterClass = "bg-indigo-500 text-white";
                     }
 
                     return (
@@ -1091,64 +1051,47 @@ function Simulado() {
                         key={idx}
                         onClick={() => selecionarResposta(idx)}
                         disabled={hasAnswered}
-                        className={`w-full p-4 rounded-xl border-2 text-left transition-all ${optionStyle} ${
+                        className={`w-full p-5 rounded-[16px] border-2 text-left transition-all duration-200 flex items-center gap-5 ${optionClass} ${
                           hasAnswered ? 'cursor-default' : 'cursor-pointer'
                         }`}
                         whileHover={!hasAnswered ? { scale: 1.01 } : {}}
                         whileTap={!hasAnswered ? { scale: 0.99 } : {}}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                            showFeedback && isCorrect
-                              ? 'bg-emerald-500 text-white'
-                              : showFeedback && isSelected && !isCorrect
-                              ? 'bg-red-500 text-white'
-                              : isSelected
-                              ? 'bg-indigo-500 text-white'
-                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                          }`}>
-                            {showFeedback && isCorrect ? (
-                              <CheckCircle size={18} />
-                            ) : showFeedback && isSelected && !isCorrect ? (
-                              <XCircle size={18} />
-                            ) : (
-                              String.fromCharCode(65 + idx)
-                            )}
-                          </div>
-                          <span className={`flex-1 ${
-                            showFeedback && isCorrect
-                              ? 'text-emerald-800 dark:text-emerald-200 font-medium'
-                              : showFeedback && isSelected && !isCorrect
-                              ? 'text-red-800 dark:text-red-200'
-                              : 'text-slate-700 dark:text-slate-300'
-                          }`}>
-                            {opcao}
-                          </span>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-[16px] shrink-0 transition-colors ${letterClass}`}>
+                          {showFeedback && isCorrect ? (
+                            <CheckCircle size={20} strokeWidth={2.5} />
+                          ) : showFeedback && isSelected && !isCorrect ? (
+                            <XCircle size={20} strokeWidth={2.5} />
+                          ) : (
+                            String.fromCharCode(65 + idx)
+                          )}
                         </div>
+                        <span className="text-[16px] font-medium leading-snug">
+                          {opcao}
+                        </span>
                       </motion.button>
                     );
                   })}
                 </div>
 
-                {/* Explicação (após responder) */}
+                {/* Explicação Premium */}
                 <AnimatePresence>
                   {hasAnswered && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="border-t border-slate-100 dark:border-slate-700"
+                      className="border-t border-slate-100 dark:border-slate-700 overflow-hidden bg-indigo-50/50 dark:bg-indigo-900/10"
                     >
-                      <div className="p-6 ipad:p-8 bg-slate-50 dark:bg-slate-800/50">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center flex-shrink-0">
-                            <BookOpen size={18} className="text-indigo-600 dark:text-indigo-400" />
+                      <div className="p-8 sm:p-10">
+                        <div className="flex gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800">
+                            <BookOpen size={24} className="text-indigo-600 dark:text-indigo-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mb-1">
-                              Explicação
+                            <p className="text-[14px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-2">
+                              Explicação Didática
                             </p>
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                            <p className="text-[15px] font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
                               {questaoAtual.explicacao}
                             </p>
                           </div>
@@ -1157,125 +1100,106 @@ function Simulado() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+              </div>
 
-                {/* Navegação */}
-                <div className="p-6 ipad:p-8 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between gap-4">
-                  <Button
-                    variant="secondary"
-                    onClick={questaoAnterior}
-                    disabled={currentIndex === 0}
-                    leftIcon={<ArrowLeft size={18} />}
-                  >
-                    Anterior
-                  </Button>
-
-                  <Button
-                    variant="primary"
-                    onClick={proximaQuestao}
-                    disabled={!hasAnswered}
-                    rightIcon={currentIndex === questoes.length - 1 ? <Trophy size={18} /> : <ArrowRight size={18} />}
-                    className="bg-indigo-600"
-                  >
-                    {currentIndex === questoes.length - 1 ? 'Ver Resultado' : 'Próxima'}
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {/* === FASE: RESULTADO === */}
-          {fase === 'resultado' && (
-            <motion.div
-              key="resultado"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm p-8 text-center"
-            >
-              {/* Ícone de troféu animado */}
-              <motion.div
-                className={`w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 ${
-                  percentual >= 80
-                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
-                    : percentual >= 60
-                    ? 'bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400'
-                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
-                }`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              >
-                <Trophy size={48} />
-              </motion.div>
-
-              <motion.h2
-                className="text-3xl font-bold text-slate-900 dark:text-white mb-2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                {percentual >= 80
-                  ? 'Excelente! 🎉'
-                  : percentual >= 60
-                  ? 'Muito Bom! 👏'
-                  : 'Continue Estudando! 💪'}
-              </motion.h2>
-
-              <motion.p
-                className="text-slate-600 dark:text-slate-300 mb-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                Você acertou <span className="font-bold text-indigo-600">{acertos}</span> de{' '}
-                <span className="font-bold">{questoes.length}</span> questões sobre{' '}
-                <span className="font-semibold text-slate-900 dark:text-white">{tema}</span>
-              </motion.p>
-
-              {/* Barra de desempenho */}
-              <motion.div
-                className="mb-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden max-w-md mx-auto">
-                  <motion.div
-                    className={`h-full rounded-full ${
-                      percentual >= 80
-                        ? 'bg-amber-500'
-                        : percentual >= 60
-                        ? 'bg-primary-500'
-                        : 'bg-indigo-500'
-                    }`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentual}%` }}
-                    transition={{ delay: 0.5, duration: 1, ease: 'easeOut' }}
-                  />
-                </div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-3">{percentual}%</p>
-              </motion.div>
-
-              {/* Botões de ação */}
-              <motion.div
-                className="flex flex-col ipad:flex-row gap-3 justify-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-              >
+              {/* Botões de Ação */}
+              <div className="flex items-center justify-between gap-4">
                 <Button
                   variant="secondary"
                   size="lg"
-                  onClick={() => navigate('/historico-simulados')}
-                  leftIcon={<History size={18} />}
+                  onClick={questaoAnterior}
+                  disabled={currentIndex === 0}
+                  leftIcon={<ArrowLeft size={20} />}
+                  className="bg-white dark:bg-slate-800 shadow-sm rounded-2xl h-14 px-6 text-[15px]"
                 >
-                  Histórico
+                  Anterior
                 </Button>
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={proximaQuestao}
+                  disabled={!hasAnswered}
+                  rightIcon={currentIndex === questoes.length - 1 ? <Trophy size={20} /> : <ArrowRight size={20} />}
+                  className="bg-indigo-600 shadow-lg shadow-indigo-500/25 rounded-2xl h-14 px-8 text-[15px] font-bold"
+                >
+                  {currentIndex === questoes.length - 1 ? 'Ver Resultado Final' : 'Avançar para a Próxima'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* === FASE: RESULTADO PREMIUM === */}
+          {fase === 'resultado' && (
+            <motion.div
+              key="resultado"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="max-w-2xl mx-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-[32px] border border-slate-200/50 dark:border-slate-700/50 shadow-2xl p-10 sm:p-14 text-center overflow-hidden relative"
+            >
+              {/* Confetti / Glow background */}
+              <div className="absolute inset-0 pointer-events-none opacity-20">
+                <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full blur-[80px] ${
+                  percentual >= 80 ? 'bg-amber-400' : percentual >= 60 ? 'bg-indigo-400' : 'bg-slate-400'
+                }`} />
+              </div>
+
+              <motion.div
+                className={`relative w-32 h-32 rounded-[28px] flex items-center justify-center mx-auto mb-8 shadow-xl z-10 ${
+                  percentual >= 80
+                    ? 'bg-gradient-to-br from-amber-400 to-orange-500 border border-amber-300'
+                    : percentual >= 60
+                    ? 'bg-gradient-to-br from-indigo-500 to-teal-400 border border-indigo-400'
+                    : 'bg-gradient-to-br from-slate-400 to-slate-600 border border-slate-300'
+                }`}
+                initial={{ scale: 0, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", damping: 15, stiffness: 200 }}
+              >
+                <Trophy size={60} color="#fff" strokeWidth={1.5} />
+              </motion.div>
+
+              <h2 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-3 tracking-tight relative z-10">
+                {percentual >= 80 ? 'Excelente! 🎉' : percentual >= 60 ? 'Muito Bom! 👏' : 'Continue Estudando! 💪'}
+              </h2>
+
+              <p className="text-[16px] text-slate-600 dark:text-slate-300 mb-10 font-medium relative z-10">
+                Você acertou <span className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">{acertos}</span> de{' '}
+                <span className="font-bold text-lg">{questoes.length}</span> questões sobre{' '}
+                <span className="font-bold text-slate-800 dark:text-slate-200">{tema}</span>.
+              </p>
+
+              {/* Barra de desempenho Gorda */}
+              <div className="mb-10 relative z-10">
+                <div className="h-6 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden max-w-sm mx-auto shadow-inner">
+                  <motion.div
+                    className={`h-full rounded-full ${
+                      percentual >= 80 ? 'bg-gradient-to-r from-amber-400 to-orange-500' : percentual >= 60 ? 'bg-gradient-to-r from-indigo-500 to-teal-400' : 'bg-slate-400'
+                    }`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percentual}%` }}
+                    transition={{ delay: 0.3, duration: 1.5, ease: 'easeOut' }}
+                  />
+                </div>
+                <motion.p 
+                  className="text-4xl font-black mt-4 tracking-tighter"
+                  style={{ color: percentual >= 80 ? '#f59e0b' : percentual >= 60 ? '#6366f1' : '#94a3b8' }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                >
+                  {percentual}%
+                </motion.p>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
                 <Button
                   variant="secondary"
                   size="lg"
                   onClick={reiniciar}
-                  leftIcon={<RotateCcw size={18} />}
+                  leftIcon={<RotateCcw size={20} />}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 h-14 rounded-[16px] text-[15px] font-bold border-none"
                 >
                   Novo Tema
                 </Button>
@@ -1283,18 +1207,24 @@ function Simulado() {
                   variant="primary"
                   size="lg"
                   onClick={novoSimulado}
-                  leftIcon={<RefreshCw size={18} />}
-                  className="bg-indigo-600"
+                  leftIcon={<RefreshCw size={20} />}
+                  className="flex-[1.5] bg-indigo-600 h-14 rounded-[16px] text-[15px] font-bold shadow-lg shadow-indigo-500/20 border-none"
                 >
                   Mais Questões ({tema})
                 </Button>
-              </motion.div>
+              </div>
+              <div className="mt-6 flex justify-center relative z-10">
+                <button
+                  onClick={() => navigate('/historico-simulados')}
+                  className="flex items-center gap-2 text-[14px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors"
+                >
+                  <History size={16} /> Ver Histórico Completo
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Nav blocker: handled via beforeunload event (BUG-027) */}
     </div>
   );
 }

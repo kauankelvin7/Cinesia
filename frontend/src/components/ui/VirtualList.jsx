@@ -1,16 +1,13 @@
 /**
- * 📜 VIRTUAL LIST - Renderização Virtualizada para Listas Longas
- * 
- * Otimização para dispositivos móveis de baixo desempenho:
- * - Renderiza APENAS os itens visíveis na viewport
- * - Usa IntersectionObserver para detecção eficiente
- * - Recicla elementos DOM para economizar memória
- * - Suporte a alturas fixas e dinâmicas
- * 
- * Uso: Substituir listas com mais de 20 itens
+ * 📜 VIRTUAL LIST & GRID
+ * * Renderização virtualizada de alta performance.
+ * - Otimizado para GPU (Transform vs Top)
+ * - Fade-in suave na entrada de itens
+ * - Containment estrito para economia de CPU
  */
 
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const VirtualList = memo(({
   items = [],
@@ -23,86 +20,66 @@ const VirtualList = memo(({
 }) => {
   const containerRef = useRef(null);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 });
-  const [containerHeight, setContainerHeight] = useState(0);
 
-  // Calcula altura total da lista
   const totalHeight = items.length * (itemHeight + gap) - gap;
 
-  // Atualiza range visível baseado no scroll
   const updateVisibleRange = useCallback(() => {
     if (!containerRef.current) return;
 
-    const container = containerRef.current;
-    const scrollTop = window.scrollY - container.offsetTop;
+    const scrollTop = window.scrollY - containerRef.current.offsetTop;
     const viewportHeight = window.innerHeight;
 
     const start = Math.max(0, Math.floor(scrollTop / (itemHeight + gap)) - overscan);
     const visibleCount = Math.ceil(viewportHeight / (itemHeight + gap)) + overscan * 2;
     const end = Math.min(items.length, start + visibleCount);
 
-    setVisibleRange(prev => {
-      if (prev.start !== start || prev.end !== end) {
-        return { start, end };
-      }
-      return prev;
-    });
+    setVisibleRange(prev => (prev.start !== start || prev.end !== end ? { start, end } : prev));
   }, [itemHeight, gap, overscan, items.length]);
 
-  // Observer para resize
   useEffect(() => {
-    const handleResize = () => {
-      setContainerHeight(window.innerHeight);
-      updateVisibleRange();
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize, { passive: true });
     window.addEventListener('scroll', updateVisibleRange, { passive: true });
-
+    window.addEventListener('resize', updateVisibleRange, { passive: true });
+    updateVisibleRange();
     return () => {
-      window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', updateVisibleRange);
+      window.removeEventListener('resize', updateVisibleRange);
     };
   }, [updateVisibleRange]);
 
-  // Atualiza quando items mudam
-  useEffect(() => {
-    updateVisibleRange();
-  }, [items.length, updateVisibleRange]);
-
   if (items.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12 text-slate-500">
-        {emptyMessage}
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20 text-slate-400 font-medium italic">{emptyMessage}</div>;
   }
 
-  // Renderiza apenas os itens visíveis
   const visibleItems = items.slice(visibleRange.start, visibleRange.end);
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${className}`}
-      style={{ height: totalHeight, minHeight: totalHeight }}
+      className={`relative will-change-transform ${className}`}
+      style={{ height: totalHeight, minHeight: totalHeight, contain: 'layout' }}
     >
       {visibleItems.map((item, index) => {
         const actualIndex = visibleRange.start + index;
-        const top = actualIndex * (itemHeight + gap);
+        const translateY = actualIndex * (itemHeight + gap);
 
         return (
           <div
             key={item.id || actualIndex}
             className="absolute left-0 right-0"
             style={{
-              top,
+              transform: `translateY(${translateY}px)`,
               height: itemHeight,
               willChange: 'transform',
-              contain: 'layout style paint'
+              contain: 'strict'
             }}
           >
-            {renderItem(item, actualIndex)}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderItem(item, actualIndex)}
+            </motion.div>
           </div>
         );
       })}
@@ -110,15 +87,7 @@ const VirtualList = memo(({
   );
 });
 
-VirtualList.displayName = 'VirtualList';
-
-export default VirtualList;
-
-/**
- * 🔥 VIRTUAL GRID - Grade Virtualizada para Cards
- * 
- * Similar ao VirtualList, mas para layouts de grid responsivo
- */
+/* ─── VIRTUAL GRID PREMIUM ─── */
 export const VirtualGrid = memo(({
   items = [],
   itemHeight = 280,
@@ -133,103 +102,85 @@ export const VirtualGrid = memo(({
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 12 });
   const [currentColumns, setCurrentColumns] = useState(1);
 
-  // Detecta número de colunas baseado na largura
   const updateColumns = useCallback(() => {
     const width = window.innerWidth;
-    if (width >= 1024) {
-      setCurrentColumns(columns.lg || 3);
-    } else if (width >= 768) {
-      setCurrentColumns(columns.md || 2);
-    } else {
-      setCurrentColumns(columns.sm || 1);
-    }
+    if (width >= 1024) setCurrentColumns(columns.lg || 3);
+    else if (width >= 768) setCurrentColumns(columns.md || 2);
+    else setCurrentColumns(columns.sm || 1);
   }, [columns]);
 
-  // Calcula altura total do grid
-  const rows = Math.ceil(items.length / currentColumns);
-  const totalHeight = rows * (itemHeight + gap) - gap;
+  const rowsCount = Math.ceil(items.length / currentColumns);
+  const totalHeight = rowsCount * (itemHeight + gap) - gap;
 
-  // Atualiza range visível baseado no scroll
   const updateVisibleRange = useCallback(() => {
     if (!containerRef.current) return;
 
-    const container = containerRef.current;
-    const scrollTop = window.scrollY - container.offsetTop;
+    const scrollTop = window.scrollY - containerRef.current.offsetTop;
     const viewportHeight = window.innerHeight;
 
     const startRow = Math.max(0, Math.floor(scrollTop / (itemHeight + gap)) - overscan);
-    const visibleRows = Math.ceil(viewportHeight / (itemHeight + gap)) + overscan * 2;
-    const endRow = Math.min(rows, startRow + visibleRows);
+    const visibleRows = Math.ceil(viewportHeight / (itemHeight + gap)) + (overscan * 2);
+    const endRow = Math.min(rowsCount, startRow + visibleRows);
 
-    const start = startRow * currentColumns;
-    const end = Math.min(items.length, endRow * currentColumns);
-
-    setVisibleRange(prev => {
-      if (prev.start !== start || prev.end !== end) {
-        return { start, end };
-      }
-      return prev;
+    setVisibleRange({
+      start: startRow * currentColumns,
+      end: Math.min(items.length, endRow * currentColumns)
     });
-  }, [itemHeight, gap, overscan, items.length, rows, currentColumns]);
+  }, [itemHeight, gap, overscan, items.length, rowsCount, currentColumns]);
 
   useEffect(() => {
-    const handleResize = () => {
-      updateColumns();
-      updateVisibleRange();
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize, { passive: true });
-    window.addEventListener('scroll', updateVisibleRange, { passive: true });
-
+    const handleEvents = () => { updateColumns(); updateVisibleRange(); };
+    window.addEventListener('scroll', handleEvents, { passive: true });
+    window.addEventListener('resize', handleEvents, { passive: true });
+    handleEvents();
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', updateVisibleRange);
+      window.removeEventListener('scroll', handleEvents);
+      window.removeEventListener('resize', handleEvents);
     };
   }, [updateColumns, updateVisibleRange]);
 
-  useEffect(() => {
-    updateVisibleRange();
-  }, [items.length, currentColumns, updateVisibleRange]);
-
   if (items.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-12 text-slate-500">
-        {emptyMessage}
-      </div>
-    );
+    return <div className="flex items-center justify-center py-20 text-slate-400 font-medium italic">{emptyMessage}</div>;
   }
 
   const visibleItems = items.slice(visibleRange.start, visibleRange.end);
-  const columnWidth = `calc((100% - ${(currentColumns - 1) * gap}px) / ${currentColumns})`;
+  const colWidthPct = 100 / currentColumns;
 
   return (
     <div
       ref={containerRef}
-      className={`relative ${className}`}
-      style={{ height: totalHeight, minHeight: totalHeight }}
+      className={`relative will-change-transform ${className}`}
+      style={{ height: totalHeight, minHeight: totalHeight, contain: 'layout' }}
     >
       {visibleItems.map((item, index) => {
         const actualIndex = visibleRange.start + index;
         const row = Math.floor(actualIndex / currentColumns);
         const col = actualIndex % currentColumns;
-        const top = row * (itemHeight + gap);
-        const left = col * (100 / currentColumns);
+        
+        const translateY = row * (itemHeight + gap);
+        // Cálculo preciso de X para evitar gaps de 1px
+        const translateX = `calc(${col * colWidthPct}% + ${col * gap / currentColumns}px)`;
+        const width = `calc(${colWidthPct}% - ${(currentColumns - 1) * gap / currentColumns}px)`;
 
         return (
           <div
             key={item.id || actualIndex}
-            className="absolute"
+            className="absolute top-0 left-0"
             style={{
-              top,
-              left: `calc(${left}% + ${col * gap / currentColumns}px)`,
-              width: columnWidth,
+              width,
               height: itemHeight,
+              transform: `translate3d(${translateX}, ${translateY}px, 0)`,
               willChange: 'transform',
-              contain: 'layout style paint'
+              contain: 'strict'
             }}
           >
-            {renderItem(item, actualIndex)}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25 }}
+            >
+              {renderItem(item, actualIndex)}
+            </motion.div>
           </div>
         );
       })}
@@ -237,4 +188,4 @@ export const VirtualGrid = memo(({
   );
 });
 
-VirtualGrid.displayName = 'VirtualGrid';
+export default VirtualList;

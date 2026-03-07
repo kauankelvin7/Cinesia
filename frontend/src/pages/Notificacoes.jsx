@@ -1,10 +1,8 @@
 /**
- * 🔔 NOTIFICAÇÕES — Página de Notificações do Usuário
- * 
+ * 🔔 NOTIFICAÇÕES — Página de Notificações Premium
  * - Listagem de notificações do Firestore (users/{uid}/notifications)
  * - Badge de não lidas, marcar como lida, marcar todas como lidas
  * - Ordenadas da mais recente para a mais antiga
- * - Dark mode completo
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -21,6 +19,8 @@ import {
   Trash2,
   Circle,
   Trophy,
+  CheckCircle2,
+  Inbox
 } from 'lucide-react';
 import {
   collection,
@@ -40,27 +40,31 @@ import Button from '../components/ui/Button';
 const TYPE_CONFIG = {
   info: {
     icon: Info,
-    bg: 'bg-blue-100 dark:bg-blue-900/40',
+    bg: 'bg-blue-50 dark:bg-blue-900/20',
     text: 'text-blue-600 dark:text-blue-400',
-    border: 'border-blue-200 dark:border-blue-800',
+    border: 'border-blue-200 dark:border-blue-800/50',
+    accent: 'border-l-blue-500'
   },
   alerta: {
     icon: AlertTriangle,
-    bg: 'bg-amber-100 dark:bg-amber-900/40',
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
     text: 'text-amber-600 dark:text-amber-400',
-    border: 'border-amber-200 dark:border-amber-800',
+    border: 'border-amber-200 dark:border-amber-800/50',
+    accent: 'border-l-amber-500'
   },
   estudo: {
     icon: BookOpen,
-    bg: 'bg-primary-100 dark:bg-primary-900/40',
-    text: 'text-primary-600 dark:text-primary-400',
-    border: 'border-primary-200 dark:border-primary-800',
+    bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+    text: 'text-indigo-600 dark:text-indigo-400',
+    border: 'border-indigo-200 dark:border-indigo-800/50',
+    accent: 'border-l-indigo-500'
   },
   conquista: {
     icon: Trophy,
-    bg: 'bg-yellow-100 dark:bg-yellow-900/40',
-    text: 'text-yellow-600 dark:text-yellow-400',
-    border: 'border-yellow-200 dark:border-yellow-800',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    border: 'border-emerald-200 dark:border-emerald-800/50',
+    accent: 'border-l-emerald-500'
   },
 };
 
@@ -108,37 +112,30 @@ function NotificationItem({ notification, userId, onMarkRead }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+      exit={{ opacity: 0, scale: 0.95 }}
       onClick={handleClick}
-      className={`group relative flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
+      className={`group relative flex items-start gap-4 p-5 rounded-[20px] border transition-all cursor-pointer ${
         isRead
-          ? 'opacity-60 bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700/60 hover:opacity-80'
-          : `bg-white dark:bg-slate-800 ${config.border} hover:shadow-md dark:hover:shadow-slate-900/30`
+          ? 'opacity-70 bg-white/50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'
+          : `bg-white dark:bg-slate-800 border-l-[6px] ${config.accent} border-t border-r border-b border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md`
       }`}
     >
-      {/* Unread dot */}
-      {!isRead && (
-        <div className="absolute top-4 right-4">
-          <Circle size={8} className="text-primary-500 fill-primary-500" />
-        </div>
-      )}
-
       {/* Icon */}
-      <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center shrink-0`}>
-        <Icon size={18} className={config.text} />
+      <div className={`w-12 h-12 rounded-[16px] ${config.bg} flex items-center justify-center shrink-0`}>
+        <Icon size={20} className={config.text} strokeWidth={2.5} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <h4 className={`text-sm font-semibold ${isRead ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+        <h4 className={`text-[14px] font-bold ${isRead ? 'text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
           {notification.title}
         </h4>
-        <p className={`text-sm mt-0.5 leading-relaxed ${isRead ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'}`}>
+        <p className={`text-[13px] mt-1 leading-relaxed ${isRead ? 'text-slate-400 dark:text-slate-500' : 'text-slate-600 dark:text-slate-300'}`}>
           {notification.message}
         </p>
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-2.5 uppercase tracking-wide">
           {timeAgo(notification.createdAt)}
         </p>
       </div>
@@ -146,10 +143,10 @@ function NotificationItem({ notification, userId, onMarkRead }) {
       {/* Delete button */}
       <button
         onClick={handleDelete}
-        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
+        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-all absolute right-4 top-4"
         title="Remover notificação"
       >
-        <Trash2 size={14} />
+        <Trash2 size={16} />
       </button>
     </motion.div>
   );
@@ -163,7 +160,6 @@ export default function Notificacoes() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Real-time listener
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -201,34 +197,32 @@ export default function Notificacoes() {
       });
 
       await batch.commit();
-      toast.success('Todas as notificações foram marcadas como lidas');
+      toast.success('Tudo lido!');
     } catch (err) {
       console.error('Erro ao marcar todas como lidas:', err);
-      toast.error('Erro ao marcar notificações');
+      toast.error('Erro ao processar ação');
     } finally {
       setMarkingAll(false);
     }
   }, [user?.uid, unreadCount]);
 
   return (
-    <div className="min-h-screen pb-32 pt-8 px-4">
+    <div className="min-h-screen pb-32 pt-8 px-4 bg-slate-50/50 dark:bg-slate-950">
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
+        {/* Header Premium */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary-50 dark:bg-primary-950 flex items-center justify-center">
-                <Bell size={28} className="text-primary-600 dark:text-primary-400" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Bell size={24} className="text-white" strokeWidth={2} />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
-                  Notificações
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Notificações</h1>
+                <p className="text-[14px] font-medium text-slate-500 dark:text-slate-400 mt-1">
                   {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Tudo em dia!'}
                 </p>
               </div>
@@ -236,11 +230,12 @@ export default function Notificacoes() {
 
             {unreadCount > 0 && (
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="sm"
                 onClick={markAllAsRead}
                 loading={markingAll}
                 leftIcon={<CheckCheck size={16} />}
+                className="bg-white dark:bg-slate-800 shadow-sm border-slate-200 dark:border-slate-700"
               >
                 Marcar todas
               </Button>
@@ -250,28 +245,26 @@ export default function Notificacoes() {
 
         {/* Content */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 size={32} className="text-primary-500 animate-spin mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Carregando notificações...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 size={32} className="text-indigo-500 animate-spin mb-4" />
+            <p className="text-[14px] font-medium text-slate-500">Sincronizando avisos...</p>
           </div>
         ) : notifications.length === 0 ? (
           <motion.div
-            className="flex flex-col items-center justify-center py-24"
+            className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-700"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <div className="w-20 h-20 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-              <BellOff size={36} className="text-slate-300 dark:text-slate-600" />
+            <div className="w-20 h-20 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6">
+              <Inbox size={40} className="text-slate-300 dark:text-slate-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-              Nenhuma notificação
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-sm">
-              Quando houver novidades sobre seus estudos, elas aparecerão aqui.
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Tudo em dia!</h3>
+            <p className="text-[14px] text-slate-500 dark:text-slate-400 max-w-[240px]">
+              Nenhuma notificação nova no momento.
             </p>
           </motion.div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <AnimatePresence>
               {notifications.map(notif => (
                 <NotificationItem

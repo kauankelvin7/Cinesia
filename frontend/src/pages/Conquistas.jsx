@@ -1,8 +1,7 @@
 /**
  * 🏆 Página de Conquistas / Achievements
- * 
- * Exibe conquistas desbloqueadas e bloqueadas do usuário
- * com categorias, progresso geral e animações.
+ * * Exibe conquistas desbloqueadas e bloqueadas do usuário
+ * com categorias, progresso geral e animações Premium.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -29,186 +28,228 @@ function Conquistas() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-            className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"
+            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+            className="w-14 h-14 border-4 border-amber-200 dark:border-amber-900 border-t-amber-500 dark:border-t-amber-400 rounded-full mx-auto mb-5 shadow-lg"
           />
-          <p className="text-slate-500 dark:text-slate-400">Carregando conquistas...</p>
+          <p className="text-[15px] font-bold text-slate-500 dark:text-slate-400">Carregando seu progresso...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200 dark:shadow-amber-900/30">
-            <Trophy size={22} className="text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Conquistas
-          </h1>
-        </div>
-        <p className="text-slate-500 dark:text-slate-400">
-          Desbloqueie conquistas estudando e usando o Cinesia
-        </p>
-      </motion.div>
-
-      {/* Progress Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 rounded-2xl p-6 mb-8 text-white relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-32">
+        {/* Header Premium */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8"
+        >
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-[16px] flex items-center justify-center shadow-lg shadow-amber-500/25 border border-amber-300 dark:border-amber-600">
+              <Trophy size={28} className="text-white" strokeWidth={1.8} />
+            </div>
             <div>
-              <p className="text-indigo-100 text-sm font-medium mb-1">Progresso Geral</p>
-              <p className="text-4xl font-bold">{totalDesbloqueadas}<span className="text-xl text-indigo-200">/{totalConquistas}</span></p>
-            </div>
-            <div className="text-right">
-              <p className="text-5xl font-bold">{percentual}%</p>
+              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
+                Conquistas
+              </h1>
+              <p className="text-[15px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1.5">
+                <Star size={14} className="text-amber-500" />
+                Desbloqueie medalhas estudando todos os dias
+              </p>
             </div>
           </div>
-          
-          <div className="h-3 bg-white/20 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${percentual}%` }}
-              transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
-              className="h-full bg-gradient-to-r from-amber-300 to-amber-500 rounded-full"
-            />
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Stats mini cards */}
-      {stats && (
+        {/* Progress Card (Hero Banner Premium) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8"
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="relative overflow-hidden bg-slate-900 rounded-[28px] p-8 sm:p-10 mb-10 shadow-2xl border border-slate-800"
         >
-          {[
-            { label: 'Flashcards', value: stats.flashcards, icon: '🃏' },
-            { label: 'Resumos', value: stats.resumos, icon: '📝' },
-            { label: 'Matérias', value: stats.materias, icon: '📂' },
-            { label: 'Simulados', value: stats.simulados, icon: '🎯' },
-            { label: 'Melhor Nota', value: `${stats.bestSimulado}%`, icon: '⭐' },
-            { label: 'Streak', value: stats.streak, icon: '🔥' },
-          ].map((s, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-3 text-center border border-slate-200/60 dark:border-slate-700/60">
-              <span className="text-lg">{s.icon}</span>
-              <p className="text-lg font-bold text-slate-900 dark:text-white">{s.value}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
+          {/* Efeitos de Glow no fundo */}
+          <div className="absolute top-[-30%] right-[-10%] w-[60%] h-[150%] bg-gradient-to-bl from-amber-500/20 to-orange-600/20 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute bottom-[-50%] left-[-10%] w-[50%] h-[150%] bg-gradient-to-tr from-indigo-500/20 to-purple-600/20 rounded-full blur-[80px] pointer-events-none" />
+          
+          <div className="relative z-10">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-6">
+              <div>
+                <p className="text-slate-400 text-[13px] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Zap size={14} className="text-amber-400" /> Progresso Geral
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-5xl sm:text-6xl font-black text-white tracking-tighter">{totalDesbloqueadas}</p>
+                  <p className="text-2xl font-bold text-slate-500 pb-1">/ {totalConquistas}</p>
+                </div>
+              </div>
+              <div className="sm:text-right">
+                <p className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent drop-shadow-sm tracking-tighter">
+                  {percentual}%
+                </p>
+              </div>
             </div>
-          ))}
+            
+            <div className="h-3 bg-slate-800/80 rounded-full overflow-hidden shadow-inner border border-slate-700/50">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${percentual}%` }}
+                transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1], delay: 0.3 }}
+                className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.5)]"
+              />
+            </div>
+          </div>
         </motion.div>
-      )}
 
-      {/* Category filters */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIAS.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategoriaAtiva(cat)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              categoriaAtiva === cat
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-            }`}
+        {/* Stats mini cards (Floating Pills) */}
+        {stats && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 mb-10"
           >
-            {cat}
-          </button>
-        ))}
+            {[
+              { label: 'Flashcards', value: stats.flashcards, icon: '🎴', color: 'from-blue-500 to-indigo-500' },
+              { label: 'Resumos', value: stats.resumos, icon: '📝', color: 'from-purple-500 to-pink-500' },
+              { label: 'Matérias', value: stats.materias, icon: '📂', color: 'from-teal-400 to-emerald-500' },
+              { label: 'Simulados', value: stats.simulados, icon: '🎯', color: 'from-rose-400 to-red-500' },
+              { label: 'Recorde', value: `${stats.bestSimulado}%`, icon: '⭐', color: 'from-amber-400 to-orange-500' },
+              { label: 'Sequência', value: stats.streak, icon: '🔥', color: 'from-orange-500 to-red-500' },
+            ].map((s, i) => (
+              <div key={i} className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[20px] p-4 text-center border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-10 h-10 mx-auto rounded-full bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center text-lg mb-2 shadow-inner border border-slate-100 dark:border-slate-800">
+                  {s.icon}
+                </div>
+                <p className="text-[18px] font-extrabold text-slate-900 dark:text-white tracking-tight">{s.value}</p>
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Category filters (iOS Style Segmented Control) */}
+        <div className="flex overflow-x-auto scrollbar-none gap-2 mb-8 p-1.5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800/80">
+          {CATEGORIAS.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoriaAtiva(cat)}
+              className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[13.5px] font-bold transition-all duration-300 flex-1 ${
+                categoriaAtiva === cat
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/30'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Unlocked */}
+        {desbloqueadas.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-5 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Star size={16} className="text-amber-500" strokeWidth={2.5} />
+              </div>
+              Desbloqueadas
+              <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[12px] px-2.5 py-0.5 rounded-full ml-1">
+                {desbloqueadas.length}
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {desbloqueadas.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.3 }}
+                  className="group bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-5 relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
+                  
+                  <div className="w-16 h-16 bg-gradient-to-br from-amber-300 to-orange-500 rounded-[18px] flex items-center justify-center text-3xl flex-shrink-0 shadow-lg shadow-amber-500/30 border border-amber-200 dark:border-amber-600 relative z-10 transform group-hover:scale-105 transition-transform duration-300">
+                    {c.icon}
+                  </div>
+                  
+                  <div className="min-w-0 flex-1 relative z-10">
+                    <p className="font-extrabold text-[16px] text-slate-900 dark:text-white truncate mb-0.5">{c.titulo}</p>
+                    <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400 truncate mb-2">{c.desc}</p>
+                    <span className="inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700">
+                      {c.categoria}
+                    </span>
+                  </div>
+                  
+                  <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0 ml-auto relative z-10">
+                    <Award size={16} className="text-amber-500" strokeWidth={2.5} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Locked */}
+        {bloqueadas.length > 0 && (
+          <div>
+            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-5 flex items-center gap-2.5 opacity-80">
+              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                <Lock size={16} className="text-slate-500 dark:text-slate-400" strokeWidth={2.5} />
+              </div>
+              Ainda por vir
+              <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[12px] px-2.5 py-0.5 rounded-full ml-1">
+                {bloqueadas.length}
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {bloqueadas.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.3 }}
+                  className="bg-slate-100/50 dark:bg-slate-800/30 rounded-[24px] p-5 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-5 opacity-70 hover:opacity-100 transition-opacity"
+                >
+                  <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800/80 rounded-[16px] flex items-center justify-center text-2xl flex-shrink-0 grayscale opacity-60 border border-slate-300 dark:border-slate-700 shadow-inner">
+                    {c.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-[15px] text-slate-700 dark:text-slate-300 truncate mb-0.5">{c.titulo}</p>
+                    <p className="text-[13px] font-medium text-slate-500 dark:text-slate-500 truncate mb-2">{c.desc}</p>
+                    <span className="inline-flex px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-slate-200 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500">
+                      {c.categoria}
+                    </span>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 ml-auto">
+                    <Lock size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {conquistasFiltradas.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-20 bg-white/50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-300 dark:border-slate-700"
+          >
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trophy size={36} className="text-slate-300 dark:text-slate-600" />
+            </div>
+            <p className="text-[18px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhuma conquista aqui</p>
+            <p className="text-[14px] text-slate-500 dark:text-slate-500">Mude a categoria para ver seu progresso.</p>
+          </motion.div>
+        )}
       </div>
-
-      {/* Unlocked */}
-      {desbloqueadas.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Star size={18} className="text-amber-500" />
-            Desbloqueadas ({desbloqueadas.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {desbloqueadas.map((c, i) => (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
-              >
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-800/40 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
-                  {c.icon}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 dark:text-white truncate">{c.titulo}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{c.desc}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
-                    {c.categoria}
-                  </span>
-                </div>
-                <Award size={20} className="text-amber-500 flex-shrink-0 ml-auto" />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Locked */}
-      {bloqueadas.length > 0 && (
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Lock size={18} className="text-slate-400" />
-            Bloqueadas ({bloqueadas.length})
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {bloqueadas.map((c, i) => (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.03 }}
-                className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200/40 dark:border-slate-700/40 flex items-center gap-4 opacity-60"
-              >
-                <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 grayscale">
-                  {c.icon}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-600 dark:text-slate-400 truncate">{c.titulo}</p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 truncate">{c.desc}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                    {c.categoria}
-                  </span>
-                </div>
-                <Lock size={16} className="text-slate-300 dark:text-slate-600 flex-shrink-0 ml-auto" />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {conquistasFiltradas.length === 0 && (
-        <div className="text-center py-12 text-slate-400 dark:text-slate-500">
-          <Trophy size={48} className="mx-auto mb-3 opacity-30" />
-          <p>Nenhuma conquista nesta categoria</p>
-        </div>
-      )}
     </div>
   );
 }
