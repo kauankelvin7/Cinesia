@@ -103,6 +103,7 @@ const Modal = ({
                   <button
                     ref={closeButtonRef}
                     onClick={onClose}
+                    aria-label={title ? `Fechar modal ${title}` : 'Fechar modal'}
                     className="p-2 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-90 focus:outline-none"
                   >
                     <X size={20} strokeWidth={2.5} />

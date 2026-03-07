@@ -145,9 +145,10 @@ const ChatPanel = memo(({ showButton = true }) => {
                       </div>
                       <button
                         onClick={closeChat}
+                        aria-label="Fechar painel de mensagens"
                         className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-400"
                       >
-                        <X size={20} strokeWidth={3} />
+                        <X size={20} strokeWidth={2.5} />
                       </button>
                     </div>
 

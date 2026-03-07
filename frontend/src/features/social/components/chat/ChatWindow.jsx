@@ -132,7 +132,11 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
     <div className="flex flex-col h-full bg-white dark:bg-slate-950 overflow-hidden relative">
       {/* ─── Header Premium ─── */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl z-30">
-        <button onClick={onBack} className="p-2 -ml-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 md:hidden">
+        <button
+          onClick={onBack}
+          aria-label="Voltar para lista de conversas"
+          className="p-2 -ml-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 md:hidden"
+        >
           <ArrowLeft size={20} strokeWidth={2.5} />
         </button>
 
@@ -167,7 +171,11 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
         </div>
 
         {onClose && (
-          <button onClick={onClose} className="hidden md:flex p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all">
+          <button
+            onClick={onClose}
+            aria-label="Fechar conversa"
+            className="hidden md:flex p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-all"
+          >
             <X size={20} strokeWidth={2.5} />
           </button>
         )}

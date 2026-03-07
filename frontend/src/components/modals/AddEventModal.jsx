@@ -122,9 +122,10 @@ const AddEventModal = ({
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Fechar criação de evento"
                   className="w-9 h-9 flex items-center justify-center bg-black/10 hover:bg-black/20 rounded-full text-white transition-all"
                 >
-                  <X size={18} strokeWidth={3} />
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
