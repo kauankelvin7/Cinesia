@@ -176,6 +176,12 @@ export default function OnboardingFlow() {
         },
         { merge: true }
       );
+
+      // Força reload do contexto de usuário para garantir nome/displayName atualizados
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('cinesia:user:reload'));
+      }
+
       setStatus('done');
       if (action === 'materias') {
         navigate('/materias');
