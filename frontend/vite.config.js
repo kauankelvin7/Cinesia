@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
   define: {
     'VITE_BUILD_TIME': JSON.stringify(Date.now())
-  }
+  },
   base: '/',
   plugins: [
     react(),
