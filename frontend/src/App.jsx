@@ -179,6 +179,9 @@ function AppContent() {
 function App() {
   // Inicializar PWA (listeners de instalação e status)
   useEffect(() => {
+    // DEBUG: rastreia ciclo de vida raiz do app
+    // eslint-disable-next-line no-console
+    console.log('[APP INIT] Aplicação iniciando...');
     initPWA();
   }, []);
 

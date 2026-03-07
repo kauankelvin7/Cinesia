@@ -22,7 +22,22 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, terminate } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getDatabase } from 'firebase/database';
-import { getAnalytics } from 'firebase/analytics';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+
+// Validação básica de variáveis de ambiente críticas
+const requiredEnvVars = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_APP_ID'
+];
+
+const missingVars = requiredEnvVars.filter((key) => !import.meta.env[key]);
+if (missingVars.length > 0) {
+  // Loga mas não impede o app de subir — evita travar splash sem feedback
+  // eslint-disable-next-line no-console
+  console.error('[FIREBASE] Variáveis de ambiente faltando:', missingVars);
+}
 
 // Configuração do Firebase — valores via variáveis de ambiente Vite (prefixo VITE_)
 // NOTE: o `import.meta.env` é resolvido em build time pelo Vite — não disponível em Node.js puro
@@ -36,12 +51,10 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Inicializa o app Firebase (singleton)
+// 1. App principal
 const app = initializeApp(firebaseConfig);
 
-// Analytics — só funciona em ambiente browser; não disponivel durante SSR ou testes
-const analytics = getAnalytics(app);
-
+// 2. Serviços críticos primeiro
 /** Instância do Firebase Auth — usada em AuthContext-firebase.jsx */
 export const auth = getAuth(app);
 
@@ -61,13 +74,21 @@ export const storage = getStorage(app);
 /** Instância do Firebase Realtime Database — usado para sistema de presença (online/offline) */
 export const rtdb = getDatabase(app);
 
-export { analytics };
-
-// Configura a seleção de conta ao fazer login com Google
-// NOTE: 'select_account' força o seletor de conta mesmo se já houver sessão ativa
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+// 3. Analytics por último, protegido (não crítico para boot)
+let analytics = null;
+isSupported()
+  .then((yes) => {
+    if (yes) {
+      analytics = getAnalytics(app);
+    }
+  })
+  .catch(() => {});
+
+export { analytics };
 
 export default app;
 

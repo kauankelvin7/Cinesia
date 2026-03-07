@@ -75,16 +75,44 @@ export const AuthProvider = ({ children }) => {
         // Persiste localmente para restaurar UI instantâneamente no próximo carregamento
         // WARN: o localStorage não substitui o estado real do Firebase — use apenas para UI inicial
         localStorage.setItem('user', JSON.stringify(userData));
+        // DEBUG: estado de auth após login
+        // eslint-disable-next-line no-console
+        console.log('[AUTH STATE]', {
+          phase: 'logged-in',
+          uid: userData.uid,
+          email: userData.email
+        });
       } else {
         // Usuário deslogado ou sessão expirada
         setUser(null);
         setToken(null);
         localStorage.removeItem('user');
+        // DEBUG: estado de auth após logout / sessão expirada
+        // eslint-disable-next-line no-console
+        console.log('[AUTH STATE]', {
+          phase: 'logged-out'
+        });
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Timeout de segurança — se o Firebase não responder em 10s,
+  // força loading false para não travar o app eternamente
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          // eslint-disable-next-line no-console
+          console.warn('[AUTH] Timeout de segurança ativado — Firebase não respondeu em 10s');
+          return false;
+        }
+        return prev;
+      });
+    }, 10000);
+    return () => clearTimeout(timeout);
   }, []);
 
   /**

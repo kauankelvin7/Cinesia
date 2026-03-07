@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   define: {
-    'VITE_BUILD_TIME': JSON.stringify(Date.now())
+    'import.meta.env.VITE_BUILD_TIME': JSON.stringify(Date.now())
   },
   base: '/',
   plugins: [
@@ -147,7 +147,7 @@ export default defineConfig({
   ],
 
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom', 'three', '@react-three/fiber'],
   },
 
   server: {
