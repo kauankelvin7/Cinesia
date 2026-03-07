@@ -111,7 +111,7 @@ function PageSpinner() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // ⚡ Pré-carrega todos os chunks de rota no idle após o app montar
   usePrefetchRoutes();
@@ -119,6 +119,11 @@ function AppContent() {
   // 🔍 Hook de Acessibilidade - Controle de tamanho de fonte
   // Inicializa o hook para aplicar font-size no <html> element
   useFontSize();
+
+  useEffect(() => {
+    if (!user) return;
+    ensureUserProfileOnAuth(user);
+  }, [user]);
 
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -177,9 +182,6 @@ function App() {
     initPWA();
   }, []);
 
-  useEffect(() => {
-    ensureUserProfileOnAuth();
-  }, []);
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
