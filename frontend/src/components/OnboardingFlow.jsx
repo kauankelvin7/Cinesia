@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, CreditCard, FileText, Calendar, Flame, Rocket,
   ChevronLeft, ChevronRight, Sun, Moon, Trophy, Sparkles,
-  ArrowRight, MessageCircle, Compass, User
+  ArrowRight, MessageCircle, Compass, User, Zap, Dna
 } from 'lucide-react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';

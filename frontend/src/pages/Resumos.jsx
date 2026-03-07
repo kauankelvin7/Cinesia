@@ -53,6 +53,8 @@ import {
   Paperclip,
   XCircle,
   Image as ImageIcon2,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { 
   listarResumos, 

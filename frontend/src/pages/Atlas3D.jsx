@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import {
   X, RotateCcw, Info, ChevronRight, Search,
   Eye, Layers, ChevronDown, Filter, ZoomIn, ZoomOut,
-  Activity, Bone, Brain, Heart, Sparkles
+  Activity, Bone, Brain, Heart, Sparkles, ChevronLeft
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
