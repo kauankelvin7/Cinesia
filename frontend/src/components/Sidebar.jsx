@@ -5,6 +5,7 @@
  */
 
 import React, { useState, memo } from 'react';
+import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { 
   Home, 
