@@ -2,6 +2,42 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+
+// Remove PWA Splash Screen App Shell
+function removeSplash() {
+  const splash = document.getElementById('pwa-splash');
+  if (splash) {
+    splash.style.opacity = '0';
+    splash.style.transition = 'opacity 0.4s ease';
+    setTimeout(() => splash.remove(), 400);
+  }
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+removeSplash();
+
+// Remove App Shell Splash Screen
+function removeSplash() {
+  const splash = document.getElementById('app-shell-splash');
+  if (splash) {
+    splash.style.opacity = '0';
+    setTimeout(() => splash.remove(), 600);
+  }
+}
+
+// Remove splash as soon as React mounts
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+removeSplash();
 import './utils/deviceLayout.js';
 import { validateEnv } from './utils/validateEnv';
 
