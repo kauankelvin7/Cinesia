@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import Logo from './Logo';
+import Logo from '../Logo';
 
 const LoadingScreen = () => {
   return (
