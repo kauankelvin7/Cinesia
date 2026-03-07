@@ -54,10 +54,11 @@ export default function OnboardingFlow() {
   const { setMode, isDarkMode } = useTheme();
   const navigate = useNavigate();
 
+
   const uid = user?.uid || user?.id;
 
   // Bloqueia UI até autenticação estar pronta
-  if (!user?.uid || !auth.currentUser) {
+  if (!uid || !auth.currentUser) {
     return <div style={{textAlign:'center',marginTop:'2rem'}}>Aguardando autenticação...</div>;
   }
 
@@ -65,17 +66,13 @@ export default function OnboardingFlow() {
   const [status, setStatus] = useState('checking'); // checking | show | done
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
-
-  // Step 2 — Nome
-  const [nome, setNome] = useState(user?.displayName || '');
+  const [onboardingData, setOnboardingData] = useState({
+    nomePreferido: user?.displayName || '',
+    temaPreferido: isDarkMode ? 'dark' : 'light',
+  });
   const [nomeError, setNomeError] = useState('');
   const [savingNome, setSavingNome] = useState(false);
-
-  // Step 3 — Tema
-  const [selectedTheme, setSelectedTheme] = useState(isDarkMode ? 'dark' : 'light');
   const [savingTheme, setSavingTheme] = useState(false);
-
-  // Step 9 — Conclusão
   const [finishing, setFinishing] = useState(false);
 
   // ─── Check onboarding status ────────────────────────────────────────────────
@@ -115,7 +112,7 @@ export default function OnboardingFlow() {
 
   // ─── Step 2: Save name ──────────────────────────────────────────────────────
   const handleSaveName = async () => {
-    const trimmed = nome.trim();
+    const trimmed = onboardingData.nomePreferido.trim();
     if (trimmed.length < 2) {
       setNomeError('Mínimo 2 caracteres');
       return;
@@ -124,23 +121,17 @@ export default function OnboardingFlow() {
       setNomeError('Máximo 30 caracteres');
       return;
     }
-    if (!user?.uid || !auth.currentUser) {
-      setNomeError('Aguarde autenticação...');
-      return;
-    }
     setNomeError('');
     setSavingNome(true);
     try {
-      await updateProfile(auth.currentUser, { displayName: trimmed });
-      await setDoc(doc(db, 'users', user.uid, 'perfil', 'dados'), {
+      setOnboardingData((prev) => ({
+        ...prev,
         nomePreferido: trimmed,
-      }, { merge: true });
-      await setDoc(doc(db, 'users', user.uid, 'perfil', 'dados'), cleanUndefined({
-        nomePreferido: trimmed,
-      }), { merge: true });
+      }));
       goNext();
-    } catch {
-      setNomeError('Erro ao salvar. Tente novamente.');
+    } catch (error) {
+      setNomeError('Erro inesperado. Tente novamente.');
+      console.error("Erro detalhado:", error);
     } finally {
       setSavingNome(false);
     }
@@ -150,13 +141,14 @@ export default function OnboardingFlow() {
   const handleSaveTheme = async () => {
     setSavingTheme(true);
     try {
-      setMode(selectedTheme);
-      await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), {
-        temaPreferido: selectedTheme,
-      }, { merge: true });
+      setMode(onboardingData.temaPreferido);
+      setOnboardingData((prev) => ({
+        ...prev,
+        temaPreferido: prev.temaPreferido,
+      }));
       goNext();
-    } catch {
-      // Não bloqueia — o tema já foi aplicado localmente
+    } catch (error) {
+      console.error("Erro detalhado:", error);
       goNext();
     } finally {
       setSavingTheme(false);
@@ -165,22 +157,38 @@ export default function OnboardingFlow() {
 
   // ─── Step 9: Finish onboarding ──────────────────────────────────────────────
   const finishOnboarding = useCallback(async (action) => {
+    if (!uid || !auth.currentUser) return;
     setFinishing(true);
     try {
-      await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), {
-        onboardingConcluido: true,
-        onboardingConcluidoEm: serverTimestamp(),
-      }, { merge: true });
-    } catch {
-      // Não bloqueia
+      // Atualiza displayName do Auth
+      await updateProfile(auth.currentUser, {
+        displayName: onboardingData.nomePreferido,
+      });
+
+      // Salva todos os dados de uma vez no Firestore
+      await setDoc(
+        doc(db, 'users', uid, 'perfil', 'dados'),
+        {
+          nomePreferido: onboardingData.nomePreferido,
+          temaPreferido: onboardingData.temaPreferido,
+          onboardingConcluido: true,
+          onboardingConcluidoEm: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      setStatus('done');
+      if (action === 'materias') {
+        navigate('/materias');
+      } else if (action === 'kaka') {
+        window.dispatchEvent(new CustomEvent('cinesia:kakabot:abrir'));
+      }
+    } catch (error) {
+      setNomeError('Erro ao concluir onboarding. Tente novamente.');
+      console.error("Erro detalhado:", error);
+    } finally {
+      setFinishing(false);
     }
-    setStatus('done');
-    if (action === 'materias') {
-      navigate('/materias');
-    } else if (action === 'kaka') {
-      window.dispatchEvent(new CustomEvent('cinesia:kakabot:abrir'));
-    }
-  }, [uid, navigate]);
+  }, [uid, onboardingData, navigate]);
 
   // ─── Render conditions ──────────────────────────────────────────────────────
   if (status !== 'show') return null;
@@ -242,8 +250,8 @@ export default function OnboardingFlow() {
                 {step === 1 && <StepWelcome onNext={goNext} />}
                 {step === 2 && (
                   <StepName
-                    nome={nome}
-                    setNome={setNome}
+                    nome={onboardingData.nomePreferido}
+                    setNome={(nome) => setOnboardingData((prev) => ({ ...prev, nomePreferido: nome }))}
                     nomeError={nomeError}
                     saving={savingNome}
                     onConfirm={handleSaveName}
@@ -251,8 +259,8 @@ export default function OnboardingFlow() {
                 )}
                 {step === 3 && (
                   <StepTheme
-                    selected={selectedTheme}
-                    setSelected={(t) => { setSelectedTheme(t); setMode(t); }}
+                    selected={onboardingData.temaPreferido}
+                    setSelected={(t) => setOnboardingData((prev) => ({ ...prev, temaPreferido: t }))}
                     saving={savingTheme}
                     onConfirm={handleSaveTheme}
                   />
