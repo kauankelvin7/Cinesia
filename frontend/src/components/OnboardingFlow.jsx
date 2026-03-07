@@ -119,16 +119,18 @@ export default function OnboardingFlow() {
       setNomeError('Máximo 30 caracteres');
       return;
     }
+    if (!user?.uid || !auth.currentUser) {
+      setNomeError('Aguarde autenticação...');
+      return;
+    }
     setNomeError('');
     setSavingNome(true);
     try {
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { displayName: trimmed });
-      }
-      await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), {
+      await updateProfile(auth.currentUser, { displayName: trimmed });
+      await setDoc(doc(db, 'users', user.uid, 'perfil', 'dados'), {
         nomePreferido: trimmed,
       }, { merge: true });
-      await setDoc(doc(db, 'users', uid, 'perfil', 'dados'), cleanUndefined({
+      await setDoc(doc(db, 'users', user.uid, 'perfil', 'dados'), cleanUndefined({
         nomePreferido: trimmed,
       }), { merge: true });
       goNext();
