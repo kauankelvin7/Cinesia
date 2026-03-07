@@ -1,10 +1,14 @@
 /**
- * @file FriendSearch.jsx
- * @description Busca de usuários cadastrados com debounce para adicionar como amigo.
+ * 🔍 FRIEND SEARCH PREMIUM — v2.0
+ * * Busca de usuários com debounce e animação em cascata.
+ * - Input responsivo com estados de foco imersivos
+ * - Result cards com micro-interações de hover
+ * - Integração fluida com o sistema de convites
  */
 
 import React, { memo, useState, useRef, useCallback } from 'react';
-import { Search, UserPlus, Clock, Check, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Clock, Check, Loader2, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
 
@@ -18,40 +22,34 @@ const FriendSearch = memo(({ onSearch, onSendRequest, sentRequests = [], friends
   const sentUserIds = new Set(sentRequests.map((r) => r.requestedTo));
   const friendUserIds = new Set(friends.map((f) => f.uid));
 
-  const handleSearch = useCallback(
-    (value) => {
-      setQuery(value);
-      clearTimeout(debounceRef.current);
+  const handleSearch = useCallback((value) => {
+    setQuery(value);
+    clearTimeout(debounceRef.current);
 
-      if (value.trim().length < 2) {
+    if (value.trim().length < 2) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await onSearch(value.trim());
+        setResults(data || []);
+      } catch {
         setResults([]);
-        setSearching(false);
-        return;
       }
-
-      setSearching(true);
-      debounceRef.current = setTimeout(async () => {
-        try {
-          const data = await onSearch(value.trim());
-          setResults(data || []);
-        } catch {
-          setResults([]);
-        }
-        setSearching(false);
-      }, 300);
-    },
-    [onSearch],
-  );
+      setSearching(false);
+    }, 350); // Aumentei um pouco o debounce para evitar flickering
+  }, [onSearch]);
 
   const handleSendRequest = async (targetUser) => {
-    const targetComUid = {
-      ...targetUser,
-      uid: targetUser.uid || targetUser.id || null,
-    };
+    const targetComUid = { ...targetUser, uid: targetUser.uid || targetUser.id || null };
     setSending((prev) => ({ ...prev, [targetComUid.uid]: true }));
     try {
       await onSendRequest(targetComUid);
-      toast.success(`Pedido enviado para ${targetComUid.displayName}!`);
+      toast.success(`Pedido enviado para ${targetComUid.displayName}! 🚀`);
     } catch (err) {
       toast.error(err.message || 'Erro ao enviar pedido');
     }
@@ -64,109 +62,122 @@ const FriendSearch = memo(({ onSearch, onSendRequest, sentRequests = [], friends
     return 'none';
   };
 
+  // Variantes para a animação em cascata (Stagger)
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-3">
-      {/* Input */}
-      <div className="relative">
-        <Search
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-        />
+    <div className="space-y-6">
+      {/* ─── Search Input Premium ─── */}
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <Search size={20} className="text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300" strokeWidth={2.5} />
+        </div>
         <input
           type="text"
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Buscar por nome..."
-          className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all"
+          placeholder="Busque por nome ou email..."
+          className="w-full pl-12 pr-12 py-4 text-[15px] font-medium rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
           autoFocus
         />
         {searching && (
-          <Loader2
-            size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin"
-          />
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+            <Loader2 size={20} className="animate-spin text-teal-500" strokeWidth={3} />
+          </div>
         )}
       </div>
 
-      {/* Results */}
-      {results.length > 0 && (
-        <div className="space-y-1 max-h-100 overflow-y-auto">
-          {results.map((user) => {
-            const status = getStatus(user.uid);
-            const initials = getInitials(user.displayName);
-            const avatarBg = getAvatarColor(user.displayName);
-            // Garante key única: uid || email || index
-            const key = user.uid || user.email || `${user.displayName}-${Math.random()}`;
+      {/* ─── Search Results ─── */}
+      <AnimatePresence mode="wait">
+        {results.length > 0 && !searching ? (
+          <motion.div 
+            variants={containerVariants} 
+            initial="hidden" 
+            animate="show" 
+            className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1"
+          >
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-2 mb-3">Resultados ({results.length})</p>
+            
+            {results.map((user) => {
+              const status = getStatus(user.uid);
+              const initials = getInitials(user.displayName);
+              const key = user.uid || user.email || `${user.displayName}-${Math.random()}`;
 
-            return (
-              <div
-                key={key}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-              >
-                {/* Avatar */}
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName}
-                    className="w-9 h-9 rounded-full object-cover shrink-0"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: avatarBg }}
-                  >
-                    {initials}
-                  </div>
-                )}
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                    {user.displayName}
-                  </p>
-                  {user.institution && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                      {user.institution}
-                    </p>
-                  )}
-                </div>
-
-                {/* Action button */}
-                {status === 'friend' ? (
-                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium px-2 py-1 rounded-lg bg-green-500/10">
-                    <Check size={12} /> Amigo
-                  </span>
-                ) : status === 'pending' ? (
-                  <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium px-2 py-1 rounded-lg bg-amber-500/10">
-                    <Clock size={12} /> Pendente
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleSendRequest(user)}
-                    disabled={sending[user.uid]}
-                    className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors disabled:opacity-50"
-                  >
-                    {sending[user.uid] ? (
-                      <Loader2 size={12} className="animate-spin" />
+              return (
+                <motion.div
+                  variants={itemVariants}
+                  key={key}
+                  className="flex items-center gap-4 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-md hover:border-indigo-100 dark:hover:border-indigo-900/50 transition-all group"
+                >
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-transparent group-hover:border-indigo-100 dark:group-hover:border-slate-700 transition-all" referrerPolicy="no-referrer" />
                     ) : (
-                      <UserPlus size={12} />
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-black shadow-inner" style={{ backgroundColor: getAvatarColor(user.displayName) }}>
+                        {initials}
+                      </div>
                     )}
-                    Adicionar
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  </div>
 
-      {/* Empty state */}
-      {query.trim().length >= 2 && !searching && results.length === 0 && (
-        <p className="text-center text-sm text-slate-400 dark:text-slate-500 py-8">
-          Nenhum usuário encontrado com "{query}"
-        </p>
-      )}
+                  {/* User Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-bold text-slate-800 dark:text-slate-100 truncate tracking-tight">
+                      {user.displayName}
+                    </p>
+                    {user.institution ? (
+                      <p className="text-[12px] font-medium text-slate-500 truncate flex items-center gap-1 mt-0.5">
+                        <BookOpen size={12} /> {user.institution}
+                      </p>
+                    ) : (
+                      <p className="text-[12px] text-slate-400 truncate mt-0.5">Estudante Cinesia</p>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="shrink-0 pl-2">
+                    {status === 'friend' ? (
+                      <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" title="Amigo">
+                        <Check size={20} strokeWidth={3} />
+                      </span>
+                    ) : status === 'pending' ? (
+                      <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-50 text-amber-500 dark:bg-amber-900/20 dark:text-amber-400" title="Convite Pendente">
+                        <Clock size={20} strokeWidth={2.5} />
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSendRequest(user)}
+                        disabled={sending[user.uid]}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-teal-500 text-slate-700 hover:text-white font-bold text-[13px] transition-all disabled:opacity-50 active:scale-95"
+                      >
+                        {sending[user.uid] ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} strokeWidth={2.5} />}
+                        <span className="hidden sm:inline">Adicionar</span>
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        ) : query.trim().length >= 2 && !searching ? (
+          /* Empty State da Busca */
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 text-center px-4">
+             <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-3xl flex items-center justify-center mb-4">
+                <Search size={28} className="text-slate-300" />
+             </div>
+             <p className="text-[14px] font-bold text-slate-600 dark:text-slate-400">Ninguém encontrado.</p>
+             <p className="text-[12px] text-slate-400 mt-1 max-w-[200px]">Verifique a ortografia ou tente buscar apenas pelo primeiro nome.</p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 });

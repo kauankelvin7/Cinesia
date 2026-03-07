@@ -1,11 +1,14 @@
 /**
- * @file ChallengeInvite.jsx
- * @description Modal para convidar um amigo para desafio de flashcards.
+ * ⚔️ CHALLENGE INVITE MODAL PREMIUM — v2.0
+ * * Modal gamificado para seleção e envio de desafios.
+ * - Header temático com contexto do oponente
+ * - Cards de deck interativos com feedback visual de seleção
+ * - Botões de ação com alta proeminência (Gamification UI)
  */
 
 import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Swords, Loader2 } from 'lucide-react';
+import { X, Swords, Loader2, BrainCircuit, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
@@ -19,10 +22,10 @@ const ChallengeInvite = memo(({ isOpen, onClose, friend, onSendChallenge }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  // Busca flashcards do usuário para escolher deck
   useEffect(() => {
     if (!isOpen || !user?.uid) return;
     setLoading(true);
+    setSelectedDeck(null); // Resetar seleção ao abrir
 
     const fetchDecks = async () => {
       try {
@@ -34,14 +37,13 @@ const ChallengeInvite = memo(({ isOpen, onClose, friend, onSendChallenge }) => {
         const snap = await getDocs(q);
         const raw = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        // Agrupa por matéria para criar "decks"
         const deckMap = {};
         raw.forEach((card) => {
           const key = card.materiaId || card.materia || 'Geral';
           if (!deckMap[key]) {
             deckMap[key] = {
               id: key,
-              name: card.materiaNome || card.materia || 'Flashcards',
+              name: card.materiaNome || card.materia || 'Estudos Gerais',
               materia: card.materia || '',
               cards: [],
             };
@@ -49,9 +51,15 @@ const ChallengeInvite = memo(({ isOpen, onClose, friend, onSendChallenge }) => {
           deckMap[key].cards.push(card);
         });
 
-        setDecks(Object.values(deckMap).filter((d) => d.cards.length >= 3));
+        // Ordena por quantidade de cards (maiores primeiro)
+        const validDecks = Object.values(deckMap)
+          .filter((d) => d.cards.length >= 3)
+          .sort((a, b) => b.cards.length - a.cards.length);
+
+        setDecks(validDecks);
       } catch {
         setDecks([]);
+        toast.error('Erro ao carregar seus flashcards.');
       }
       setLoading(false);
     };
@@ -63,7 +71,8 @@ const ChallengeInvite = memo(({ isOpen, onClose, friend, onSendChallenge }) => {
     setSending(true);
     try {
       await onSendChallenge(friend, selectedDeck);
-      toast.success('Desafio enviado!');
+      // O toast de sucesso já é disparado no onSendChallenge, mas se precisar:
+      // toast.success('Desafio enviado! Prepare-se! 🚀');
       onClose();
     } catch (err) {
       toast.error(err.message || 'Erro ao criar desafio');
@@ -79,100 +88,154 @@ const ChallengeInvite = memo(({ isOpen, onClose, friend, onSendChallenge }) => {
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop Escuro */}
           <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
+          
           <motion.div
-            className="fixed inset-x-4 top-1/2 z-101 max-w-sm mx-auto"
+            className="fixed inset-x-4 top-1/2 z-[101] max-w-sm mx-auto"
             initial={{ opacity: 0, y: '-45%', scale: 0.95 }}
-            animate={{ opacity: 1, y: '-50%', scale: 1 }}
-            exit={{ opacity: 0, y: '-45%', scale: 0.95 }}
+            animate={{ opacity: 1, y: '-50%', scale: 1, transition: { type: "spring", damping: 25, stiffness: 300 } }}
+            exit={{ opacity: 0, y: '-45%', scale: 0.95, transition: { duration: 0.2 } }}
           >
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              {/* Header */}
-              <div className="relative bg-linear-to-r from-amber-500 to-orange-500 px-4 py-4">
+            <div className="bg-white dark:bg-slate-900 rounded-[28px] shadow-2xl border border-white/20 dark:border-slate-700/50 overflow-hidden flex flex-col max-h-[85vh]">
+              
+              {/* ─── Header Gamificado ─── */}
+              <div className="relative bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 px-5 py-6 shrink-0">
+                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+                
                 <button
                   onClick={onClose}
-                  className="absolute top-3 right-3 flex items-center justify-center p-1.5 rounded-lg bg-black/20 text-white hover:bg-black/30 transition-colors"
+                  className="absolute top-4 right-4 flex items-center justify-center p-2 rounded-full bg-black/10 hover:bg-black/20 text-white backdrop-blur-md transition-all active:scale-90 z-10"
                   aria-label="Fechar"
                 >
-                  <X size={16} />
+                  <X size={18} strokeWidth={2.5} />
                 </button>
-                <div className="flex items-center gap-3">
-                  <Swords size={24} className="text-white" />
-                  <div>
-                    <h3 className="text-lg font-bold text-white">Desafiar</h3>
-                    <p className="text-sm text-white/80">{friend.displayName}</p>
+                
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <div className="relative mb-3">
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border-2 border-white/30 shadow-inner">
+                       <Swords size={32} className="text-white drop-shadow-md" strokeWidth={2} />
+                    </div>
+                    {/* Mini avatar do oponente */}
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full border-2 border-amber-500 overflow-hidden bg-white">
+                      {friend.photoURL ? (
+                        <img src={friend.photoURL} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] font-black text-white" style={{ backgroundColor: avatarBg }}>
+                          {initials}
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  <h3 className="text-2xl font-black text-white tracking-tight drop-shadow-sm leading-none mb-1">Duelo Real</h3>
+                  <p className="text-sm font-bold text-orange-50 opacity-90">Desafiando {friend.displayName.split(' ')[0]}</p>
                 </div>
               </div>
 
-              <div className="p-4">
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                  Escolha um deck de flashcards para o duelo:
-                </p>
+              {/* ─── Body (Seleção de Deck) ─── */}
+              <div className="p-5 flex flex-col flex-1 min-h-0">
+                <div className="mb-4 text-center shrink-0">
+                  <h4 className="text-[15px] font-bold text-slate-800 dark:text-slate-100">Escolha sua arma</h4>
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Selecione um deck de estudos para a batalha</p>
+                </div>
 
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 size={24} className="animate-spin text-slate-400" />
-                  </div>
-                ) : decks.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Você precisa ter pelo menos 3 flashcards para criar um desafio.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-62.5 overflow-y-auto">
-                    {decks.map((deck) => (
-                      <div
-                        key={deck.id}
-                        onClick={() => setSelectedDeck(deck)}
-                        className={`
-                          flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all
-                          ${selectedDeck?.id === deck.id
-                            ? 'bg-amber-500/15 border-2 border-amber-500/40 ring-1 ring-amber-500/20'
-                            : 'bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
-                          }
-                        `}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                          <span className="text-lg">🃏</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                            {deck.name}
-                          </p>
-                          <p className="text-xs text-slate-500">{deck.cards.length} cards</p>
-                        </div>
-                        {selectedDeck?.id === deck.id && (
-                          <span className="text-amber-500 text-sm font-bold">✓</span>
-                        )}
+                <div className="flex-1 overflow-y-auto custom-scrollbar -mx-2 px-2 pb-2">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                        <Loader2 size={24} className="animate-spin text-amber-500" />
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Action button */}
-                <button
-                  onClick={handleSend}
-                  disabled={!selectedDeck || sending}
-                  className="w-full mt-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {sending ? (
-                    <Loader2 size={16} className="animate-spin" />
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Buscando decks...</span>
+                    </div>
+                  ) : decks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center px-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                      <BrainCircuit size={32} className="text-slate-300 mb-3" strokeWidth={1.5} />
+                      <p className="text-[14px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Seu arsenal está vazio
+                      </p>
+                      <p className="text-[12px] text-slate-500">
+                        Você precisa ter pelo menos 3 flashcards da mesma matéria para iniciar um duelo.
+                      </p>
+                    </div>
                   ) : (
-                    <>
-                      <Swords size={16} /> Enviar Desafio!
-                    </>
+                    <div className="space-y-2.5">
+                      {decks.map((deck) => {
+                        const isSelected = selectedDeck?.id === deck.id;
+                        return (
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.98 }}
+                            key={deck.id}
+                            onClick={() => setSelectedDeck(deck)}
+                            className={`
+                              relative flex items-center gap-3.5 p-3.5 rounded-2xl cursor-pointer transition-all border-2
+                              ${isSelected
+                                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-500 shadow-md shadow-amber-500/10'
+                                : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-amber-200 dark:hover:border-amber-900/50'
+                              }
+                            `}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+                              <BrainCircuit size={20} strokeWidth={isSelected ? 2.5 : 2} />
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[14px] font-bold truncate transition-colors ${isSelected ? 'text-amber-700 dark:text-amber-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                                {deck.name}
+                              </p>
+                              <p className="text-[12px] font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-amber-500' : 'bg-slate-300'}`} />
+                                {deck.cards.length} cards
+                              </p>
+                            </div>
+                            
+                            {/* Checkmark animado */}
+                            <div className="shrink-0 w-6 flex justify-end">
+                              <AnimatePresence>
+                                {isSelected && (
+                                  <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }}>
+                                    <CheckCircle2 size={20} className="text-amber-500" strokeWidth={2.5} />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   )}
-                </button>
+                </div>
+
+                {/* ─── Footer (Ação) ─── */}
+                <div className="pt-4 mt-2 shrink-0 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={handleSend}
+                    disabled={!selectedDeck || sending || decks.length === 0}
+                    className={`
+                      w-full py-3.5 rounded-2xl font-black text-[15px] uppercase tracking-wider transition-all flex items-center justify-center gap-2
+                      ${(!selectedDeck || decks.length === 0) 
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-xl shadow-orange-500/25 active:scale-[0.98]'
+                      }
+                    `}
+                  >
+                    {sending ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Swords size={20} strokeWidth={2.5} /> Lançar Desafio
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

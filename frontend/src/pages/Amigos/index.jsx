@@ -1,11 +1,14 @@
 /**
- * @file Amigos/index.jsx
- * @description Página principal do sistema social – 4 abas: Amigos, Pedidos, Buscar, Grupos.
+ * 👥 HUB SOCIAL PREMIUM — v2.0
+ * * Página principal do ecossistema comunitário.
+ * - Magic Sliding Tabs com Framer Motion
+ * - Transições de Blur-Fade entre as seções
+ * - Header imersivo com identidade visual Cinesia
  */
 
-import React, { memo, useState, useCallback, useMemo, lazy, Suspense, useEffect } from 'react';
+import React, { memo, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, Search, BookOpen, Swords, Bell } from 'lucide-react';
+import { Users, UserPlus, Search, BookOpen, Swords, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext-firebase';
 import { useSocial } from '../../features/social/context/SocialContext';
@@ -14,6 +17,8 @@ import { useGroups } from '../../features/social/hooks/useGroups';
 import { challengeService } from '../../features/social/services/challengeService';
 import { chatService } from '../../features/social/services/chatService';
 import { getStreakData } from '../../services/streakService';
+
+// Componentes da aba
 import FriendsList from '../../features/social/components/friends/FriendsList';
 import FriendRequests from '../../features/social/components/friends/FriendRequests';
 import FriendSearch from '../../features/social/components/friends/FriendSearch';
@@ -34,21 +39,14 @@ const TABS = [
 
 const Amigos = memo(() => {
   const { user } = useAuth();
-  const { pendingRequestsCount, startChallenge, openConversation } =
-    useSocial();
+  const { pendingRequestsCount, startChallenge, openConversation } = useSocial();
+  
   const {
-    friends,
-    pendingRequests,
-    sentRequests,
-    friendsStatus,
-    loading: friendsLoading,
-    sendRequest,
-    acceptRequest,
-    declineRequest,
-    removeFriend,
-    blockUser,
-    searchUsers,
+    friends, pendingRequests, sentRequests, friendsStatus,
+    loading: friendsLoading, sendRequest, acceptRequest,
+    declineRequest, removeFriend, blockUser, searchUsers,
   } = useFriends();
+  
   const { groups, loading: groupsLoading, createGroup, leaveGroup, removeMember } = useGroups();
 
   const [myStreakDays, setMyStreakDays] = useState(0);
@@ -61,7 +59,6 @@ const Amigos = memo(() => {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
 
-  // Busca streak do usuário logado para exibir na comparação
   useEffect(() => {
     if (!user?.uid) return;
     getStreakData(user.uid)
@@ -69,75 +66,49 @@ const Amigos = memo(() => {
       .catch(() => {});
   }, [user?.uid]);
 
-  // Abrir perfil do amigo
   const handleOpenProfile = useCallback((friend) => {
     setSelectedFriend(friend);
     setShowProfile(true);
   }, []);
 
-  // Mensagem direta
-  const handleMessage = useCallback(
-    async (friend) => {
-      try {
-        const convId = await chatService.getOrCreateConversation(
-          user.uid, friend.uid, user, friend,
-        );
-        openConversation(convId);
-      } catch (err) {
-        toast.error('Erro ao abrir conversa');
-      }
-    },
-    [user, openConversation],
-  );
+  const handleMessage = useCallback(async (friend) => {
+    try {
+      const convId = await chatService.getOrCreateConversation(user.uid, friend.uid, user, friend);
+      openConversation(convId);
+    } catch (err) {
+      toast.error('Erro ao abrir conversa');
+    }
+  }, [user, openConversation]);
 
-  // Abrir modal de desafio
   const handleChallengeOpen = useCallback((friend) => {
     setChallengeTarget(friend);
     setShowChallengeInvite(true);
   }, []);
 
-  // Envia desafio
-  const handleSendChallenge = useCallback(
-    async (friend, deck) => {
-      try {
-        // Precisa de uma conversa para enviar o desafio
-        const convId = await chatService.getOrCreateConversation(
-          user.uid, friend.uid, user, friend,
-        );
-        const challengeId = await challengeService.createChallenge(
-          user,
-          friend,
-          deck,
-          convId,
-        );
-        startChallenge(challengeId);
-        toast.success('Desafio enviado!');
-      } catch (err) {
-        toast.error(err.message || 'Erro ao criar desafio');
-      }
-    },
-    [user, startChallenge],
-  );
+  const handleSendChallenge = useCallback(async (friend, deck) => {
+    try {
+      const convId = await chatService.getOrCreateConversation(user.uid, friend.uid, user, friend);
+      const challengeId = await challengeService.createChallenge(user, friend, deck, convId);
+      startChallenge(challengeId);
+      toast.success('Desafio enviado com sucesso!');
+    } catch (err) {
+      toast.error(err.message || 'Erro ao criar desafio');
+    }
+  }, [user, startChallenge]);
 
-  // Criar grupo
-  const handleCreateGroup = useCallback(
-    async ({ name, description, memberIds }) => {
-      try {
-        await createGroup(name, description, memberIds);
-        toast.success('Grupo criado!');
-      } catch (err) {
-        toast.error(err.message || 'Erro ao criar grupo');
-      }
-    },
-    [createGroup],
-  );
+  const handleCreateGroup = useCallback(async ({ name, description, memberIds }) => {
+    try {
+      await createGroup(name, description, memberIds);
+      toast.success('Grupo criado com sucesso!');
+    } catch (err) {
+      toast.error(err.message || 'Erro ao criar grupo');
+    }
+  }, [createGroup]);
 
-  // Abrir chat do grupo
   const handleSelectGroup = useCallback((group) => {
     setSelectedGroup(group);
   }, []);
 
-  // Sair do grupo
   const handleLeaveGroup = useCallback(async () => {
     if (!selectedGroup) return;
     try {
@@ -150,24 +121,20 @@ const Amigos = memo(() => {
     }
   }, [selectedGroup, leaveGroup]);
 
-  // Remover membro
-  const handleRemoveMember = useCallback(
-    async (memberId) => {
-      if (!selectedGroup) return;
-      try {
-        await removeMember(selectedGroup.id, memberId);
-        toast.success('Membro removido');
-      } catch (err) {
-        toast.error(err.message || 'Erro ao remover membro');
-      }
-    },
-    [selectedGroup, removeMember],
-  );
+  const handleRemoveMember = useCallback(async (memberId) => {
+    if (!selectedGroup) return;
+    try {
+      await removeMember(selectedGroup.id, memberId);
+      toast.success('Membro removido');
+    } catch (err) {
+      toast.error(err.message || 'Erro ao remover membro');
+    }
+  }, [selectedGroup, removeMember]);
 
-  // Se grupo selecionado, mostra chat do grupo
+  // Se grupo selecionado, mostra chat do grupo (Lógica de retorno após os Hooks!)
   if (selectedGroup) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-white dark:bg-slate-950">
         <GroupChat
           group={selectedGroup}
           onBack={() => setSelectedGroup(null)}
@@ -177,10 +144,7 @@ const Amigos = memo(() => {
           isOpen={showGroupMembers}
           onClose={() => setShowGroupMembers(false)}
           group={selectedGroup}
-          membersData={selectedGroup?.participantsData
-            ? Object.values(selectedGroup.participantsData)
-            : []
-          }
+          membersData={selectedGroup?.participantsData ? Object.values(selectedGroup.participantsData) : []}
           onRemoveMember={handleRemoveMember}
           onLeaveGroup={handleLeaveGroup}
           onMessage={async (member) => {
@@ -198,20 +162,25 @@ const Amigos = memo(() => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Users size={24} className="text-amber-500" />
-          Estude Juntos
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Conecte-se, estude e desafie seus colegas de fisioterapia
-        </p>
+    <div className="max-w-3xl mx-auto px-4 py-8 pb-24 lg:pb-8">
+      {/* ─── Header Premium ─── */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white shrink-0">
+          <Users size={28} strokeWidth={2.5} />
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            Comunidade
+          </h1>
+          <p className="text-[13px] sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+            <Sparkles size={14} className="text-amber-500" />
+            Conecte-se, estude e desafie seus colegas
+          </p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
+      {/* ─── Magic Sliding Tabs ─── */}
+      <div className="flex gap-1.5 p-1.5 bg-slate-100/80 dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-[20px] mb-8 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -222,32 +191,42 @@ const Amigos = memo(() => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex-1 relative flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all
-                ${
-                  isActive
-                    ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                }
+                relative flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-[14px] text-[13px] sm:text-sm font-bold transition-colors z-10 whitespace-nowrap min-w-[100px]
+                ${isActive ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}
               `}
             >
-              <Icon size={14} />
-              <span className="hidden sm:inline">{tab.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="activeTabAmigos"
+                  className="absolute inset-0 bg-white dark:bg-slate-700 rounded-[14px] shadow-sm border border-slate-200/50 dark:border-slate-600/50"
+                  initial={false}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </span>
+              
               {showBadge && (
-                <NotificationBadge count={pendingRequestsCount} size="sm" />
+                <div className="relative z-10 ml-1">
+                  <NotificationBadge count={pendingRequestsCount} size="sm" pulse />
+                </div>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Tab content */}
+      {/* ─── Conteúdo com Fade-Blur ─── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15 }}
+          initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className="min-h-[400px]"
         >
           {activeTab === 'friends' && (
             <FriendsList
@@ -267,11 +246,11 @@ const Amigos = memo(() => {
               pendingRequests={pendingRequests}
               sentRequests={sentRequests}
               onAccept={async (id) => {
-                try { await acceptRequest(id); toast.success('Pedido aceito!'); }
+                try { await acceptRequest(id); toast.success('Novo amigo adicionado! 🎉'); }
                 catch (e) { toast.error(e.message || 'Erro ao aceitar'); }
               }}
               onDecline={async (id) => {
-                try { await declineRequest(id); toast.success('Pedido recusado'); }
+                try { await declineRequest(id); }
                 catch (e) { toast.error(e.message || 'Erro ao recusar'); }
               }}
             />
@@ -281,7 +260,7 @@ const Amigos = memo(() => {
             <FriendSearch
               onSearch={searchUsers}
               onSendRequest={async (targetUser) => {
-                try { await sendRequest(targetUser); toast.success('Pedido enviado!'); }
+                try { await sendRequest(targetUser); toast.success('Convite enviado! 🚀'); }
                 catch (e) { toast.error(e.message || 'Erro ao enviar pedido'); }
               }}
               sentRequests={sentRequests}
@@ -299,7 +278,7 @@ const Amigos = memo(() => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Modals */}
+      {/* ─── Modais ─── */}
       <FriendProfile
         isOpen={showProfile}
         onClose={() => setShowProfile(false)}

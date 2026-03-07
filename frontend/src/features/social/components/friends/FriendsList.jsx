@@ -1,63 +1,90 @@
 /**
- * @file FriendsList.jsx
- * @description Lista de amigos com status online/offline.
+ * 👥 FRIENDS LIST PREMIUM — v2.0
+ * * Lista segmentada de conexões com status em tempo real.
+ * - Empty State focado em conversão e engajamento
+ * - Cabeçalhos de categoria com indicadores visuais
+ * - Animações de entrada suaves
  */
 
 import React, { memo } from 'react';
-import { Users, Search, Loader2 } from 'lucide-react';
+import { Users, Search, Loader2, Sparkles, Wifi, Moon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import FriendCard from './FriendCard';
 
-const FriendsList = memo(({ friends, friendsStatus = {}, loading, onMessage, onChallenge, onRemove, onViewProfile, onNavigateSearch }) => {
+const FriendsList = memo(({ 
+  friends, 
+  friendsStatus = {}, 
+  loading, 
+  onMessage, 
+  onChallenge, 
+  onRemove, 
+  onViewProfile, 
+  onNavigateSearch 
+}) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl">
+          <Loader2 size={28} className="animate-spin text-indigo-500" />
+        </div>
+        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Sincronizando conexões...</p>
       </div>
     );
   }
 
   if (!friends?.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
-          <Users size={24} className="text-slate-400" />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center justify-center py-16 text-center px-4"
+      >
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full" />
+          <div className="relative w-20 h-20 rounded-[28px] bg-gradient-to-br from-indigo-50 to-white dark:from-slate-800 dark:to-slate-900 flex items-center justify-center border border-indigo-100/50 dark:border-slate-700 shadow-xl">
+            <Sparkles size={32} className="text-indigo-500" strokeWidth={2} />
+          </div>
         </div>
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          Nenhum amigo ainda
+        
+        <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-2">
+          Sua rede está vazia
+        </h3>
+        <p className="text-[13px] text-slate-500 dark:text-slate-400 max-w-[240px] leading-relaxed mb-6 font-medium">
+          A jornada é melhor quando compartilhada. Busque colegas de fisioterapia e comecem a evoluir juntos!
         </p>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-50">
-          Busque outros estudantes de fisioterapia para adicionar!
-        </p>
+        
         {onNavigateSearch && (
           <button
             onClick={onNavigateSearch}
-            className="mt-3 flex items-center gap-1.5 text-sm font-medium text-primary-500 hover:text-primary-600 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 text-[13px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-indigo-600 to-teal-500 rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all active:scale-95"
           >
-            <Search size={14} />
-            Buscar estudantes →
+            <Search size={16} strokeWidth={2.5} />
+            Encontrar Estudantes
           </button>
         )}
-      </div>
+      </motion.div>
     );
   }
 
-  // Separa online e offline
-  const onlineFriends = friends.filter(
-    (f) => friendsStatus[f.uid]?.isOnline
-  );
-  const offlineFriends = friends.filter(
-    (f) => !friendsStatus[f.uid]?.isOnline
-  );
+  const onlineFriends = friends.filter((f) => friendsStatus[f.uid]?.isOnline);
+  const offlineFriends = friends.filter((f) => !friendsStatus[f.uid]?.isOnline);
 
   return (
-    <div className="space-y-4">
-      {/* Online */}
+    <div className="space-y-8">
+      {/* ─── Online ─── */}
       {onlineFriends.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider px-1 mb-2">
-            Online ({onlineFriends.length})
-          </p>
-          <div className="space-y-1">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center gap-2 px-2 mb-3">
+            <div className="relative flex items-center justify-center">
+              <span className="absolute w-full h-full rounded-full bg-emerald-400 opacity-50 animate-ping" />
+              <Wifi size={14} className="text-emerald-500 relative z-10" />
+            </div>
+            <h4 className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
+              Online ({onlineFriends.length})
+            </h4>
+          </div>
+          
+          <div className="space-y-1.5">
             {onlineFriends.map((friend) => (
               <FriendCard
                 key={friend.uid}
@@ -70,16 +97,20 @@ const FriendsList = memo(({ friends, friendsStatus = {}, loading, onMessage, onC
               />
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Offline */}
+      {/* ─── Offline ─── */}
       {offlineFriends.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-2">
-            Offline ({offlineFriends.length})
-          </p>
-          <div className="space-y-1">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <div className="flex items-center gap-2 px-2 mb-3 opacity-60">
+            <Moon size={14} className="text-slate-500" />
+            <h4 className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+              Offline ({offlineFriends.length})
+            </h4>
+          </div>
+          
+          <div className="space-y-1.5">
             {offlineFriends.map((friend) => (
               <FriendCard
                 key={friend.uid}
@@ -92,7 +123,7 @@ const FriendsList = memo(({ friends, friendsStatus = {}, loading, onMessage, onC
               />
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
