@@ -28,3 +28,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <App />
   </React.StrictMode>
 );
+    
+  // Verificação periódica de atualização
+  import { checkForUpdate } from './utils/checkForUpdate';
+  setInterval(() => {
+    checkForUpdate();
+  }, 30000); // verifica a cada 30 segundos
