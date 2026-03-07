@@ -10,7 +10,7 @@
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Cinesia - Sistema de estudos com resumos, flashcards e simulados para Fisioterapia" />
-    <meta name="theme-color" content="#0d9488" />
+    <meta name="theme-color" content="#0f172a" />
     <meta name="author" content="Kauan Kelvin" />
     
     <!-- Security Headers (fallback - prefer server-side headers) -->
@@ -106,70 +106,97 @@
         min-width: 44px;
       }
     </style>
+    <!-- Splash Screen Premium -->
+    <style>
+      #pwa-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at center, #115e59 0%, #0f172a 60%);
+        font-family: 'Sora', sans-serif;
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
+      }
+      .splash-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: fadeUp 0.8s ease-out;
+      }
+      .splash-logo-container {
+        position: relative;
+        margin-bottom: 1.5rem;
+      }
+      .splash-logo {
+        width: 88px;
+        height: 88px;
+        position: relative;
+        z-index: 2;
+        animation: float 3s ease-in-out infinite;
+      }
+      .splash-glow {
+        position: absolute;
+        inset: 0;
+        background: #14b8a6;
+        filter: blur(20px);
+        opacity: 0.4;
+        border-radius: 50%;
+        animation: pulseGlow 2.5s ease-in-out infinite;
+      }
+      .splash-title {
+        color: #ffffff;
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin: 0;
+        text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
+      .splash-subtitle {
+        color: #94a3b8;
+        font-size: 1rem;
+        font-weight: 400;
+        margin-top: 0.5rem;
+        margin-bottom: 2.5rem;
+        letter-spacing: 0.02em;
+      }
+      .splash-loader {
+        width: 42px;
+        height: 42px;
+        border: 3px solid rgba(20, 184, 166, 0.15);
+        border-radius: 50%;
+        border-top-color: #14b8a6;
+        animation: spin 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+      }
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+      @keyframes pulseGlow {
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.4); opacity: 0.6; }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
   </head>
   <body>
-    <!-- PWA Splash Screen App Shell -->
     <div id="pwa-splash">
-      <style>
-        #pwa-splash {
-          position: fixed;
-          inset: 0;
-          z-index: 9999;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #0f172a;
-          transition: opacity 0.4s ease;
-        }
-        .splash-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-        .splash-logo {
-          width: 72px;
-          height: 72px;
-          margin-bottom: 1.2rem;
-          animation: splashPulse 1.2s infinite;
-        }
-        @keyframes splashPulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.6; }
-          100% { opacity: 1; }
-        }
-        .splash-title {
-          font-family: Sora, sans-serif;
-          font-size: 2.2rem;
-          font-weight: bold;
-          color: #14b8a6;
-          letter-spacing: 0.02em;
-          margin-bottom: 0.8rem;
-        }
-        .splash-spinner {
-          width: 32px;
-          height: 32px;
-          border: 3px solid #14b8a6;
-          border-top: 3px solid #fff;
-          border-radius: 50%;
-          animation: splashSpin 1s linear infinite;
-        }
-        @keyframes splashSpin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
-      <div class="splash-container">
-        <img src="/pwa-192x192.png" class="splash-logo" alt="Cinesia logo" />
+      <div class="splash-content">
+        <div class="splash-logo-container">
+          <div class="splash-glow"></div>
+          <img src="/pwa-192x192.png" class="splash-logo" alt="Logo Cinesia" />
+        </div>
         <h1 class="splash-title">Cinesia</h1>
-        <div class="splash-spinner"></div>
-      </div>
-    </div>
-    <!-- App Shell Splash Screen -->
-    <div id="app-shell-splash" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f1,#0d9488);transition:opacity 0.6s;">
-      <div style="text-align:center">
-        <span style="font-family:Sora,sans-serif;font-size:2.5rem;font-weight:bold;color:#fff;letter-spacing:0.02em;">Cinesia</span>
-        <div style="margin-top:1rem;color:#fff;font-size:1.1rem;">Seu parceiro de estudos</div>
+        <p class="splash-subtitle">Seu parceiro de estudos</p>
+        <div class="splash-loader"></div>
       </div>
     </div>
     <div id="root"></div>
