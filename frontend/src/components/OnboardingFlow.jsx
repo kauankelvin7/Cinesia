@@ -56,6 +56,11 @@ export default function OnboardingFlow() {
 
   const uid = user?.uid || user?.id;
 
+  // Bloqueia UI até autenticação estar pronta
+  if (!user?.uid || !auth.currentUser) {
+    return <div style={{textAlign:'center',marginTop:'2rem'}}>Aguardando autenticação...</div>;
+  }
+
   // ─── State ───────────────────────────────────────────────────────────────────
   const [status, setStatus] = useState('checking'); // checking | show | done
   const [step, setStep] = useState(1);
