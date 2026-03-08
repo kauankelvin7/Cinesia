@@ -9,6 +9,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, X, Info, Sparkles, Loader2 } from 'lucide-react';
+import Button from './Button';
 
 const ConfirmModal = ({
   isOpen,
