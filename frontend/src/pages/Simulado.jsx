@@ -362,7 +362,7 @@ function Simulado() {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      throw new Error('API Key do Gemini não configurada. Adicione VITE_GEMINI_API_KEY no Vercel (Settings → Environment Variables) e faça Redeploy.');
+      throw new Error('O sistema está temporariamente indisponível. Por favor, tente novamente mais tarde.');
     }
     
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -398,10 +398,12 @@ function Simulado() {
     }
     
     // Se chegou aqui, todos falharam
+    // 1. Deixa o erro feio e técnico apenas no console do navegador (para você debugar)
+    console.error('[Simulado] Todos os modelos falharam. Detalhes técnicos:', errors);
+    
+    // 2. Dispara uma mensagem limpa e amigável para o usuário final
     throw new Error(
-      `Todos os ${MODEL_CANDIDATES.length} modelos falharam.\n\n` +
-      `Erros:\n${errors.slice(0, 2).join('\n')}\n\n` +
-      'Aguarde alguns minutos e tente novamente.'
+      'Não foi possível gerar o simulado neste momento. Nossos servidores de Inteligência Artificial estão indisponíveis ou sobrecarregados. Por favor, aguarde alguns minutos e tente novamente.'
     );
   };
 
@@ -494,10 +496,10 @@ function Simulado() {
       const validQuestions = parsedQuestions
         .filter(q => {
           const isValid = q.pergunta && 
-                         Array.isArray(q.opcoes) && 
-                         q.opcoes.length >= 2 &&
-                         typeof q.correta === 'number' &&
-                         q.explicacao;
+                          Array.isArray(q.opcoes) && 
+                          q.opcoes.length >= 2 &&
+                          typeof q.correta === 'number' &&
+                          q.explicacao;
           
           if (!isValid) {
             if (import.meta.env.DEV) { console.warn('⚠️ Questão inválida:', q); }
@@ -608,7 +610,7 @@ function Simulado() {
     }
   };
 
-  // Novo simulado (mesmo tema)
+  // Novo simulado
   const novoSimulado = () => {
     setQuestoes([]);
     setCurrentIndex(0);

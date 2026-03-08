@@ -251,12 +251,11 @@ const LoginMinimal = () => {
                 leftIcon={Lock}
                 required
                 maxLength={LIMITS.password}
-                className="h-12 bg-slate-50 dark:bg-slate-900 pr-12"
-              />
+                className="h-12 bg-slate-50 dark:bg-slate-900 pr-12 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden"              />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-[38px] text-slate-400 hover:text-indigo-500 transition-colors"
+                className="absolute right-1 top-[29.8px] text-slate-400 hover:text-indigo-500 transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
