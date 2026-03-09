@@ -6,6 +6,7 @@
  * - Grid de cards com flip 3D
  * - NOVO: Modo Estudo Imersivo (Quiz)
  * - Animações fluidas com framer-motion
+ * - Correção: Responsividade da barra de filtros (overflow resolvido)
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -549,35 +550,36 @@ function Flashcards() {
   return (
     <div className="min-h-screen pb-32 pt-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Premium */}
+        
+        {/* Header Premium (INTOCADO OS BOTOES CONFORME PEDIDO) */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 mb-6">
-            <div className="flex-1">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-3 tracking-tight">
-                <div 
-                  className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-500/20"
-                >
+                <div className="w-12 h-12 shrink-0 rounded-[14px] bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                   <CreditCard size={24} className="text-white" strokeWidth={2} />
                 </div>
-                Meus Flashcards
+                <span className="truncate">Meus Flashcards</span>
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium ml-1">
+              <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium ml-1 sm:ml-16 lg:ml-1">
                 Crie cartas, memorize conteúdos e não esqueça de revisar.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            
+            {/* GRUPO DE BOTÕES (INTOCADO) */}
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
               {pendingReviewCount > 0 && (
                 <Button
                   variant="secondary"
                   size="md"
                   leftIcon={<RotateCcw size={18} />}
                   onClick={() => iniciarModoEstudo(true)}
-                  className="w-full sm:w-auto justify-center bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                  className="w-full sm:flex-1 lg:flex-none justify-center bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
                 >
                   Revisar
                   <span className="ml-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-white text-xs font-bold shadow-sm">
@@ -591,7 +593,7 @@ function Flashcards() {
                   size="md"
                   leftIcon={<Play size={18} className="ml-0.5" />}
                   onClick={() => iniciarModoEstudo(false)}
-                  className="w-full sm:w-auto justify-center shadow-sm"
+                  className="w-full sm:flex-1 lg:flex-none justify-center shadow-sm"
                 >
                   Modo Estudo
                 </Button>
@@ -601,57 +603,67 @@ function Flashcards() {
                 size="md"
                 leftIcon={<Plus size={20} />}
                 onClick={() => setShowModal(true)}
-                className="w-full sm:w-auto justify-center shadow-md bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 border-none"
+                className="w-full sm:flex-1 lg:flex-none justify-center shadow-md bg-gradient-to-r from-indigo-600 to-teal-600 hover:from-indigo-700 hover:to-teal-700 border-none"
               >
                 Novo Flashcard
               </Button>
             </div>
           </div>
 
-          {/* Barra de Filtros Estilo Floating Island */}
+          {/* === AQUI FOI AJUSTADO: Barra de Filtros Totalmente Responsiva === */}
           <motion.div 
-            className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
+            className="flex flex-col lg:flex-row lg:items-center gap-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm w-full"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-semibold text-sm">
+            {/* Label */}
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-semibold text-sm shrink-0">
               <Filter size={16} className="text-indigo-500 dark:text-indigo-400" />
               Filtrar por:
             </div>
-            <Select
-              value={selectedMateria}
-              onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTag('all'); }}
-              className="w-full sm:w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-            >
-              <option value="all">Todas as Matérias</option>
-              {materias.map(materia => (
-                <option key={materia.id} value={materia.id}>
-                  {materia.nome}
-                </option>
-              ))}
-            </Select>
-
-            {/* Tag filter */}
-            {(() => {
-              const baseCards = selectedMateria === 'all' ? flashcards : flashcards.filter(fc => fc.materiaId === selectedMateria);
-              const allTags = [...new Set(baseCards.flatMap(fc => fc.tags || []))].sort();
-              return allTags.length > 0 ? (
+            
+            {/* Contêiner dos Selects (Ajustado com min-w-0 e flex-1) */}
+            <div className="flex flex-col sm:flex-row flex-1 gap-3 min-w-0 w-full">
+              <div className="flex-1 min-w-0">
                 <Select
-                  value={selectedTag}
-                  onChange={(e) => setSelectedTag(e.target.value)}
-                  className="w-full sm:w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                  value={selectedMateria}
+                  onChange={(e) => { setSelectedMateria(e.target.value); setSelectedTag('all'); }}
+                  className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm truncate"
                 >
-                  <option value="all">Todas as Tags</option>
-                  {allTags.map(tag => (
-                    <option key={tag} value={tag}>#{tag}</option>
+                  <option value="all">Todas as Matérias</option>
+                  {materias.map(materia => (
+                    <option key={materia.id} value={materia.id}>
+                      {materia.nome}
+                    </option>
                   ))}
                 </Select>
-              ) : null;
-            })()}
+              </div>
+
+              {(() => {
+                const baseCards = selectedMateria === 'all' ? flashcards : flashcards.filter(fc => fc.materiaId === selectedMateria);
+                const allTags = [...new Set(baseCards.flatMap(fc => fc.tags || []))].sort();
+                return allTags.length > 0 ? (
+                  <div className="flex-1 sm:max-w-[200px] min-w-0">
+                    <Select
+                      value={selectedTag}
+                      onChange={(e) => setSelectedTag(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm truncate"
+                    >
+                      <option value="all">Todas as Tags</option>
+                      {allTags.map(tag => (
+                        <option key={tag} value={tag}>#{tag}</option>
+                      ))}
+                    </Select>
+                  </div>
+                ) : null;
+              })()}
+            </div>
             
-            <div className="ml-auto flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            {/* Contador (agora quebra de linha corretamente em telas pequenas) */}
+            <div className="flex items-center justify-between w-full lg:w-auto border-t lg:border-t-0 border-slate-100 dark:border-slate-700 pt-3 lg:pt-0 shrink-0">
+              <span className="lg:hidden text-xs font-medium text-slate-500">Total listado:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
                 {flashcardsFiltrados.length} card{flashcardsFiltrados.length !== 1 && 's'}
               </span>
             </div>

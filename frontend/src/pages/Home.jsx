@@ -1,5 +1,5 @@
 /**
- * HOME — Cinesia Premium Dashboard v5
+ * HOME — Cinesia
  * Design System: Medical Precision meets Modern Study App
  * Inspired by: Linear.app, Vercel Dashboard, Raycast
  *
@@ -31,15 +31,18 @@ import {
   Layers,
   PenLine,
   Pencil,
+  Lightbulb,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useDashboardData } from '../contexts/DashboardDataContext';
-import { salvarEvento, deletarEvento, listarFlashcards } from '../services/firebaseService';
+import { salvarEvento, deletarEvento, listarFlashcards, atualizarMetaMensal } from '../services/firebaseService';
 import { isDueForReview } from '../utils/sm2';
 import { useTheme } from '../contexts/ThemeContext';
 import AddEventModal from '../components/modals/AddEventModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import Button from '../components/ui/Button';
+import SkeletonPulse from '../components/ui/SkeletonPulse';
 
 /* ═══════════════════════════════════════════
    UTILITIES
@@ -144,7 +147,7 @@ const Avatar = memo(({ src, name, size = 56, ring = false, className = '' }) => 
 
   const renderFallback = (w, h, fs) => (
     <div
-      className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+      className="rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-inner"
       style={{ width: w, height: h, backgroundColor: bgColor, fontSize: fs }}
     >
       {initials}
@@ -157,7 +160,7 @@ const Avatar = memo(({ src, name, size = 56, ring = false, className = '' }) => 
         {(error || !src) ? renderFallback(size, size, size * 0.35) : (
           <img
             src={src} alt={name || ''}
-            className="rounded-full object-cover shrink-0"
+            className="rounded-full object-cover shrink-0 shadow-sm"
             style={{ width: size, height: size }}
             onError={() => setError(true)}
           />
@@ -167,7 +170,7 @@ const Avatar = memo(({ src, name, size = 56, ring = false, className = '' }) => 
   }
 
   return (
-    <div className={`relative shrink-0 ${className}`} style={{ width: size + 6, height: size + 6 }}>
+    <div className={`relative shrink-0 ${className}`} style={{ width: size + 8, height: size + 8 }}>
       <div
         className="absolute inset-0 rounded-full opacity-80"
         style={{
@@ -176,16 +179,16 @@ const Avatar = memo(({ src, name, size = 56, ring = false, className = '' }) => 
         }}
       />
       <div className="absolute rounded-full" style={{ inset: '2px', background: 'var(--bg-app)' }} />
-      <div className="absolute" style={{ inset: '3px' }}>
+      <div className="absolute" style={{ inset: '4px' }}>
         {(error || !src) ? (
           <div
-            className="rounded-full flex items-center justify-center text-white font-bold w-full h-full"
+            className="rounded-full flex items-center justify-center text-white font-bold w-full h-full shadow-inner"
             style={{ backgroundColor: bgColor, fontSize: size * 0.35 }}
           >{initials}</div>
         ) : (
           <img
             src={src} alt={name || ''}
-            className="rounded-full object-cover w-full h-full"
+            className="rounded-full object-cover w-full h-full shadow-inner"
             style={{ border: '2px solid rgba(255,255,255,0.2)' }}
             onError={() => setError(true)}
           />
@@ -211,42 +214,44 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
     <motion.div
       role="listitem"
       onClick={() => nav(path)}
-      className="relative overflow-hidden cursor-pointer"
+      className="relative overflow-hidden cursor-pointer group"
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '16px',
-        padding: '16px 14px',
+        borderRadius: '20px', // Mais arredondado (Premium)
+        padding: '20px 16px', // Mais respiro
         boxShadow: isDarkMode 
-          ? '0 4px 20px rgba(0,0,0,0.3)' 
-          : '0 4px 20px rgba(37,99,235,0.05)',
+          ? '0 8px 32px rgba(0,0,0,0.4)' 
+          : '0 8px 32px rgba(37,99,235,0.08)',
       }}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
+      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
       whileHover={{
         y: -4,
         borderColor: color,
-        boxShadow: `0 8px 24px ${color}20`,
+        boxShadow: `0 12px 40px ${color}25`,
       }}
-      whileTap={{ y: 0 }}
+      whileTap={{ y: 0, scale: 0.98 }}
     >
-      {/* Top color line */}
+      {/* Top color line (Soft glow) */}
+      <div 
+        className="absolute pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
+        style={{ top: 0, left: '20px', right: '20px', height: '3px', borderRadius: '0 0 6px 6px', background: color, filter: 'blur(1px)' }} 
+      />
       <div 
         className="absolute pointer-events-none" 
-        style={{ top: 0, left: '16px', right: '16px', height: '3px', borderRadius: '0 0 4px 4px', background: color, opacity: 0.9 }} 
+        style={{ top: 0, left: '20px', right: '20px', height: '3px', borderRadius: '0 0 6px 6px', background: color }} 
       />
 
       {/* Icon + label row */}
-      <div className="flex items-center gap-2 mb-2">
-        {Icon && (
-          <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${color}15` }}>
-            <Icon size={14} style={{ color }} />
-          </div>
-        )}
+      <div className="flex items-center gap-2.5 mb-3 mt-1">
+        <div className="p-1.5 rounded-lg transition-colors duration-300" style={{ backgroundColor: `${color}15` }}>
+          <Icon size={16} style={{ color }} />
+        </div>
         <span 
-          className="uppercase font-bold" 
-          style={{ fontSize: '10px', letterSpacing: '0.05em', color: 'var(--text-2)' }}
+          className="uppercase font-extrabold tracking-widest" 
+          style={{ fontSize: '10px', color: 'var(--text-3)' }}
         >
           {label}
         </span>
@@ -256,26 +261,26 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
       {loading ? (
         <div 
           className="animate-pulse rounded-md mt-1" 
-          style={{ height: '32px', width: '55%', backgroundColor: 'var(--bg-elevated)' }} 
+          style={{ height: '36px', width: '60%', backgroundColor: 'var(--bg-elevated)' }} 
         />
       ) : (
         <AnimatedNumber
           value={value}
           duration={1.5}
-          className="mt-1"
+          className="mt-1 block"
           style={{
             fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
-            fontSize: 'clamp(24px, 3.5vw, 32px)',
+            fontSize: 'clamp(28px, 4vw, 36px)',
             fontWeight: 800,
             lineHeight: 1,
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.04em',
             color: 'var(--text-1)'
           }}
         />
       )}
 
       {/* Sub-label */}
-      <span style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px', display: 'block', lineHeight: 1 }}>
+      <span className="font-medium" style={{ fontSize: '12px', color: 'var(--text-4)', marginTop: '6px', display: 'block', lineHeight: 1 }}>
         {sublabel}
       </span>
     </motion.div>
@@ -286,8 +291,8 @@ KpiCard.displayName = 'KpiCard';
 /* ═══════════════════════════════════════════
    CIRCULAR PROGRESS (SVG) for Meta Mensal
    ═══════════════════════════════════════════ */
-const CircularProgress = memo(({ current = 0, total = 50, size = 90, showStartMessage = false }) => {
-  const strokeWidth = 6;
+const CircularProgress = memo(({ current = 0, total = 50, size = 100, showStartMessage = false }) => {
+  const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const percentage = total > 0 ? Math.min((current / total) * 100, 100) : 0;
@@ -297,8 +302,19 @@ const CircularProgress = memo(({ current = 0, total = 50, size = 90, showStartMe
 
   return (
     <div ref={ref} className="relative inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      {/* Background Track */}
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={strokeWidth} />
+        {/* Glow Layer */}
+        <motion.circle
+          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="url(#cpGradHome)"
+          strokeWidth={strokeWidth} strokeLinecap="round" strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={inView ? { strokeDashoffset: offset } : {}}
+          transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
+          style={{ filter: 'blur(4px)', opacity: 0.5 }}
+        />
+        {/* Main Progress */}
         <motion.circle
           cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="url(#cpGradHome)"
           strokeWidth={strokeWidth} strokeLinecap="round" strokeDasharray={circumference}
@@ -315,13 +331,13 @@ const CircularProgress = memo(({ current = 0, total = 50, size = 90, showStartMe
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {showStartMessage ? (
-          <span className="font-display font-bold" style={{ fontSize: '13px', color: 'var(--primary)', lineHeight: 1.2, textAlign: 'center' }}>Comece!</span>
+          <span className="font-display font-bold" style={{ fontSize: '14px', color: 'var(--primary)', lineHeight: 1.2, textAlign: 'center' }}>Comece!</span>
         ) : (
           <>
-            <span className="font-mono font-bold" style={{ fontSize: '22px', color: 'var(--text-1)', lineHeight: 1 }}>
+            <span className="font-mono font-black" style={{ fontSize: '24px', color: 'var(--text-1)', lineHeight: 1 }}>
               <AnimatedNumber value={current} duration={1.5} />
             </span>
-            <span style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>de {total}</span>
+            <span className="font-bold uppercase tracking-wider" style={{ fontSize: '9px', color: 'var(--text-4)', marginTop: '4px' }}>de {total}</span>
           </>
         )}
       </div>
@@ -342,13 +358,13 @@ const SectionCard = memo(({ children, className = '', hover = true, onClick }) =
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '16px',
+        borderRadius: '24px', // Mais arredondado
         boxShadow: isDarkMode
-          ? '0 2px 8px rgba(0,0,0,0.2)'
-          : '0 2px 12px rgba(37,99,235,0.03)',
+          ? '0 4px 20px rgba(0,0,0,0.2)'
+          : '0 4px 24px rgba(37,99,235,0.04)',
       }}
       onClick={onClick}
-      whileHover={hover && onClick ? { y: -2, borderColor: 'var(--border-strong)' } : undefined}
+      whileHover={hover && onClick ? { y: -2, borderColor: 'var(--border-strong)', boxShadow: isDarkMode ? '0 8px 30px rgba(0,0,0,0.4)' : '0 8px 30px rgba(37,99,235,0.08)' } : undefined}
     >
       {children}
     </motion.div>
@@ -356,12 +372,6 @@ const SectionCard = memo(({ children, className = '', hover = true, onClick }) =
 });
 SectionCard.displayName = 'SectionCard';
 
-/* ═══════════════════════════════════════════
-   SKELETON
-   ═══════════════════════════════════════════ */
-const SkeletonPulse = ({ className = '' }) => (
-  <div className={`animate-pulse rounded-xl ${className}`} style={{ backgroundColor: 'var(--bg-elevated)' }} />
-);
 
 /* ═══════════════════════════════════════════
    MAIN HOME COMPONENT
@@ -382,18 +392,49 @@ const Home = () => {
   const [editingMeta, setEditingMeta] = useState(false);
   const [metaValue, setMetaValue] = useState(() => getStoredMetaMensal().value);
   const [hasSavedMeta, setHasSavedMeta] = useState(() => getStoredMetaMensal().hasSaved);
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
   const location = useLocation();
 
   const persistMetaMensal = useCallback((value) => {
-    const safe = Math.max(1, Math.min(500, Number(value) || 50));
-    try {
-      localStorage.setItem('cinesia:meta:mensal', String(safe));
-      setHasSavedMeta(true);
-    } catch {
-      setHasSavedMeta(false);
+    const userId = user?.id || user?.uid;
+    if (!userId) {
+      toast.error('Usuário não autenticado');
+      return;
     }
-    setMetaValue(safe);
-  }, []);
+
+    setIsSavingMeta(true);
+    
+    // Chamada ao Firebase para persistir a meta
+    atualizarMetaMensal(userId, value)
+      .then((result) => {
+        const safe = result.metaSalva;
+        // Salva também no localStorage como fallback
+        try {
+          localStorage.setItem('cinesia:meta:mensal', String(safe));
+          setHasSavedMeta(true);
+        } catch {
+          setHasSavedMeta(false);
+        }
+        setMetaValue(safe);
+        toast.success('📈 Meta mensal salva com sucesso!');
+        
+        // Recarrega o dashboard para refletir a nova meta
+        refreshData(userId)
+          .then(updatedData => {
+            setDashboardData(updatedData);
+          })
+          .catch(err => {
+            console.error('Erro ao recarregar dashboard:', err);
+          });
+      })
+      .catch((error) => {
+        console.error('Erro ao salvar meta:', error);
+        toast.error('❌ Não foi possível salvar a meta. Tente novamente.');
+      })
+      .finally(() => {
+        setIsSavingMeta(false);
+      });
+  }, [user, refreshData]);
 
   // Carregar contagem de flashcards pendentes de revisão (SM-2)
   useEffect(() => {
@@ -428,6 +469,12 @@ const Home = () => {
       try {
         const data = await loadData(userId);
         setDashboardData(data);
+        
+        // Sincroniza a meta do Firebase com o estado local
+        if (data?.metaMensal?.meta) {
+          setMetaValue(data.metaMensal.meta);
+          setHasSavedMeta(true);
+        }
       } catch {
         setDashboardData(null);
       } finally {
@@ -504,7 +551,7 @@ const Home = () => {
   const quickActions = [
     { Icon: FileText,   label: 'Novo Resumo', path: '/resumos',        onClick: () => navigate('/resumos', { state: { openNew: true } }), color: '#7C3AED', rgb: '124,58,237' },
     { Icon: CreditCard, label: 'Flashcards',  path: '/flashcards',     onClick: () => navigate('/flashcards'), color: '#2563EB', rgb: '37,99,235' },
-    { Icon: Target,     label: 'Simulados',   path: '/simulado',       onClick: () => navigate('/simulado'), color: '#059669', rgb: '5,150,105' },
+    { Icon: Target,     label: 'Simulados',   path: '/simulados',      onClick: () => navigate('/simulados'), color: '#059669', rgb: '5,150,105' },
     { Icon: Search,     label: 'Consulta',    path: '/consulta-rapida',onClick: () => navigate('/consulta-rapida'), color: '#D97706', rgb: '217,119,6' },
     { Icon: Layers,     label: 'Atlas 3D',    path: '/atlas-3d',       onClick: () => navigate('/atlas-3d'), color: '#0D9488', rgb: '13,148,136' },
     { Icon: PenLine,    label: 'Quadro',      path: '/quadro-branco',  onClick: () => navigate('/quadro-branco'), color: '#DB2777', rgb: '219,39,119' },
@@ -521,9 +568,9 @@ const Home = () => {
          ═══════════════════════════════════════════ */}
       <motion.div
         variants={fadeUp}
-        className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4 pb-16 sm:pb-20"
+        className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4 pb-16 sm:pb-24 shadow-xl"
         style={{
-          borderRadius: '20px',
+          borderRadius: '28px', // Premium rounding
           backgroundImage: isDarkMode ? [
             'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.20) 0%, transparent 60%)',
             'linear-gradient(135deg, #0f1f3d 0%, #0d2540 35%, #0a3040 65%, #083c3c 100%)',
@@ -531,9 +578,9 @@ const Home = () => {
             'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.12) 0%, transparent 60%)',
             'linear-gradient(135deg, #1e3a8a 0%, #1e40af 35%, #0e7490 65%, #0f766e 100%)',
           ].join(', '),
-          paddingTop: 'clamp(24px, 4vw, 32px)',
-          paddingLeft: 'clamp(24px, 4vw, 32px)',
-          paddingRight: 'clamp(24px, 4vw, 32px)',
+          paddingTop: 'clamp(28px, 5vw, 40px)',
+          paddingLeft: 'clamp(24px, 5vw, 40px)',
+          paddingRight: 'clamp(24px, 5vw, 40px)',
         }}
       >
         {/* Decorative glow — teal, top-right */}
@@ -542,41 +589,43 @@ const Home = () => {
           style={{ 
             top: '-80px', 
             right: '-80px', 
-            width: '260px', 
-            height: '260px', 
-            background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.25) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.35) 0%, transparent 70%)' 
+            width: '300px', 
+            height: '300px', 
+            background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.3) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.4) 0%, transparent 70%)',
+            filter: 'blur(20px)'
           }} 
         />
         {/* Bright bottom border line */}
         <div 
           className="absolute bottom-0 left-0 right-0 pointer-events-none" 
           style={{ 
-            height: '1px', 
-            background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.4), rgba(96,165,250,0.3), transparent)' 
+            height: '2px', 
+            background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.5), rgba(96,165,250,0.4), transparent)' 
           }} 
         />
 
-        {/* Avatar + Greeting row */}
+        {/* Avatar + Greeting row (Ajustado gap para evitar cortes no mobile) */}
         <div className="relative z-10 flex items-center gap-4 sm:gap-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }} 
             animate={{ opacity: 1, scale: 1 }} 
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: 0.5, delay: 0.1, type: 'spring' }}
           >
             <Avatar 
               src={user?.photoURL} 
               name={user?.displayName || user?.email} 
-              size={64} 
+              size={68} 
               ring 
             />
           </motion.div>
 
           <div className="flex-1 min-w-0">
+            {/* Título com text-wrap ajustado para não cortar nomes no mobile */}
             <motion.h1
-              className="font-display tracking-tight leading-tight truncate"
+              className="font-display tracking-tight leading-tight break-words"
               style={{
-                fontSize: 'clamp(22px, 4.5vw, 30px)',
-                fontWeight: 800,
+                fontSize: 'clamp(20px, 5vw, 32px)', // Limite inferior reduzido para evitar transbordo excessivo
+                fontWeight: 900,
                 letterSpacing: '-0.02em',
                 color: '#FFFFFF',
                 WebkitTextFillColor: '#FFFFFF',
@@ -589,16 +638,16 @@ const Home = () => {
               {' '}
               <motion.span
                 className="inline-flex ml-1 align-middle"
-                animate={{ rotate: [0, 12, -8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+                animate={{ rotate: [0, 15, -10, 0] }}
+                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 5 }}
               >
-                <greeting.Icon size={26} style={{ color: greeting.color }} />
+                <greeting.Icon size={28} style={{ color: greeting.color, filter: 'drop-shadow(0px 0px 8px rgba(255,255,255,0.3))' }} />
               </motion.span>
             </motion.h1>
 
             <motion.p
               className="italic mt-1.5 line-clamp-2 hidden sm:block font-medium"
-              style={{ fontSize: '14px', color: isDarkMode ? 'rgba(199,210,254,0.8)' : 'rgba(219,234,254,0.9)' }}
+              style={{ fontSize: '15px', color: isDarkMode ? 'rgba(199,210,254,0.85)' : 'rgba(219,234,254,0.95)' }}
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               transition={{ delay: 0.3 }}
@@ -606,37 +655,37 @@ const Home = () => {
               &ldquo;{motivational}&rdquo;
             </motion.p>
 
-            {/* Streak badge */}
+            {/* Streak badge Premium */}
             <motion.div 
-              className="mt-3" 
+              className="mt-3 sm:mt-4" 
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               transition={{ delay: 0.4 }}
             >
-              <span 
-                className="inline-flex items-center gap-2 rounded-full font-bold" 
+              <div 
+                className="inline-flex items-center gap-2 rounded-full font-bold shadow-lg" 
                 style={{ 
-                  background: 'rgba(0,0,0,0.25)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
+                  background: 'rgba(0,0,0,0.3)', 
+                  border: '1px solid rgba(255,255,255,0.15)', 
                   color: '#FFFFFF', 
-                  padding: '6px 14px', 
+                  padding: '6px 16px', 
                   fontSize: '13px', 
-                  backdropFilter: 'blur(4px)' 
+                  backdropFilter: 'blur(8px)' 
                 }}
               >
                 <motion.span 
-                  animate={{ scale: [1, 1.15, 1] }} 
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{ scale: [1, 1.2, 1] }} 
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   🔥
                 </motion.span>
-                <span className="font-mono tabular-nums text-orange-400">
+                <span className="font-mono tabular-nums text-orange-400 text-sm">
                   {isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: 'normal' }}>
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: 'normal' }}>
                   {(dashboardData?.offensiveStreak || 0) === 0 ? 'Comece hoje!' : 'dias consecutivos'}
                 </span>
-              </span>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -645,8 +694,8 @@ const Home = () => {
       {/* ═══════════════════════════════════════════
          ② FLOATING KPIs (Efeito de Sobreposição)
          ═══════════════════════════════════════════ */}
-      <div className="relative z-20 max-w-[1280px] mx-auto px-5 sm:px-8 -mt-10 sm:-mt-12">
-        <div className="grid grid-cols-3 gap-3 sm:gap-5" role="list">
+      <div className="relative z-20 max-w-[1280px] mx-auto px-5 sm:px-8 -mt-12 sm:-mt-16">
+        <div className="grid grid-cols-3 gap-4 sm:gap-6" role="list">
           <KpiCard 
             variant="materias"  
             value={dashboardData?.totalMaterias || 0} 
@@ -677,53 +726,55 @@ const Home = () => {
       {/* ═══════════════════════════════════════════
          MAIN GRID (max-w-1280, responsive)
          ═══════════════════════════════════════════ */}
-      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 mt-8">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-5 mt-10">
         <motion.div 
           variants={staggerContainer} 
           initial="hidden" 
           animate="show" 
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-8"
         >
 
           {/* ═══════════════════════════════
-              ③ ZONA DE FOCO (Revisão + Agenda)
-              ═══════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+             ③ ZONA DE FOCO (Revisão + Agenda)
+             ═══════════════════════════════ */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
             {/* ── Revisão de Hoje (SM-2) ── */}
             <div className="lg:col-span-2 flex flex-col justify-center">
-              {pendingReviews > 0 ? (
+              {isLoading ? (
+                <SkeletonPulse className="h-full min-h-[140px]" />
+              ) : pendingReviews > 0 ? (
                 <motion.div variants={fadeUp} className="h-full">
                   <motion.div
-                    className="relative overflow-hidden cursor-pointer h-full flex items-center"
+                    className="relative overflow-hidden cursor-pointer h-full flex items-center shadow-md"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(234,88,12,0.04) 100%)',
+                      background: isDarkMode ? 'linear-gradient(135deg, rgba(251,146,60,0.1) 0%, rgba(234,88,12,0.05) 100%)' : 'linear-gradient(135deg, rgba(251,146,60,0.08) 0%, rgba(234,88,12,0.02) 100%)',
                       border: '1px solid rgba(251,146,60,0.3)',
-                      borderRadius: '16px',
-                      padding: '24px 28px',
+                      borderRadius: '24px',
+                      padding: '24px 32px',
                     }}
                     onClick={() => navigate('/flashcards', { state: { reviewMode: true } })}
-                    whileHover={{ y: -2, borderColor: 'rgba(251,146,60,0.6)' }}
+                    whileHover={{ y: -2, borderColor: 'rgba(251,146,60,0.6)', boxShadow: '0 10px 30px rgba(251,146,60,0.15)' }}
                     whileTap={{ scale: 0.99 }}
                   >
                     <div className="flex items-center gap-5 w-full">
                       <div 
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" 
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border border-orange-500/20" 
                         style={{ backgroundColor: '#EA580C15' }}
                       >
-                        <BookOpen size={28} style={{ color: '#EA580C' }} />
+                        <BookOpen size={32} style={{ color: '#EA580C' }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg" style={{ color: 'var(--text-1)' }}>
+                        <h3 className="font-extrabold text-xl tracking-tight" style={{ color: 'var(--text-1)' }}>
                           Sua Revisão Diária
                         </h3>
-                        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
-                          Você tem <span className="font-bold font-mono text-orange-500 text-base">{pendingReviews}</span> flashcards te esperando.
+                        <p className="text-[15px] mt-1 font-medium" style={{ color: 'var(--text-3)' }}>
+                          Você tem <span className="font-black font-mono text-orange-500 text-lg mx-1">{pendingReviews}</span> flashcards te esperando.
                         </p>
                       </div>
                       <Button
                         variant="primary"
-                        className="bg-orange-500 hover:bg-orange-600 shrink-0 font-bold px-6 py-3"
+                        className="bg-orange-500 hover:bg-orange-600 shrink-0 font-bold px-8 py-3.5 rounded-xl shadow-lg shadow-orange-500/30 text-[15px]"
                         onClick={(e) => { e.stopPropagation(); navigate('/flashcards', { state: { reviewMode: true } }); }}
                       >
                         Iniciar Revisão
@@ -740,24 +791,24 @@ const Home = () => {
                   exit={{ opacity: 0 }}
                 >
                   <div
-                    className="flex items-center gap-4 h-full rounded-2xl"
+                    className="flex items-center gap-5 h-full rounded-[24px]"
                     style={{
-                      padding: '24px 28px',
-                      backgroundColor: 'rgba(13,148,136,0.05)',
+                      padding: '24px 32px',
+                      backgroundColor: isDarkMode ? 'rgba(13,148,136,0.05)' : 'rgba(13,148,136,0.03)',
                       border: '1px dashed rgba(13,148,136,0.3)',
                     }}
                   >
                     <div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center" 
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center border border-teal-500/20" 
                       style={{ backgroundColor: 'rgba(13,148,136,0.1)' }}
                     >
-                      <span style={{ fontSize: '20px' }}>✨</span>
+                      <Sparkles size={28} style={{ color: 'var(--teal)' }} />
                     </div>
                     <div>
-                      <span className="text-base font-bold block mb-0.5" style={{ color: 'var(--teal)' }}>
+                      <span className="text-lg font-extrabold block mb-1 tracking-tight" style={{ color: 'var(--teal)' }}>
                         Tudo em dia!
                       </span>
-                      <span className="text-sm" style={{ color: 'var(--text-3)' }}>
+                      <span className="text-[15px] font-medium" style={{ color: 'var(--text-3)' }}>
                         Você completou todas as revisões programadas para hoje.
                       </span>
                     </div>
@@ -768,93 +819,102 @@ const Home = () => {
 
             {/* ── Agenda Compacta ── */}
             <motion.div className="lg:col-span-1" variants={fadeUp}>
-              <SectionCard className="p-5 h-full" hover={false}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-sm font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
-                    <Calendar size={15} style={{ color: 'var(--primary)' }} />
+              <SectionCard className="p-6 h-full flex flex-col" hover={false}>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="font-display text-[15px] font-bold flex items-center gap-2.5 uppercase tracking-widest" style={{ color: 'var(--text-2)' }}>
+                    <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                      <Calendar size={16} style={{ color: 'var(--primary)' }} strokeWidth={2.5} />
+                    </div>
                     Próximos Eventos
                   </h2>
                   <button
                     onClick={() => handleOpenEventModal()}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 hover:bg-opacity-80"
-                    style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)' }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: 'var(--primary)', color: 'white', boxShadow: '0 4px 10px rgba(37,99,235,0.2)' }}
                     title="Adicionar Evento"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} strokeWidth={3} />
                   </button>
                 </div>
 
-                {proximosEventos.length > 0 ? (
-                  <div className="space-y-2.5">
-                    {proximosEventos.map((evento, index) => (
-                      <motion.div
-                        key={evento.id || index}
-                        className="group flex items-center gap-3 p-2.5 rounded-xl transition-all"
-                        style={{ backgroundColor: 'transparent', border: '1px solid var(--border)' }}
-                        whileHover={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)' }}
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        transition={{ delay: 0.3 + index * 0.08 }}
-                      >
-                        <div 
-                          className="shrink-0 w-11 h-11 rounded-xl flex flex-col items-center justify-center" 
-                          style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                        >
-                          <span className="font-mono text-sm font-bold" style={{ color: 'var(--primary)', lineHeight: 1.1 }}>
-                            {evento.dataObj.getDate()}
-                          </span>
-                          <span className="uppercase font-semibold mt-0.5" style={{ fontSize: '9px', color: 'var(--text-4)' }}>
-                            {evento.dataObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-1)' }}>
-                            {evento.titulo || evento.title}
-                          </p>
-                          {evento.tipo && (
-                            <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>
-                              {evento.tipo}
-                            </p>
-                          )}
-                        </div>
-                        {evento.id && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }} 
-                            className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all shrink-0 hover:bg-red-500 hover:bg-opacity-10" 
-                            style={{ color: 'var(--accent)' }} 
-                            title="Excluir evento"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <motion.div 
-                    className="text-center py-8" 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div 
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" 
-                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    >
-                      <CalendarDays size={20} style={{ color: 'var(--text-4)' }} />
+                <div className="flex-1">
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      <SkeletonPulse className="h-12 w-full" />
+                      <SkeletonPulse className="h-12 w-full" />
                     </div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>
-                      Nenhum evento próximo
-                    </p>
-                    <p className="mt-1" style={{ fontSize: '12px', color: 'var(--text-4)' }}>
-                      Clique no + para se organizar
-                    </p>
-                  </motion.div>
-                )}
+                  ) : proximosEventos.length > 0 ? (
+                    <div className="space-y-3">
+                      {proximosEventos.map((evento, index) => (
+                        <motion.div
+                          key={evento.id || index}
+                          className="group flex items-center gap-3.5 p-3 rounded-[16px] transition-all"
+                          style={{ backgroundColor: 'transparent', border: '1px solid var(--border)' }}
+                          whileHover={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)', x: 4 }}
+                          initial={{ opacity: 0, x: -10 }} 
+                          animate={{ opacity: 1, x: 0 }} 
+                          transition={{ delay: 0.3 + index * 0.08 }}
+                        >
+                          <div 
+                            className="shrink-0 w-12 h-12 rounded-[12px] flex flex-col items-center justify-center border border-blue-500/20" 
+                            style={{ backgroundColor: 'var(--primary-bg)' }}
+                          >
+                            <span className="font-mono text-[16px] font-black" style={{ color: 'var(--primary)', lineHeight: 1 }}>
+                              {evento.dataObj.getDate()}
+                            </span>
+                            <span className="uppercase font-bold mt-0.5" style={{ fontSize: '9px', color: 'var(--primary)', opacity: 0.8, letterSpacing: '0.05em' }}>
+                              {evento.dataObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0 pt-0.5">
+                            <p className="text-[14px] font-bold truncate tracking-tight" style={{ color: 'var(--text-1)' }}>
+                              {evento.titulo || evento.title}
+                            </p>
+                            {evento.tipo && (
+                              <p className="font-medium mt-0.5" style={{ fontSize: '11px', color: 'var(--text-4)' }}>
+                                {evento.tipo}
+                              </p>
+                            )}
+                          </div>
+                          {evento.id && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteEvento(evento); }} 
+                              className="p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all shrink-0 hover:bg-red-500 hover:bg-opacity-10 hover:text-red-500" 
+                              style={{ color: 'var(--text-4)' }} 
+                              title="Excluir evento"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div 
+                      className="text-center py-6 h-full flex flex-col items-center justify-center" 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }} 
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div 
+                        className="w-14 h-14 rounded-[16px] flex items-center justify-center mx-auto mb-4 border border-dashed" 
+                        style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-strong)' }}
+                      >
+                        <CalendarDays size={24} style={{ color: 'var(--text-4)' }} />
+                      </div>
+                      <p className="text-[15px] font-bold mb-1" style={{ color: 'var(--text-2)' }}>
+                        Nenhum evento
+                      </p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-4)' }}>
+                        Organize suas provas e trabalhos.
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
                 
-                <div className="mt-4 pt-3 text-center" style={{ borderTop: '1px solid var(--border)' }}>
-                  <p style={{ fontSize: '11px', color: 'var(--text-4)' }}>
-                    {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                <div className="mt-4 pt-4 text-center" style={{ borderTop: '1px solid var(--border)' }}>
+                  <p className="font-semibold uppercase tracking-widest" style={{ fontSize: '10px', color: 'var(--text-4)' }}>
+                    Hoje é {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </p>
                 </div>
               </SectionCard>
@@ -862,22 +922,22 @@ const Home = () => {
           </div>
 
           {/* ═══════════════════════════════
-              ④ FERRAMENTAS (Acesso Rápido Estilo Linear)
-              ═══════════════════════════════ */}
+             ④ FERRAMENTAS (Acesso Rápido Estilo Linear)
+             ═══════════════════════════════ */}
           <motion.div variants={fadeUp}>
-            <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-3 ml-2" style={{ color: 'var(--text-2)' }}>
-              <Zap size={14} /> Acesso Rápido
+            <h2 className="font-display text-[15px] font-bold flex items-center gap-2.5 mb-4 ml-2 uppercase tracking-widest" style={{ color: 'var(--text-2)' }}>
+              <Zap size={16} className="text-amber-500" /> Acesso Rápido
             </h2>
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
               {quickActions.map((action, idx) => {
                 const isActive = location.pathname === action.path;
                 return (
                   <motion.button
                     key={action.label}
                     onClick={action.onClick}
-                    className="group flex flex-col items-center justify-center gap-2 rounded-2xl transition-all relative overflow-hidden"
+                    className="group flex flex-col items-center justify-center gap-3 rounded-[20px] transition-all relative overflow-hidden"
                     style={{
-                      padding: '16px 10px',
+                      padding: '20px 10px',
                       backgroundColor: isActive ? `rgba(${action.rgb}, 0.08)` : 'var(--bg-card)',
                       border: isActive ? `1px solid rgba(${action.rgb}, 0.3)` : '1px solid var(--border)',
                       cursor: 'pointer',
@@ -886,44 +946,33 @@ const Home = () => {
                       backgroundColor: `rgba(${action.rgb}, 0.04)`,
                       borderColor: `rgba(${action.rgb}, 0.3)`,
                       y: -2,
+                      boxShadow: `0 10px 20px rgba(${action.rgb}, 0.1)`
                     }}
-                    whileTap={{ scale: 0.97 }}
+                    whileTap={{ scale: 0.96 }}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 + idx * 0.05, duration: 0.3 }}
                   >
-                    <action.Icon 
-                      size={20} 
-                      style={{ color: isActive ? action.color : 'var(--text-3)' }} 
-                      className="group-hover:text-[color:var(--hover-color)] transition-colors" 
+                    {/* Glow de fundo no hover */}
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" 
+                      style={{ background: `radial-gradient(circle at 50% 0%, rgba(${action.rgb}, 0.1) 0%, transparent 70%)` }} 
                     />
-                    <style>{`.group:hover .group-hover\\:text-\\[color\\:var\\(--hover-color\\)\\] { color: ${action.color} !important; }`}</style>
+                    
+                    <action.Icon 
+                      size={24} 
+                      style={{ color: isActive ? action.color : 'var(--text-3)' }} 
+                      className="group-hover:scale-110 transition-transform duration-300 relative z-10" 
+                    />
+                    {/* Forçar cor no hover via estilo injetado */}
+                    <style>{`.group:hover .group-hover\\:scale-110 { color: ${action.color} !important; }`}</style>
+                    
                     <span 
-                      className="font-semibold" 
-                      style={{ fontSize: '12px', color: isActive ? 'var(--text-1)' : 'var(--text-2)' }}
+                      className="font-bold relative z-10" 
+                      style={{ fontSize: '13px', color: isActive ? 'var(--text-1)' : 'var(--text-2)' }}
                     >
                       {action.label}
                     </span>
-                    
-                    {/* Mantido o código original do badge caso adicione futuramente */}
-                    {action.badge && (
-                      <span
-                        className="absolute font-extrabold uppercase"
-                        style={{
-                          top: '8px',
-                          right: '8px',
-                          fontSize: '8px',
-                          padding: '2px 5px',
-                          borderRadius: '4px',
-                          backgroundColor: '#7C3AED',
-                          color: 'white',
-                          letterSpacing: '0.05em',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {action.badge}
-                      </span>
-                    )}
                   </motion.button>
                 );
               })}
@@ -931,421 +980,272 @@ const Home = () => {
           </motion.div>
 
           {/* ═══════════════════════════════
-              ⑤ PROGRESSO GERAL
-              ═══════════════════════════════ */}
-          <motion.div variants={fadeUp}>
-            {isLoading ? (
-              <SkeletonPulse className="h-48" />
-            ) : (
-              <SectionCard className="overflow-hidden" hover={false}>
-                {/* Header with divider */}
-                <div 
-                  className="flex items-center justify-between px-5 py-4" 
-                  style={{ borderBottom: '1px solid var(--border)' }}
-                >
-                  <h2 className="font-display text-[13px] font-bold flex items-center gap-2" style={{ color: 'var(--text-1)' }}>
-                    <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
-                    Progresso Geral
-                  </h2>
-                  <button 
-                    onClick={() => navigate('/materias')} 
-                    className="group flex items-center gap-1 text-xs font-medium transition-colors" 
-                    style={{ color: 'var(--primary)' }}
-                  >
-                    Ver todas
-                    <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </div>
+             ⑤ PROGRESSO GERAL E ESTE MÊS
+             ═══════════════════════════════ */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-                {/* Total bar with shimmer */}
-                <div className="mx-5 mt-3">
-                  <p className="text-sm" style={{ color: 'var(--text-2)' }}>
-                    <span className="font-bold font-mono" style={{ color: 'var(--text-1)' }}>
-                      {dashboardData?.concluidas || 0}
-                    </span>
-                    <span style={{ color: 'var(--text-3)' }}>
-                      {' / '}{dashboardData?.totalMaterias || 0} matérias concluídas
-                    </span>
-                  </p>
+            {/* ── Progresso e Matérias Recentes ── */}
+            <motion.div variants={fadeUp} className="flex flex-col">
+              {isLoading ? (
+                <SkeletonPulse className="h-full min-h-[300px]" />
+              ) : (
+                <SectionCard className="overflow-hidden h-full flex flex-col" hover={false}>
+                  {/* Header */}
                   <div 
-                    className="relative mt-2 mb-4 overflow-hidden" 
-                    style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}
+                    className="flex items-center justify-between px-6 py-5 shrink-0" 
+                    style={{ borderBottom: '1px solid var(--border)' }}
                   >
-                    <motion.div
-                      className="h-full relative overflow-hidden"
-                      style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressPercent}%` }}
-                      transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    <h2 className="font-display text-[14px] font-bold flex items-center gap-2 uppercase tracking-widest" style={{ color: 'var(--text-2)' }}>
+                      <TrendingUp size={16} style={{ color: 'var(--primary)' }} />
+                      Progresso
+                    </h2>
+                    <button 
+                      onClick={() => navigate('/materias')} 
+                      className="group flex items-center gap-1 text-[13px] font-bold transition-colors px-2.5 py-1 rounded-md hover:bg-blue-500 hover:bg-opacity-10" 
+                      style={{ color: 'var(--primary)' }}
                     >
-                      <div 
-                        className="absolute inset-0" 
-                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} 
-                      />
-                    </motion.div>
-                    <span 
-                      className="absolute right-1 top-1/2 -translate-y-1/2 font-mono font-bold" 
-                      style={{ fontSize: '10px', color: 'var(--text-3)' }}
-                    >
-                      {progressPercent}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Subject rows with left color bar */}
-                {dashboardData?.materiasRecentes?.length > 0 ? (
-                  <div>
-                    {dashboardData.materiasRecentes.slice(0, 5).map((materia, idx) => (
-                      <motion.div
-                        key={materia.id || idx}
-                        className="flex items-center gap-3 px-5 py-2.5 transition-colors cursor-pointer"
-                        style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}
-                        onClick={() => navigate('/materias')}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                        initial={{ opacity: 0, x: -15 }} 
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 + idx * 0.07 }}
-                      >
-                        {/* Subject icon */}
-                        <div 
-                          className="w-10 h-10 rounded-[10px] flex items-center justify-center font-bold text-sm shrink-0"
-                          style={{ 
-                            backgroundColor: `${materia.cor || '#2563EB'}18`, 
-                            color: materia.cor || 'var(--primary)', 
-                            borderLeft: `3px solid ${materia.cor || 'var(--primary)'}` 
-                          }}
-                        >
-                          {materia.nome?.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-1)' }}>
-                            {materia.nome}
-                          </h3>
-                          {materia.descricao && (
-                            <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-3)' }}>
-                              {materia.descricao}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-0.5" style={{ fontSize: '11px', color: 'var(--text-4)' }}>
-                            <span>{materia.totalFlashcards || 0} cards</span>
-                            <span>·</span>
-                            <span>{materia.totalResumos || 0} resumos</span>
-                          </div>
-                        </div>
-                        {/* Progress pill — only show if real data exists */}
-                        {materia.progresso != null && (
-                          <div 
-                            className="hidden sm:block shrink-0" 
-                            style={{ width: '48px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--bg-elevated)', overflow: 'hidden' }}
-                          >
-                            <motion.div 
-                              className="h-full" 
-                              style={{ backgroundColor: materia.cor || 'var(--primary)', borderRadius: '2px' }} 
-                              initial={{ width: 0 }} 
-                              animate={{ width: `${Math.min(materia.progresso, 100)}%` }} 
-                              transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }} 
-                            />
-                          </div>
-                        )}
-                        <ChevronRight size={16} className="shrink-0 ml-2" style={{ color: 'var(--text-4)' }} />
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="text-center py-10 px-5"
-                  >
-                    <div 
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" 
-                      style={{ backgroundColor: 'var(--primary-bg)' }}
-                    >
-                      <Bookmark size={28} style={{ color: 'var(--text-4)' }} />
-                    </div>
-                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--text-1)' }}>
-                      Nenhuma matéria criada
-                    </h3>
-                    <p className="text-sm mb-5 max-w-xs mx-auto" style={{ color: 'var(--text-3)' }}>
-                      Crie sua primeira matéria para organizar seus estudos
-                    </p>
-                    <Button 
-                      variant="primary" 
-                      leftIcon={<Plus size={16} />} 
-                      onClick={() => navigate('/materias')}
-                    >
-                      Criar Matéria
-                    </Button>
-                  </motion.div>
-                )}
-              </SectionCard>
-            )}
-          </motion.div>
-
-          {/* ═══════════════════════════════
-              ⑥ ESTE MÊS + META MENSAL
-              ═══════════════════════════════ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-            {/* ── Este Mês — dados reais (Restaurados os Cards e o Gráfico de 7 Dias) ── */}
-            <motion.div className="lg:col-span-2" variants={fadeUp}>
-              <SectionCard className="p-5 h-full flex flex-col" hover={false}>
-                <h2 className="font-display text-sm font-bold flex items-center gap-2 mb-4" style={{ color: 'var(--text-1)' }}>
-                  <TrendingUp size={15} style={{ color: 'var(--teal)' }} />
-                  Este Mês
-                  <span className="text-xs font-normal ml-auto" style={{ color: 'var(--text-4)' }}>
-                    {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
-                  </span>
-                </h2>
-
-                {/* Stat cards row (Restaurado) */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {/* Resumos */}
-                  <motion.div
-                    className="rounded-2xl p-4 flex flex-col justify-between"
-                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.35 }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div 
-                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" 
-                        style={{ backgroundColor: 'var(--primary-bg)' }}
-                      >
-                        <FileText size={14} style={{ color: 'var(--primary)' }} />
-                      </div>
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-                        Resumos
-                      </span>
-                    </div>
-                    <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
-                      {isLoading ? '—' : (dashboardData?.metaMensal?.resumosDoMes || 0) === 0
-                        ? <button onClick={() => navigate('/resumos')} className="text-xs underline font-sans font-normal" style={{ color: 'var(--text-4)' }}>Criar primeiro →</button>
-                        : <><span style={{ color: 'var(--teal)', fontWeight: 700 }}>+</span><AnimatedNumber value={dashboardData?.metaMensal?.resumosDoMes || 0} /></>}
-                    </p>
-                    <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
-                      este mês · {dashboardData?.totalResumos || 0} no total
-                    </p>
-                  </motion.div>
-
-                  {/* Flashcards */}
-                  <motion.div
-                    className="rounded-2xl p-4 flex flex-col justify-between"
-                    style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.45 }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <div 
-                        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" 
-                        style={{ backgroundColor: 'var(--teal-bg)' }}
-                      >
-                        <CreditCard size={14} style={{ color: 'var(--teal)' }} />
-                      </div>
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-                        Flashcards
-                      </span>
-                    </div>
-                    <p className="font-mono font-bold" style={{ fontSize: '34px', color: 'var(--text-1)', lineHeight: 1 }}>
-                      {isLoading ? '—' : (dashboardData?.metaMensal?.flashcardsDoMes || 0) === 0
-                        ? <button onClick={() => navigate('/flashcards')} className="text-xs underline font-sans font-normal" style={{ color: 'var(--text-4)' }}>Criar primeiro →</button>
-                        : <><span style={{ color: 'var(--teal)', fontWeight: 700 }}>+</span><AnimatedNumber value={dashboardData?.metaMensal?.flashcardsDoMes || 0} /></>}
-                    </p>
-                    <p style={{ fontSize: '11px', color: 'var(--text-4)', marginTop: '4px' }}>
-                      este mês · {dashboardData?.totalFlashcards || 0} no total
-                    </p>
-                  </motion.div>
-                </div>
-
-                {/* Streak — últimos 7 dias (Restaurado e Adaptado) */}
-                <motion.div
-                  className="rounded-2xl p-4 mt-auto"
-                  style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.55 }}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Zap size={14} style={{ color: 'var(--accent)' }} />
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>
-                        Sequência de acesso
-                      </span>
-                    </div>
-                    <span className="font-mono font-bold text-sm" style={{ color: 'var(--accent)' }}>
-                      {isLoading ? '—' : `${dashboardData?.offensiveStreak || 0} dias`}
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {Array.from({ length: 7 }).map((_, i) => {
-                      const today = new Date();
-                      const dayDate = new Date(today);
-                      dayDate.setDate(today.getDate() - (6 - i));
-                      const dateStr = dayDate.toISOString().split('T')[0];
-                      const history = dashboardData?.streakHistory || [];
-                      // streakHistory items are { date: Timestamp, streak, event }
-                      const active = history.some(d => {
-                        try {
-                          const raw = d?.date ?? d; // support both object format and raw date
-                          const parsed = raw?.toDate?.() || (raw ? new Date(raw) : null);
-                          if (!parsed || isNaN(parsed.getTime())) return false;
-                          return parsed.toISOString().split('T')[0] === dateStr;
-                        } catch { 
-                          return false; 
-                        }
-                      });
-                      const isToday = i === 6;
-                      
-                      return (
-                        <div 
-                          key={i} 
-                          className="flex-1 flex flex-col items-center gap-1"
-                          title={dayDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
-                        >
-                          <div
-                            className="w-full rounded-lg"
-                            style={{
-                              height: '28px',
-                              backgroundColor: active ? 'var(--primary)' : 'var(--border)',
-                              border: isToday && !active ? '1.5px solid var(--border-strong)' : 'none',
-                              opacity: active ? 1 : isToday ? 0.7 : 0.35,
-                            }}
-                          />
-                          <span style={{ fontSize: '9px', color: 'var(--text-4)', userSelect: 'none' }}>
-                            {dayDate.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              </SectionCard>
-            </motion.div>
-
-            {/* ── Meta Mensal — gradient card + circular SVG + Lógicas Omitidas (Restaurado) ── */}
-            <motion.div className="lg:col-span-1" variants={fadeUp}>
-              <div 
-                className="relative overflow-hidden h-full flex flex-col" 
-                style={{
-                  backgroundColor: 'var(--bg-card)',
-                  border: '1px solid var(--border)', 
-                  borderRadius: '16px', 
-                  padding: '24px',
-                }}
-              >
-                {/* Decorative */}
-                <div 
-                  className="absolute pointer-events-none" 
-                  style={{ right: '16px', top: '16px', opacity: 0.12 }}
-                >
-                  <Target size={40} style={{ color: 'var(--text-1)' }} />
-                </div>
-
-                <h2 
-                  className="font-display text-sm font-bold flex items-center gap-2 mb-4 relative z-10" 
-                  style={{ color: 'var(--text-1)' }}
-                >
-                  <Target size={16} style={{ color: 'var(--primary)' }} />
-                  Meta de {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^\w/, c => c.toUpperCase())}
-                  <button
-                    onClick={() => { setMetaValue(dashboardData?.metaMensal?.meta || 50); setEditingMeta(true); }}
-                    className="ml-1 p-1 rounded-md transition-colors hover:bg-gray-500 hover:bg-opacity-10"
-                    style={{ color: 'var(--text-4)' }}
-                    title="Editar meta"
-                  >
-                    <Pencil size={12} />
-                  </button>
-                </h2>
-
-                {editingMeta && (
-                  <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <input
-                      type="number"
-                      min={1}
-                      max={500}
-                      value={metaValue}
-                      onChange={(e) => setMetaValue(Math.max(1, Math.min(500, Number(e.target.value))))}
-                      className="w-20 rounded-lg px-3 py-1.5 text-sm font-mono font-bold text-center"
-                      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-1)' }}
-                      autoFocus
-                      onKeyDown={(e) => { if (e.key === 'Enter') { persistMetaMensal(metaValue); setEditingMeta(false); } }}
-                    />
-                    <button
-                      onClick={() => { persistMetaMensal(metaValue); setEditingMeta(false); }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      OK
+                      Ver todas
+                      <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
                     </button>
                   </div>
-                )}
 
-                <div className="flex justify-center mt-2 mb-4 relative z-10">
-                  <CircularProgress
-                    current={dashboardData?.metaMensal?.atual || 0}
-                    total={editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
-                    size={110}
-                    showStartMessage={(dashboardData?.metaMensal?.atual || 0) === 0 && !hasSavedMeta}
-                  />
-                </div>
-
-                <p 
-                  className="text-center text-xs mb-1 font-medium relative z-10" 
-                  style={{ color: 'var(--text-3)' }}
-                >
-                  resumos + flashcards criados
-                </p>
-
-                {/* Tip card (Restaurado) */}
-                <div 
-                  className="mt-4 p-3 rounded-xl relative z-10" 
-                  style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
-                >
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
-                    {(dashboardData?.offensiveStreak || 0) > 0 ? (
-                      <>
-                        💡 Você está em uma sequência de <span style={{ color: 'var(--accent)' }}>🔥 {dashboardData.offensiveStreak} dias</span>! Continue estudando hoje.
-                      </>
-                    ) : (
-                      <>
-                        💡 Crie um hábito diário. Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> para começar sua sequência!
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {/* Bottom progress bar (Restaurado) */}
-                <div className="mt-auto pt-4 relative z-10">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
-                      {dashboardData?.metaMensal?.atual || 0}/{editingMeta ? metaValue : (dashboardData?.metaMensal?.meta || 50)}
-                    </span>
-                    <span className="font-mono" style={{ fontSize: '10px', color: 'var(--text-4)' }}>
-                      {dashboardData?.metaMensal?.porcentagem || 0}% do mês
-                    </span>
-                  </div>
-                  <div 
-                    className="overflow-hidden" 
-                    style={{ height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)' }}
-                  >
-                    <motion.div
-                      className="h-full relative overflow-hidden"
-                      style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '3px' }}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${dashboardData?.metaMensal?.porcentagem || 0}%` }}
-                      transition={{ duration: 1.2, delay: 0.8, ease: 'easeOut' }}
+                  {/* Total bar */}
+                  <div className="px-6 pt-5 pb-2 shrink-0">
+                    <p className="text-[14px] font-medium flex items-baseline gap-1.5" style={{ color: 'var(--text-2)' }}>
+                      <span className="font-black font-mono text-2xl tracking-tighter" style={{ color: 'var(--text-1)' }}>
+                        {dashboardData?.concluidas || 0}
+                      </span>
+                      <span style={{ color: 'var(--text-4)' }}>
+                        / {dashboardData?.totalMaterias || 0} matérias
+                      </span>
+                    </p>
+                    <div 
+                      className="relative mt-3 mb-2 overflow-hidden" 
+                      style={{ height: '8px', borderRadius: '4px', backgroundColor: 'var(--bg-elevated)' }}
                     >
-                      <div 
-                        className="absolute inset-0" 
-                        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} 
-                      />
-                    </motion.div>
+                      <motion.div
+                        className="h-full relative overflow-hidden"
+                        style={{ background: 'linear-gradient(90deg, var(--primary), var(--teal))', borderRadius: '4px' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 1, delay: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                      >
+                        <div 
+                          className="absolute inset-0" 
+                          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmer 2s ease infinite' }} 
+                        />
+                      </motion.div>
+                    </div>
                   </div>
-                </div>
-                
-              </div>
+
+                  {/* Subject rows */}
+                  <div className="flex-1 overflow-y-auto mt-2">
+                    {dashboardData?.materiasRecentes?.length > 0 ? (
+                      <div className="px-2 pb-2">
+                        {dashboardData.materiasRecentes.slice(0, 4).map((materia, idx) => (
+                          <motion.div
+                            key={materia.id || idx}
+                            className="flex items-center gap-3.5 px-4 py-3 rounded-xl transition-colors cursor-pointer group"
+                            onClick={() => navigate('/materias')}
+                            whileHover={{ backgroundColor: 'var(--bg-elevated)' }}
+                            initial={{ opacity: 0, x: -15 }} 
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 + idx * 0.07 }}
+                          >
+                            <div 
+                              className="w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[16px] shrink-0 border shadow-sm transition-transform group-hover:scale-105"
+                              style={{ 
+                                backgroundColor: `${materia.cor || '#2563EB'}15`, 
+                                color: materia.cor || 'var(--primary)', 
+                                borderColor: `${materia.cor || '#2563EB'}30` 
+                              }}
+                            >
+                              {materia.nome?.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <h3 className="font-extrabold text-[15px] truncate tracking-tight" style={{ color: 'var(--text-1)' }}>
+                                {materia.nome}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1 font-semibold uppercase tracking-wider" style={{ fontSize: '10px', color: 'var(--text-4)' }}>
+                                <span>{materia.totalFlashcards || 0} cards</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                                <span>{materia.totalResumos || 0} resumos</span>
+                              </div>
+                            </div>
+                            {/* Progress bar minificada */}
+                            {materia.progresso != null && (
+                              <div 
+                                className="hidden sm:block shrink-0" 
+                                style={{ width: '50px', height: '6px', borderRadius: '3px', backgroundColor: 'var(--bg-elevated)', overflow: 'hidden' }}
+                              >
+                                <motion.div 
+                                  className="h-full" 
+                                  style={{ backgroundColor: materia.cor || 'var(--primary)', borderRadius: '3px' }} 
+                                  initial={{ width: 0 }} 
+                                  animate={{ width: `${Math.min(materia.progresso, 100)}%` }} 
+                                  transition={{ duration: 0.8, delay: 0.5 + idx * 0.1 }} 
+                                />
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center px-6 pb-6 text-center">
+                        <Bookmark size={32} style={{ color: 'var(--text-4)', marginBottom: '12px', opacity: 0.5 }} />
+                        <p className="text-[14px] font-bold mb-1" style={{ color: 'var(--text-2)' }}>Nenhuma matéria criada</p>
+                        <p className="text-[13px] font-medium" style={{ color: 'var(--text-4)' }}>Crie sua primeira matéria para ver o progresso aqui.</p>
+                      </div>
+                    )}
+                  </div>
+                </SectionCard>
+              )}
+            </motion.div>
+
+            {/* ── Este Mês + Meta ── */}
+            <motion.div className="lg:col-span-2" variants={fadeUp}>
+              {isLoading ? (
+                <SkeletonPulse className="h-full min-h-[300px]" />
+              ) : (
+                <SectionCard className="p-6 sm:p-8 h-full flex flex-col" hover={false}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h2 className="font-display text-[14px] font-bold flex items-center gap-2 uppercase tracking-widest" style={{ color: 'var(--text-2)' }}>
+                      <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--teal-bg)' }}>
+                        <TrendingUp size={16} style={{ color: 'var(--teal)' }} strokeWidth={2.5} />
+                      </div>
+                      Produção Mensal
+                    </h2>
+                    <span className="inline-flex px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest border" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-3)' }}>
+                      {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
+                    
+                    {/* Coluna Esquerda: Cards de Resumo e Flashcard */}
+                    <div className="flex flex-col gap-4 justify-center">
+                      <div
+                        className="rounded-[20px] p-5 flex flex-col justify-center relative overflow-hidden group"
+                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-blue-500/20" style={{ backgroundColor: 'var(--primary-bg)' }}>
+                            <FileText size={18} style={{ color: 'var(--primary)' }} />
+                          </div>
+                          <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Resumos</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-mono font-black tracking-tighter" style={{ fontSize: '42px', color: 'var(--text-1)', lineHeight: 1 }}>
+                            {(dashboardData?.metaMensal?.resumosDoMes || 0) === 0 ? '0' : <AnimatedNumber value={dashboardData?.metaMensal?.resumosDoMes || 0} />}
+                          </p>
+                          <span className="text-[13px] font-medium" style={{ color: 'var(--text-4)' }}>criados</span>
+                        </div>
+                      </div>
+
+                      <div
+                        className="rounded-[20px] p-5 flex flex-col justify-center relative overflow-hidden group"
+                        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+                      >
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 border border-teal-500/20" style={{ backgroundColor: 'var(--teal-bg)' }}>
+                            <CreditCard size={18} style={{ color: 'var(--teal)' }} />
+                          </div>
+                          <span className="text-[13px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Flashcards</span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-mono font-black tracking-tighter" style={{ fontSize: '42px', color: 'var(--text-1)', lineHeight: 1 }}>
+                            {(dashboardData?.metaMensal?.flashcardsDoMes || 0) === 0 ? '0' : <AnimatedNumber value={dashboardData?.metaMensal?.flashcardsDoMes || 0} />}
+                          </p>
+                          <span className="text-[13px] font-medium" style={{ color: 'var(--text-4)' }}>criados</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Coluna Direita: Meta Circular */}
+                    <div 
+                      className="rounded-[24px] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden border border-dashed"
+                      style={{ borderColor: 'var(--border-strong)', backgroundColor: 'transparent' }}
+                    >
+                      {/* Meta Header */}
+                      <div className="absolute top-4 right-4 z-10">
+                        <button
+                          onClick={() => { setMetaValue(dashboardData?.metaMensal?.meta || 50); setEditingMeta(true); }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors shadow-sm border border-slate-200 dark:border-slate-700"
+                          title="Editar meta mensal"
+                        >
+                          <Pencil size={14} style={{ color: 'var(--text-3)' }} />
+                        </button>
+                      </div>
+
+                      {editingMeta ? (
+                        <div className="flex flex-col items-center gap-3 relative z-10 w-full max-w-[200px] mx-auto py-8">
+                          <label className="text-[13px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Nova Meta</label>
+                          <input
+                            type="number"
+                            min={1} max={500}
+                            value={metaValue}
+                            onChange={(e) => setMetaValue(Math.max(1, Math.min(500, Number(e.target.value))))}
+                            disabled={isSavingMeta}
+                            className="w-full h-14 rounded-2xl px-4 text-2xl font-mono font-black text-center border-2 transition-colors focus:outline-none focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-1)' }}
+                            autoFocus
+                            onKeyDown={(e) => { if (e.key === 'Enter' && !isSavingMeta) { persistMetaMensal(metaValue); setEditingMeta(false); } }}
+                          />
+                          <Button 
+                            onClick={() => { persistMetaMensal(metaValue); setEditingMeta(false); }} 
+                            variant="primary" 
+                            fullWidth 
+                            disabled={isSavingMeta}
+                            className="h-12 rounded-xl mt-2"
+                          >
+                            {isSavingMeta ? '⏳ Salvando...' : 'Salvar'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="relative z-10 mb-4 scale-110 mt-4">
+                            <CircularProgress
+                              current={dashboardData?.metaMensal?.atual || 0}
+                              total={dashboardData?.metaMensal?.meta || 50}
+                              size={120}
+                              showStartMessage={(dashboardData?.metaMensal?.atual || 0) === 0 && !hasSavedMeta}
+                            />
+                          </div>
+                          <p className="text-[12px] font-bold uppercase tracking-widest mt-2" style={{ color: 'var(--text-3)' }}>
+                            Meta Atingida
+                          </p>
+                          <p className="font-mono font-black text-[20px]" style={{ color: 'var(--primary)' }}>
+                            {dashboardData?.metaMensal?.porcentagem || 0}%
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Dica de Estudo (Tip) */}
+                  <div 
+                    className="mt-6 p-4 rounded-[16px] relative overflow-hidden" 
+                    style={{ 
+                      backgroundColor: (dashboardData?.offensiveStreak || 0) > 0 ? 'rgba(234,88,12,0.05)' : 'var(--bg-elevated)', 
+                      border: (dashboardData?.offensiveStreak || 0) > 0 ? '1px solid rgba(234,88,12,0.2)' : '1px solid var(--border)' 
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      <div className="mt-0.5 shrink-0">
+                        <Lightbulb size={18} style={{ color: (dashboardData?.offensiveStreak || 0) > 0 ? '#EA580C' : 'var(--text-4)' }} />
+                      </div>
+                      <p className="text-[14px] font-medium leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                        {(dashboardData?.offensiveStreak || 0) > 0 ? (
+                          <>Você está em uma sequência de <span className="font-bold text-orange-500">🔥 {dashboardData.offensiveStreak} dias</span>! Não quebre a corrente, revise seus cards hoje.</>
+                        ) : (
+                          <>Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> hoje para começar sua sequência de foco (Streak).</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                </SectionCard>
+              )}
             </motion.div>
 
           </div>
@@ -1374,7 +1274,7 @@ const Home = () => {
               "{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"
             </span>
             ?<br />
-            <span className="font-medium" style={{ color: 'var(--accent)' }}>
+            <span className="font-medium mt-2 block" style={{ color: 'var(--accent)' }}>
               Essa ação não pode ser desfeita.
             </span>
           </>
@@ -1383,6 +1283,17 @@ const Home = () => {
         type="danger"
         isLoading={isDeletingEvento}
       />
+
+      <style>{`
+        @keyframes spin-ring {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </motion.div>
   );
 };

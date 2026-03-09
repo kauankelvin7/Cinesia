@@ -41,6 +41,33 @@ import { db } from '../config/firebase-config';
 // Esta re-exportação existe para compatibilidade com imports legados
 export { getDashboardStats } from './dashboardService';
 
+// ==================== USUÁRIO - META MENSAL ====================
+
+/**
+ * Salva a meta mensal do usuário no Firestore.
+ * Persiste a meta no documento do usuário (users/{userId}/metaMensal).
+ *
+ * @param {string} userId - UID do usuário autenticado
+ * @param {number} metaValue - Novo valor da meta (1-500)
+ * @returns {Promise<void>}
+ */
+export const atualizarMetaMensal = async (userId, metaValue) => {
+  try {
+    const safe = Math.max(1, Math.min(500, Number(metaValue) || 50));
+    const userRef = doc(db, 'users', userId);
+    
+    await updateDoc(userRef, {
+      metaMensal: safe,
+      updatedAt: serverTimestamp()
+    });
+    
+    return { success: true, metaSalva: safe };
+  } catch (error) {
+    console.error('Erro ao atualizar meta mensal:', error);
+    throw new Error('Não foi possível salvar a meta. Tente novamente.');
+  }
+};
+
 // ==================== MATÉRIAS ====================
 
 /**

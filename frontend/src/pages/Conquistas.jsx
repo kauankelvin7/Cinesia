@@ -6,7 +6,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Lock, ChevronDown, Award, Star, Zap } from 'lucide-react';
+import { Trophy, Lock, Award, Star, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import { useConquistas } from '../utils/useConquistas';
 
@@ -26,25 +26,30 @@ function Conquistas() {
   const desbloqueadas = conquistasFiltradas.filter(c => c.desbloqueada);
   const bloqueadas = conquistasFiltradas.filter(c => !c.desbloqueada);
 
+  // ─── TELA DE CARREGAMENTO CONSISTENTE ───
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-center">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-            className="w-14 h-14 border-4 border-amber-200 dark:border-amber-900 border-t-amber-500 dark:border-t-amber-400 rounded-full mx-auto mb-5 shadow-lg"
-          />
-          <p className="text-[15px] font-bold text-slate-500 dark:text-slate-400">Carregando seu progresso...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50/50 dark:bg-slate-950">
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }} 
+          className="flex flex-col items-center text-center animate-pulse"
+        >
+          <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-[20px] flex items-center justify-center mb-5 border border-amber-100/50 dark:border-amber-800/30">
+            <Trophy size={32} className="text-amber-500" strokeWidth={1.5} />
+          </div>
+          <p className="text-[13px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            Carregando Medalhas...
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 pb-32">
-        {/* Header Premium */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-32">
+        {/* ─── HEADER PREMIUM ─── */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,25 +72,25 @@ function Conquistas() {
           </div>
         </motion.div>
 
-        {/* Progress Card (Hero Banner Premium) */}
+        {/* ─── PROGRESS CARD (HERO BANNER) ─── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.4 }}
-          className="relative overflow-hidden bg-slate-900 rounded-[28px] p-8 sm:p-10 mb-10 shadow-2xl border border-slate-800"
+          className="relative overflow-hidden bg-slate-900 rounded-[32px] p-8 sm:p-10 mb-10 shadow-2xl border border-slate-800"
         >
           {/* Efeitos de Glow no fundo */}
           <div className="absolute top-[-30%] right-[-10%] w-[60%] h-[150%] bg-gradient-to-bl from-amber-500/20 to-orange-600/20 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute bottom-[-50%] left-[-10%] w-[50%] h-[150%] bg-gradient-to-tr from-indigo-500/20 to-purple-600/20 rounded-full blur-[80px] pointer-events-none" />
           
           <div className="relative z-10">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
               <div>
                 <p className="text-slate-400 text-[13px] font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                   <Zap size={14} className="text-amber-400" /> Progresso Geral
                 </p>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-5xl sm:text-6xl font-black text-white tracking-tighter">{totalDesbloqueadas}</p>
+                  <p className="text-5xl sm:text-6xl font-black text-white tracking-tighter leading-none">{totalDesbloqueadas}</p>
                   <p className="text-2xl font-bold text-slate-500 pb-1">/ {totalConquistas}</p>
                 </div>
               </div>
@@ -107,40 +112,40 @@ function Conquistas() {
           </div>
         </motion.div>
 
-        {/* Stats mini cards (Floating Pills) */}
+        {/* ─── STATS MINI CARDS (FLOATING PILLS) ─── */}
         {stats && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4 mb-10"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-10"
           >
             {[
-              { label: 'Flashcards', value: stats.flashcards, icon: '🎴', color: 'from-blue-500 to-indigo-500' },
-              { label: 'Resumos', value: stats.resumos, icon: '📝', color: 'from-purple-500 to-pink-500' },
-              { label: 'Matérias', value: stats.materias, icon: '📂', color: 'from-teal-400 to-emerald-500' },
-              { label: 'Simulados', value: stats.simulados, icon: '🎯', color: 'from-rose-400 to-red-500' },
-              { label: 'Recorde', value: `${stats.bestSimulado}%`, icon: '⭐', color: 'from-amber-400 to-orange-500' },
-              { label: 'Sequência', value: stats.streak, icon: '🔥', color: 'from-orange-500 to-red-500' },
+              { label: 'Flashcards', value: stats.flashcards, icon: '🎴' },
+              { label: 'Resumos', value: stats.resumos, icon: '📝' },
+              { label: 'Matérias', value: stats.materias, icon: '📂' },
+              { label: 'Simulados', value: stats.simulados, icon: '🎯' },
+              { label: 'Recorde', value: `${stats.bestSimulado}%`, icon: '⭐' },
+              { label: 'Sequência', value: stats.streak, icon: '🔥' },
             ].map((s, i) => (
-              <div key={i} className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[20px] p-4 text-center border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-10 h-10 mx-auto rounded-full bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center text-lg mb-2 shadow-inner border border-slate-100 dark:border-slate-800">
+              <div key={i} className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[24px] p-4 sm:p-5 text-center border border-slate-200/60 dark:border-slate-700/60 shadow-sm hover:shadow-md hover:border-amber-200 dark:hover:border-amber-900/50 transition-all duration-300">
+                <div className="w-12 h-12 mx-auto rounded-full bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center text-xl mb-3 shadow-inner border border-slate-100 dark:border-slate-800">
                   {s.icon}
                 </div>
-                <p className="text-[18px] font-extrabold text-slate-900 dark:text-white tracking-tight">{s.value}</p>
-                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">{s.label}</p>
+                <p className="text-[20px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-none mb-1">{s.value}</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{s.label}</p>
               </div>
             ))}
           </motion.div>
         )}
 
-        {/* Category filters (iOS Style Segmented Control) */}
-        <div className="flex overflow-x-auto scrollbar-none gap-2 mb-8 p-1.5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800/80">
+        {/* ─── FILTROS DE CATEGORIA (IOS STYLE) ─── */}
+        <div className="flex overflow-x-auto custom-scrollbar-light gap-2 mb-8 p-1.5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800/80">
           {CATEGORIAS.map(cat => (
             <button
               key={cat}
               onClick={() => setCategoriaAtiva(cat)}
-              className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[13.5px] font-bold transition-all duration-300 flex-1 ${
+              className={`whitespace-nowrap px-6 py-3 rounded-xl text-[14px] font-bold transition-all duration-300 flex-1 min-w-max ${
                 categoriaAtiva === cat
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/30'
@@ -151,43 +156,43 @@ function Conquistas() {
           ))}
         </div>
 
-        {/* Unlocked */}
+        {/* ─── DESBLOQUEADAS ─── */}
         {desbloqueadas.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-5 flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Star size={16} className="text-amber-500" strokeWidth={2.5} />
+          <div className="mb-12">
+            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-6 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Star size={18} className="text-amber-500 fill-amber-500" strokeWidth={2} />
               </div>
-              Desbloqueadas
+              Medalhas Conquistadas
               <span className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[12px] px-2.5 py-0.5 rounded-full ml-1">
                 {desbloqueadas.length}
               </span>
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {desbloqueadas.map((c, i) => (
                 <motion.div
                   key={c.id}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.3 }}
-                  className="group bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-5 relative overflow-hidden"
+                  className="group bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-[24px] p-6 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-amber-200 dark:hover:border-amber-700/50 hover:-translate-y-1 transition-all duration-300 flex items-center gap-5 relative overflow-hidden"
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
                   
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-300 to-orange-500 rounded-[18px] flex items-center justify-center text-3xl flex-shrink-0 shadow-lg shadow-amber-500/30 border border-amber-200 dark:border-amber-600 relative z-10 transform group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20px] flex items-center justify-center text-3xl sm:text-4xl flex-shrink-0 shadow-lg shadow-amber-500/30 border-2 border-amber-100 dark:border-amber-600 relative z-10 transform group-hover:scale-105 transition-transform duration-300">
                     {c.icon}
                   </div>
                   
                   <div className="min-w-0 flex-1 relative z-10">
-                    <p className="font-extrabold text-[16px] text-slate-900 dark:text-white truncate mb-0.5">{c.titulo}</p>
-                    <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400 truncate mb-2">{c.desc}</p>
-                    <span className="inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700">
+                    <p className="font-extrabold text-[16px] sm:text-[18px] text-slate-900 dark:text-white truncate mb-1">{c.titulo}</p>
+                    <p className="text-[13px] sm:text-[14px] font-medium text-slate-500 dark:text-slate-400 truncate mb-2.5">{c.desc}</p>
+                    <span className="inline-flex px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700">
                       {c.categoria}
                     </span>
                   </div>
                   
-                  <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0 ml-auto relative z-10">
-                    <Award size={16} className="text-amber-500" strokeWidth={2.5} />
+                  <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0 ml-auto relative z-10 opacity-0 md:opacity-100 transition-opacity">
+                    <Award size={20} className="text-amber-500" strokeWidth={2.5} />
                   </div>
                 </motion.div>
               ))}
@@ -195,11 +200,11 @@ function Conquistas() {
           </div>
         )}
 
-        {/* Locked */}
+        {/* ─── BLOQUEADAS ─── */}
         {bloqueadas.length > 0 && (
           <div>
-            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-5 flex items-center gap-2.5 opacity-80">
-              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+            <h2 className="text-[18px] font-extrabold text-slate-900 dark:text-white mb-6 flex items-center gap-2.5 opacity-70">
+              <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
                 <Lock size={16} className="text-slate-500 dark:text-slate-400" strokeWidth={2.5} />
               </div>
               Ainda por vir
@@ -207,26 +212,26 @@ function Conquistas() {
                 {bloqueadas.length}
               </span>
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {bloqueadas.map((c, i) => (
                 <motion.div
                   key={c.id}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.3 }}
-                  className="bg-slate-100/50 dark:bg-slate-800/30 rounded-[24px] p-5 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-5 opacity-70 hover:opacity-100 transition-opacity"
+                  className="bg-white/40 dark:bg-slate-800/20 backdrop-blur-md rounded-[24px] p-5 border border-slate-200/50 dark:border-slate-700/50 flex items-center gap-5 opacity-60 hover:opacity-100 transition-opacity duration-300"
                 >
-                  <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800/80 rounded-[16px] flex items-center justify-center text-2xl flex-shrink-0 grayscale opacity-60 border border-slate-300 dark:border-slate-700 shadow-inner">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-100 dark:bg-slate-800/80 rounded-[18px] flex items-center justify-center text-2xl flex-shrink-0 grayscale opacity-50 border border-slate-200 dark:border-slate-700 shadow-inner">
                     {c.icon}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-[15px] text-slate-700 dark:text-slate-300 truncate mb-0.5">{c.titulo}</p>
                     <p className="text-[13px] font-medium text-slate-500 dark:text-slate-500 truncate mb-2">{c.desc}</p>
-                    <span className="inline-flex px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest bg-slate-200 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500">
+                    <span className="inline-flex px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-slate-200 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500">
                       {c.categoria}
                     </span>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 ml-auto">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 ml-auto">
                     <Lock size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={2} />
                   </div>
                 </motion.div>
@@ -235,18 +240,18 @@ function Conquistas() {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* ─── EMPTY STATE (Nenhuma conquista no filtro) ─── */}
         {conquistasFiltradas.length === 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20 bg-white/50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-300 dark:border-slate-700"
+            className="text-center py-20 px-6 bg-white/50 dark:bg-slate-800/20 rounded-[32px] border border-dashed border-slate-300 dark:border-slate-700"
           >
-            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trophy size={36} className="text-slate-300 dark:text-slate-600" />
+            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-[24px] flex items-center justify-center mx-auto mb-5 border border-slate-200 dark:border-slate-700">
+              <Trophy size={40} className="text-slate-300 dark:text-slate-600" strokeWidth={1.5} />
             </div>
-            <p className="text-[18px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nenhuma conquista aqui</p>
-            <p className="text-[14px] text-slate-500 dark:text-slate-500">Mude a categoria para ver seu progresso.</p>
+            <p className="text-[20px] font-black text-slate-800 dark:text-slate-200 mb-2">Nenhuma conquista aqui</p>
+            <p className="text-[15px] font-medium text-slate-500 dark:text-slate-500">Mude a categoria no filtro acima para visualizar seu progresso em outras áreas.</p>
           </motion.div>
         )}
       </div>
