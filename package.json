@@ -1,7 +1,12 @@
 {
-  "dependencies": {
-    "three-stdlib": "^2.8.0",
-    "tldraw": "^4.3.1"
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm -w frontend run dev",
+    "build:frontend": "npm -w frontend run build",
+    "lint": "npm -w frontend run lint"
   },
   "overrides": {
     "react": "18.3.1",
