@@ -60,4 +60,10 @@ export default [
       'no-constant-binary-expression': 'warn',
     },
   },
+  {
+    files: ['src/contexts/**/*.{js,jsx}', 'src/features/social/context/**/*.{js,jsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ];
