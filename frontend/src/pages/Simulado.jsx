@@ -445,7 +445,7 @@ function Simulado() {
         .trim();
       
       // Remover texto ANTES do JSON (mas preservar o JSON completo)
-      const jsonStartMatch = cleanedResponse.match(/^[^[\{]*/);
+      const jsonStartMatch = cleanedResponse.match(/^[^[{]*/);
       if (jsonStartMatch && jsonStartMatch[0].length > 0) {
         cleanedResponse = cleanedResponse.substring(jsonStartMatch[0].length);
       }
@@ -466,7 +466,7 @@ function Simulado() {
       // Tentativa 1: Parse direto (caso mais comum)
       try {
         parsedQuestions = JSON.parse(cleanedResponse);
-      } catch (parseError) {
+      } catch {
         // Tentativa 2: Extrair array JSON completo
         try {
           // Encontrar início e fim do array

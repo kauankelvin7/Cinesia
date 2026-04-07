@@ -24,13 +24,9 @@ import {
   Monitor,
   Trash2,
   AlertTriangle,
-  Save,
-  Loader2,
   Shield,
   Eye,
   EyeOff,
-  X,
-  ChevronRight,
 } from 'lucide-react';
 import {
   updateProfile,
@@ -111,7 +107,7 @@ const Toggle = ({ label, description, checked, onChange, disabled }) => (
 );
 
 export default function Configuracoes() {
-  const { user, setUser, logout } = useAuth();
+  const { user, setUser } = useAuth();
   const { mode, setMode } = useTheme();
 
   // Form states

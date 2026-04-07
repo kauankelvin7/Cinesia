@@ -16,7 +16,6 @@ import {
   ClipboardList,
   PenTool,
   Bone,
-  ChevronRight,
   Trophy,
   BarChart3,
   History,
@@ -26,11 +25,9 @@ import {
 import Logo from './Logo';
 import ProfileModal from './ProfileModal';
 import UserMenu from './UserMenu';
-import { useAuth } from '../contexts/AuthContext-firebase';
 import { useSocial } from '../features/social/context/SocialContext';
 
 const Sidebar = memo(() => {
-  const { user } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const social = useSocial?.() || {};
   const pendingCount = social.pendingRequestsCount || 0;

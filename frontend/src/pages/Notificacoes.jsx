@@ -10,16 +10,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Bell,
-  BellOff,
   CheckCheck,
   Info,
   AlertTriangle,
   BookOpen,
   Loader2,
   Trash2,
-  Circle,
   Trophy,
-  CheckCircle2,
   Inbox
 } from 'lucide-react';
 import {

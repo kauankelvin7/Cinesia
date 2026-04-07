@@ -7,10 +7,9 @@
  */
 
 import React, { memo, useMemo, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Clock, Target, ArrowLeft, Star, Zap, Crown } from 'lucide-react';
-import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
-import { calculateScore, averageResponseTime, getResultData } from '../../utils/challengeHelpers';
+import { motion } from 'framer-motion';
+import { Medal, Clock, Target, ArrowLeft, Star, Zap, Crown } from 'lucide-react';
+import { getResultData } from '../../utils/challengeHelpers';
 
 /**
  * 🎊 Confetti Premium (Física Melhorada)
@@ -84,7 +83,7 @@ const ChallengeResults = memo(({ challenge, currentUserId, onClose }) => {
     );
   }
 
-  const { isWinner, isDraw, myScore, opponentScore, myCorrect, opponentCorrect, totalQ, myAvgTime, opponentAvgTime, opponentName, opponentPhoto } = results;
+  const { isWinner, isDraw, myCorrect, opponentCorrect, totalQ, myAvgTime, opponentAvgTime, opponentName, opponentPhoto } = results;
 
   // Animações de Cascata
   const containerVariant = {

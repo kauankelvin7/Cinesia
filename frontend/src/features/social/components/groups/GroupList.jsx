@@ -5,9 +5,8 @@
 
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, MessageCircle, ChevronRight, BookOpen } from 'lucide-react';
+import { Users, Plus, ChevronRight, BookOpen } from 'lucide-react';
 import { formatChatTime } from '../../utils/chatHelpers';
-import OnlineIndicator from '../shared/OnlineIndicator';
 
 const GroupList = memo(({ groups, onSelectGroup, onCreateGroup }) => {
   if (!groups || groups.length === 0) {

@@ -29,7 +29,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send,
   Mic,
   MicOff,
   X,
@@ -43,10 +42,7 @@ import {
   User,
   Loader,
   Sparkles,
-  AlertTriangle,
   RefreshCw,
-  Database,
-  Activity,
   SquarePen,
   ChevronUp,
   History,
@@ -73,7 +69,7 @@ import useKakabotContext from '../hooks/useKakabotContext';
 import useSpeechRecognition from '../hooks/useSpeechRecognition';
 import useKakabotSessoes from '../hooks/useKakabotSessoes';
 import useTextToSpeech from '../hooks/useTextToSpeech';
-import { extrairAcoes, executarAcao, executarAcoes } from '../utils/kakabotActions';
+import { extrairAcoes, executarAcoes } from '../utils/kakabotActions';
 import KakaAvatar from './kakabot/KakaAvatar';
 import KakaSkeleton from './kakabot/KakaSkeleton';
 
@@ -722,10 +718,10 @@ const KakaBot = () => {
 
   // ─── Estado — Conexão Gemini ───────────────────────────────────────────────
   // connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error'
-  const [geminiModel, setGeminiModel] = useState(null);
+  const [, setGeminiModel] = useState(null);
   const [activeModelName, setActiveModelName] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [errorMessage, setErrorMessage] = useState(null);
+  const [, setErrorMessage] = useState(null);
 
   // ─── Estado — Memória Persistente ─────────────────────────────────────────
   const [memoriaUsuario, setMemoriaUsuario] = useState(DEFAULT_MEMORY);

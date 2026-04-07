@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext-firebase';
-import { Mail, Lock, UserRound, Eye, EyeOff, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { Mail, Lock, UserRound, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '../components/ui/Input';
 import Button from '../components/ui/Button';

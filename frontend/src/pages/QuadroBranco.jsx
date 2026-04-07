@@ -4,12 +4,12 @@
  * Fix: Tratamento de schema e persistência robusta
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tldraw } from 'tldraw';
 import 'tldraw/tldraw.css';
 import { useTheme } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Trash2, Maximize2 } from 'lucide-react';
+import { Sparkles, Trash2 } from 'lucide-react';
 
 const PERSISTENCE_KEY = 'quadro-anatomia-cinesia';
 
@@ -113,7 +113,7 @@ export default function QuadroBranco() {
             try {
               editor.updateInstanceState({ isGridMode: true });
               setIsReady(true);
-            } catch (error) {
+            } catch {
               setIsReady(true);
             }
           }}

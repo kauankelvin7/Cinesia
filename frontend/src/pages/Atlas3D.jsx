@@ -5,14 +5,14 @@
  */
 
 import React, { useState, useRef, useCallback, Suspense, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Environment, ContactShadows } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Html, ContactShadows } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import {
-  X, RotateCcw, Info, ChevronRight, Search,
-  Eye, Layers, ChevronDown, Filter, ZoomIn, ZoomOut,
-  Activity, Bone, Brain, Heart, Sparkles, ChevronLeft
+  X, RotateCcw, ChevronRight, Search,
+  Eye, Layers, ChevronDown, Filter,
+  Activity, Bone, Sparkles, ChevronLeft
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -100,7 +100,6 @@ function createLimbGeo(points, radii, segs = 6) {
     const idx = Math.min(Math.floor(t * (radii.length - 1)), radii.length - 2);
     const lt = t * (radii.length - 1) - idx;
     const r = radii[idx] * (1 - lt) + radii[idx + 1] * lt;
-    const tangent = frames.tangents[i] || frames.tangents[frames.tangents.length - 1];
     const normal = frames.normals[i] || frames.normals[frames.normals.length - 1];
     const binormal = frames.binormals[i] || frames.binormals[frames.binormals.length - 1];
 
@@ -196,7 +195,6 @@ function _buildGeo(type) {
         const x = pos.getX(i);
         const y = pos.getY(i);
         const z = pos.getZ(i);
-        const r = Math.sqrt(x*x + z*z);
         // Formato de barril: mais largo no meio, estreita em cima e embaixo
         const barrel = 1.0 + 0.15 * Math.cos(y * Math.PI * 0.8);
         pos.setX(i, x * barrel * 1.05);
@@ -212,8 +210,6 @@ function _buildGeo(type) {
       const g = new THREE.SphereGeometry(0.92, 48, 32);
       const pos = g.getAttribute('position');
       for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i);
-        const y = pos.getY(i);
         const z = pos.getZ(i);
         if (z < 0) {
           pos.setZ(i, z * 0.65);

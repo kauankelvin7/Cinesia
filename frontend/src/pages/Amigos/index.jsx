@@ -8,7 +8,7 @@
 
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, UserPlus, Search, BookOpen, Swords, Sparkles } from 'lucide-react';
+import { Users, UserPlus, Search, BookOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext-firebase';
 import { useSocial } from '../../features/social/context/SocialContext';
@@ -47,7 +47,7 @@ const Amigos = memo(() => {
     declineRequest, removeFriend, blockUser, searchUsers,
   } = useFriends();
   
-  const { groups, loading: groupsLoading, createGroup, leaveGroup, removeMember } = useGroups();
+  const { groups, createGroup, leaveGroup, removeMember } = useGroups();
 
   const [myStreakDays, setMyStreakDays] = useState(0);
   const [activeTab, setActiveTab] = useState('friends');
@@ -75,7 +75,7 @@ const Amigos = memo(() => {
     try {
       const convId = await chatService.getOrCreateConversation(user.uid, friend.uid, user, friend);
       openConversation(convId);
-    } catch (err) {
+    } catch {
       toast.error('Erro ao abrir conversa');
     }
   }, [user, openConversation]);
@@ -152,7 +152,7 @@ const Amigos = memo(() => {
             try {
               const mConvId = await chatService.getOrCreateConversation(user.uid, member.uid, user, member);
               openConversation(mConvId);
-            } catch (err) {
+            } catch {
               toast.error('Erro ao abrir conversa');
             }
           }}

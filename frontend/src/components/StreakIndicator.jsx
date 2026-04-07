@@ -195,20 +195,6 @@ const StreakIndicator = ({
             ease: "easeInOut"
           }}
         >
-          {/* Efeito de brilho */}
-          {false && currentStreak > 0 && (
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
-              animate={{
-                x: ['-100%', '200%']
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-          )}
 
           <motion.div
             animate={currentStreak > 0 ? {

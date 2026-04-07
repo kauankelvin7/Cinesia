@@ -218,9 +218,6 @@ const BottomNavigation = memo(() => {
   const { user } = useAuth();
   const { totalUnread, toggleChat } = useSocial();
 
-  // Detecta se o chat está ativo pela rota
-  const chatAtivo = location.pathname.startsWith('/chat');
-
   const isExtraActive = MORE_ITEMS.some(
     (item) => item.path && location.pathname === item.path,
   );

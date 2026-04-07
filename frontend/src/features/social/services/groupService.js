@@ -4,7 +4,7 @@
  */
 
 import {
-  collection, doc, setDoc, getDoc, updateDoc, deleteDoc,
+  collection, doc, setDoc, getDoc, updateDoc,
   query, where, onSnapshot, Timestamp, arrayUnion, arrayRemove,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase-config';
@@ -58,7 +58,7 @@ export const groupService = {
   /**
    * Adiciona um membro ao grupo (máx 10).
    */
-  async addMember(conversationId, newMember, addedBy) {
+  async addMember(conversationId, newMember) {
     const convRef = doc(db, 'conversations', conversationId);
     const snap = await getDoc(convRef);
     if (!snap.exists()) throw new Error('Grupo não encontrado');

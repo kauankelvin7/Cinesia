@@ -35,7 +35,7 @@ const requiredEnvVars = [
 const missingVars = requiredEnvVars.filter((key) => !import.meta.env[key]);
 if (missingVars.length > 0) {
   // Loga mas não impede o app de subir — evita travar splash sem feedback
-  // eslint-disable-next-line no-console
+   
   console.error('[FIREBASE] Variáveis de ambiente faltando:', missingVars);
 }
 

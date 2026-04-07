@@ -142,7 +142,7 @@ export const getImageInfo = (base64String) => {
       tipo,
       avisos
     };
-  } catch (error) {
+  } catch {
     return {
       tamanhoKB: 0,
       tamanhoMB: 0,

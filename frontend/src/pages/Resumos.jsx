@@ -9,7 +9,7 @@
  * - Carregamento Consistente Sincronizado
  */
 
-import React, { useState, useEffect, useMemo, Suspense, lazy, memo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,15 +35,11 @@ import {
   X,
   Calendar,
   ClipboardList,
-  BookOpen,
   Lightbulb,
-  PenTool,
-  Sparkles,
   ArrowRight,
   Download,
   Clock,
   BarChart2,
-  ArrowUpDown,
   Layers,
   Eye,
   ZoomIn,
@@ -51,7 +47,6 @@ import {
   AlignLeft,
   ImagePlus,
   Paperclip,
-  XCircle,
   Image as ImageIcon2,
   Loader2,
   AlertTriangle,
@@ -344,7 +339,7 @@ function Resumos() {
       const urls = await Promise.all(uploads.map(f => uploadImage(f)));
       setFormData(prev => ({ ...prev, imagens: [...(prev.imagens || []), ...urls] }));
       toast.success(`${urls.length} imagem(ns) adicionada(s)!`);
-    } catch (err) {
+    } catch {
       toast.error('Erro ao enviar imagem. Tente novamente.');
     } finally {
       setUploadingImages(false);
@@ -669,7 +664,7 @@ function Resumos() {
                 >
                   <Lightbulb size={16} className="text-amber-500 shrink-0" strokeWidth={2.5} />
                   <p className="text-[13px] font-semibold text-amber-700 dark:text-amber-400">
-                    Dica Pro: Use o template de "Caso Clínico" para estruturar raciocínios rapidamente!
+                    Dica Pro: Use o template de &ldquo;Caso Clínico&rdquo; para estruturar raciocínios rapidamente!
                   </p>
                 </motion.div>
               </>

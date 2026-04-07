@@ -8,7 +8,7 @@
 
 import React, { memo, useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Swords, Loader2, Zap, WifiOff, ArrowLeft } from 'lucide-react';
+import { X, Swords, Zap, WifiOff, ArrowLeft } from 'lucide-react';
 import ChallengeQuestion from './ChallengeQuestion';
 import ChallengeScoreboard from './ChallengeScoreboard';
 import ChallengeResults from './ChallengeResults';

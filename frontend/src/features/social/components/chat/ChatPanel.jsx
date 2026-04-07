@@ -8,7 +8,7 @@
 
 import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, ArrowLeft, Sparkles, MessageSquare } from 'lucide-react';
+import { MessageCircle, X, Sparkles, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { useSocial } from '../../context/SocialContext';
 import { useChat } from '../../hooks/useChat';

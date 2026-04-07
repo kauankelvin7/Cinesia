@@ -1,263 +1,159 @@
 
 <div align="center">
 
-# 🧬 Cinesia
+# Cinesia
 
-**Sistema inteligente de estudos para fisioterapeutas**
+Plataforma de estudos para Fisioterapia com foco em organização, revisão espaçada, IA assistiva e experiência PWA.
 
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
+![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=black)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?logo=google&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Instalável-5A0FC8)
 
 </div>
 
 ---
 
-**Cinesia** é um sistema web e PWA inteligente criado para potencializar os estudos de estudantes de Fisioterapia. Centraliza resumos, flashcards com SM-2, simulados por IA, KakaBot, atlas 3D e pomodoro — tudo com sync em tempo real via Firebase.
+## Visão Geral
 
-> 📖 **Documentação completa:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/DEPLOY.md](docs/DEPLOY.md) · [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+O Cinesia é um monorepo com frontend React/Vite e um backend Java legado mantido para compatibilidade histórica. A experiência principal da aplicação está no `frontend/`, com Firebase como camada de persistência e autenticação.
 
+O sistema foi desenhado para apoiar estudos de Fisioterapia com:
+- resumos editor rich text
+- flashcards com repetição espaçada SM-2
+- simulados gerados com IA
+- KakaBot para apoio conversacional
+- atlas 3D, lousa digital e pomodoro
+- recursos sociais com grupos, chat e desafios
+- PWA instalável e sincronização em tempo real
 
+## Stack
 
-## 🧠 Contexto e Propósito
+| Camada | Tecnologia |
+| --- | --- |
+| Interface | React 18 + Vite |
+| Estilo | Tailwind CSS 4 + Framer Motion |
+| Estado e dados | Firebase Auth, Firestore e Storage |
+| IA | Google Gemini |
+| Navegação | React Router DOM |
+| Testes | Vitest + Testing Library |
+| Build | Vite PWA |
 
-Estudar Fisioterapia exige organização, revisão constante e acesso rápido a conteúdos confiáveis. O Cinesia foi desenvolvido para:
-- Centralizar materiais de estudo (resumos, flashcards, simulados, quadros brancos)
-- Ajudar estudantes a revisar, praticar e fixar conteúdos de forma ativa
-- Oferecer recursos inteligentes, como geração automática de questões e resumos com IA
-- Tornar o aprendizado mais dinâmico, visual e acessível em qualquer dispositivo (PWA)
+## Estrutura do Repositório
 
-## 👩‍⚕️ Público-Alvo
-
-Estudantes de graduação em Fisioterapia, cursinhos, residentes e profissionais que desejam revisar conteúdos de forma prática e moderna.
-
-## 🤖 Inteligência Artificial Integrada
-
-O sistema já conta com integração a LLMs (Google Gemini, OpenAI, Claude, Vertex AI), permitindo:
-- Geração automática de simulados e questões a partir de temas ou PDFs
-- Respostas didáticas e adaptativas via chat (KakaBot)
-- Futuramente: agentes de IA personalizados para tutoria, correção automática, sugestões de estudo e acompanhamento de progresso
-
-## 🚀 Visão de Futuro: Sistema com Agente de IA
-
-O Cinesia está sendo preparado para evoluir além de um simples organizador de estudos. A visão é transformar a plataforma em um **agente de IA educacional**:
-- Capaz de entender o perfil do estudante, sugerir trilhas de estudo, identificar dificuldades e adaptar conteúdos
-- Interagir de forma natural, proativa e personalizada
-- Automatizar tarefas repetitivas (resumos, revisões, geração de questões, feedback)
-- Integrar-se a outros sistemas e bancos de dados acadêmicos
-
----
-
-## 🚀 Arquitetura
-
-### ⚡ Serverless (Firebase)
-- **Firebase Authentication** (Login com Google + Email/Senha)
-- **Firestore Database** (NoSQL em tempo real)
-- **Firebase Storage** (Upload de imagens)
-- **Sem backend local** - Infraestrutura gerenciada pelo Google
-
-### Frontend
-- **React 18**
-- **Vite** (Build tool)
-- **React Router DOM** (Roteamento)
-- **React Quill** (Editor de texto rico)
-- **Firebase SDK** (Auth + Firestore + Storage)
-- **Framer Motion** (Animações)
-- **React Icons** (Ícones)
-- **PWA** (Progressive Web App)
-
-## 📋 Funcionalidades
-
-### ✅ Implementadas
-- 🔐 **Autenticação Firebase**
-  - Login com Google
-  - Login com Email/Senha
-  - Registro de novos usuários
-  - Estado persistente (auto-login)
-
-- ✨ **Gerenciamento de Matérias**
-  - Criar, editar, listar e excluir matérias
-  - Personalização com 8 cores diferentes
-  - Dados salvos no Firestore
-  - Isolamento por usuário (uid)
-
-- 📝 **Resumos com Editor Rico**
-  - Editor WYSIWYG com formatação completa
-  - Suporte a imagens, listas, cores e estilos
-  - Organização por matérias
-  - Armazenamento no Firestore
-
-- 🎴 **Flashcards com Imagens**
-  - Criação de flashcards com pergunta e resposta
-  - Upload de imagens no Firebase Storage
-  - Modo de estudo interativo com flip cards 3D
-  - Navegação entre flashcards
-  - URLs públicas de imagens
-
-- 📱 **PWA (Progressive Web App)**
-  - Instalável em dispositivos móveis
-  - Funciona offline (com cache do Firestore)
-  - Ícones e manifest configurados
-## 🏗️ Arquitetura Serverless
-
-O projeto usa **Firebase** como backend completo, eliminando a necessidade de servidores próprios:
-
-```
-Frontend (React + Firebase SDK)
-├── config/
-│   └── firebase-config.js      # Configuração Firebase (Auth, Firestore, Storage)
-├── services/
-│   └── firebaseService.js      # Camada de serviço (CRUD completo)
-├── contexts/
-│   └── AuthContext-firebase.jsx # Context de autenticação
-├── components/                  # Componentes reutilizáveis
-├── pages/                      # Páginas da aplicação
-│   ├── Materias.jsx
-│   ├── Flashcards.jsx
-│   └── Resumos.jsx
-└── App.jsx                     # Componente raiz
-
-Firebase (Backend Gerenciado)
-├── Authentication              # Login/Registro de usuários
-├── Firestore Database         # Banco NoSQL
-│   ├── materias/              # Coleção de matérias
-│   ├── flashcards/            # Coleção de flashcards
-│   └── resumos/               # Coleção de resumos
-└── Storage                     # Armazenamento de imagens
-    └── flashcards/{userId}/   # Imagens organizadas por usuário
+```text
+.
+├── frontend/              # Aplicação principal
+├── backend/               # Backend Java legado
+├── docs/                  # Arquitetura, deploy e contribuição
+├── firebase.json          # Configuração do hosting
+├── firestore.rules        # Regras do Firestore
+├── firestore.indexes.json  # Índices do Firestore
+└── scripts/               # Utilitários e scripts auxiliares
 ```
 
-## 🛠️ Configuração e Instalação
+## Principais Funcionalidades
+
+- autenticação com Google e email/senha
+- matérias, resumos e flashcards por usuário
+- revisão espaçada com SM-2
+- simulados e apoio de IA
+- comunidade com amigos, grupos, chat e desafios
+- quadro branco e atlas 3D
+- notificações, conquistas e métricas de estudo
+- suporte a PWA e uso em dispositivos móveis
+
+## Como Executar
 
 ### Pré-requisitos
-- Node.js 18 ou superior
-- Conta no [Firebase](https://firebase.google.com)
 
-### 1️⃣ Configurar Firebase
+- Node.js 18+
+- npm
+- conta Firebase com projeto configurado
 
-#### Criar Projeto Firebase:
-1. Acesse [Firebase Console](https://console.firebase.google.com)
-2. Clique em "Adicionar projeto"
-3. Nome: **Cinesia** (ou outro de sua escolha)
-4. Desative Google Analytics (opcional)
-
-#### Configurar Authentication:
-1. No menu lateral → **Authentication**
-2. Clique em "Começar"
-3. Ative os métodos:
-   - ✅ **Google** (configure OAuth)
-   - ✅ **Email/Senha**
-
-#### Configurar Firestore Database:
-1. No menu lateral → **Firestore Database**
-2. Clique em "Criar banco de dados"
-3. Escolha **Modo de produção**
-4. Região: **us-central** (ou mais próxima)
-5. Vá em **Regras** e cole:
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{collection}/{docId} {
-      allow read, write: if request.auth != null 
-                         && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null 
-                    && request.auth.uid == request.resource.data.uid;
-    }
-  }
-}
-```
-
-#### Configurar Storage:
-1. No menu lateral → **Storage**
-2. Clique em "Começar"
-3. Modo de produção → **us-central**
-4. Vá em **Regras** e cole:
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /flashcards/{userId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}
-```
-
-#### Obter Credenciais:
-1. ⚙️ **Configurações do Projeto** (ícone de engrenagem)
-2. Role até "Seus apps" → Clique no ícone **Web** (`</>`)
-3. Registre o app: **Cinesia Web**
-4. Copie o objeto `firebaseConfig`
-5. Cole em `frontend/src/config/firebase-config.js`
-
-### 2️⃣ Configurar Frontend
+### Instalação
 
 ```bash
-# Navegar para o diretório frontend
-cd frontend
-
-# Instalar dependências
 npm install
+```
 
-# Executar em modo de desenvolvimento
+### Desenvolvimento
+
+```bash
+npm run dev:frontend
+```
+
+Ou, diretamente no frontend:
+
+```bash
+cd frontend
 npm run dev
 ```
 
-O frontend estará rodando em: `http://localhost:5173` (porta padrão do Vite)
+### Build
 
-## 🔥 Estrutura de Dados Firestore
-
-### Coleção: `materias`
-```javascript
-{
-  id: "auto-id",
-  nome: "Anatomia Humana",
-  descricao: "Estudo do corpo",
-  cor: "#0D9488",
-  uid: "firebase-user-id",
-  createdAt: Timestamp,
-  updatedAt: Timestamp
-}
+```bash
+npm run build:frontend
 ```
 
-### Coleção: `flashcards`
-```javascript
-{
-  id: "auto-id",
-  pergunta: "O que é a escápula?",
-  resposta: "Osso triangular...",
-  imagemUrl: "https://firebasestorage...",
-  materiaId: "id-da-materia",
-  uid: "firebase-user-id",
-  createdAt: Timestamp,
-  updatedAt: Timestamp
-}
+### Lint
+
+```bash
+npm run lint
 ```
 
-### Coleção: `resumos`
-```javascript
-{
-  id: "auto-id",
-  titulo: "Sistema Esquelético",
-  conteudo: "<p>HTML do editor...</p>",
-  materiaId: "id-da-materia",
-  uid: "firebase-user-id",
-  createdAt: Timestamp,
-  updatedAt: Timestamp
+### Testes
+
+```bash
+cd frontend
+npm run test
 ```
 
-## 🚀 Como Usar
+## Configuração Firebase
 
-### 1. Fazer Login
-- Clique em "Entrar com Google" ou
-- Registre-se com email/senha
+As credenciais do Firebase devem ser fornecidas nas variáveis `VITE_*` usadas em `frontend/src/config/firebase-config.js`.
 
-### 2. Criar Matérias
+Campos esperados:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
+- `VITE_GEMINI_API_KEY`
+
+## Deploy
+
+O fluxo oficial de deploy está documentado em [docs/DEPLOY.md](docs/DEPLOY.md).
+
+Resumo rápido:
+- Firebase Hosting é o caminho recomendado
+- GitHub Actions automatiza o deploy na branch principal
+- Vercel também é suportado com `frontend/` como root directory
+
+## Documentação
+
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Deploy](docs/DEPLOY.md)
+- [Contribuição](docs/CONTRIBUTING.md)
+
+## Observações
+
+- O backend Java existente é legado e foi mantido para compatibilidade com partes antigas do ecossistema.
+- O fluxo principal de produto está concentrado no frontend e nos serviços Firebase.
+- Variáveis `VITE_*` entram no bundle no build e não devem conter segredos sensíveis fora do escopo esperado para frontend.
+
+## Contribuição
+
+Antes de abrir PR ou enviar alterações:
+1. rode `npm run lint`
+2. rode `npm run build:frontend`
+3. valide o comportamento das rotas principais no navegador
+
+Consulte [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) para o processo completo.
 1. Vá em "Matérias"
 2. Clique em "Nova Matéria"
 3. Preencha nome, cor e descrição

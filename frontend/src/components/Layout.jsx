@@ -14,8 +14,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   AlertTriangle, 
-  RefreshCw,
-  Sparkles
+  RefreshCw
 } from 'lucide-react';
 
 /* ── Error Boundary com Design Premium ── */

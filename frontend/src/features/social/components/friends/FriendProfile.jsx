@@ -8,14 +8,14 @@
 
 import React, { memo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Swords, BookOpen, Flame, UserMinus } from 'lucide-react';
+import { X, MessageCircle, Swords, BookOpen, Flame } from 'lucide-react';
 import OnlineIndicator from '../shared/OnlineIndicator';
 import StudyingBadge from '../shared/StudyingBadge';
 import StreakComparison from '../shared/StreakComparison';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
 import { friendsService } from '../../services/friendsService';
 
-const FriendProfile = memo(({ friend, friendStatus, isOpen, onClose, onMessage, onChallenge, onRemove, myStreak = 0 }) => {
+const FriendProfile = memo(({ friend, friendStatus, isOpen, onClose, onMessage, onChallenge, myStreak = 0 }) => {
   const [profile, setProfile] = useState(null);
   const [imgError, setImgError] = useState(false);
 
@@ -122,7 +122,7 @@ const FriendProfile = memo(({ friend, friendStatus, isOpen, onClose, onMessage, 
               <div className="px-6 pb-6">
                 {displayData.bio && (
                   <p className="text-[14px] text-center text-slate-600 dark:text-slate-300 mb-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl italic">
-                    "{displayData.bio}"
+                    &ldquo;{displayData.bio}&rdquo;
                   </p>
                 )}
 

@@ -30,28 +30,6 @@ function getCardBack(card) {
   return card.back || card.verso || card.resposta || '';
 }
 
-function generateHeuristicDistractors(correctAnswer, theme) {
-  const base = String(correctAnswer || '').trim();
-  if (!base) return [];
-
-  const t = theme || 'fisioterapia';
-  const variants = [
-    `Conduta focada apenas na fase aguda em ${t}`,
-    `Abordagem prioritariamente compensatória em ${t}`,
-    `Intervenção de suporte sem foco no mecanismo principal em ${t}`,
-  ];
-
-  // Se houver número na resposta, cria distrações numéricas plausíveis
-  const numMatch = base.match(/\d+/);
-  if (numMatch) {
-    const n = Number(numMatch[0]);
-    variants.push(base.replace(numMatch[0], String(Math.max(1, n - 1))));
-    variants.push(base.replace(numMatch[0], String(n + 1)));
-  }
-
-  return uniqueNonEmpty(variants).slice(0, 3);
-}
-
 async function generateDistractorsWithGemini(question, correctAnswer, theme, excluded = []) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) return [];

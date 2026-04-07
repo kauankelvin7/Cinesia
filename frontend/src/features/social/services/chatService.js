@@ -5,9 +5,9 @@
  */
 
 import {
-  collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, Timestamp,
-  increment, writeBatch, startAfter,
+  increment, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase-config';
 import { handleFirestoreError } from '../../../utils/firestoreErrorHandler';

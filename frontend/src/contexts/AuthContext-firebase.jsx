@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
     const timeout = setTimeout(() => {
       setLoading((prev) => {
         if (prev) {
-          // eslint-disable-next-line no-console
+           
           console.warn('[AUTH] Timeout de segurança ativado — Firebase não respondeu em 10s');
           return false;
         }
@@ -112,8 +112,7 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (email, password) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
+      await signInWithEmailAndPassword(auth, email, password);
       
       navigate('/');
       return { success: true };
@@ -144,8 +143,6 @@ export const AuthProvider = ({ children }) => {
         displayName: nome
       });
       
-      const idToken = await userCredential.user.getIdToken();
-      
       navigate('/');
       return { success: true };
     } catch (error) {
@@ -166,8 +163,7 @@ export const AuthProvider = ({ children }) => {
    */
   const loginWithGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
+      await signInWithPopup(auth, googleProvider);
       
       navigate('/');
       return { success: true };

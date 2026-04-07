@@ -13,7 +13,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Icons
 import { 
@@ -24,7 +24,6 @@ import {
   CreditCard,
   FileText,
   Palette,
-  TrendingUp,
   Search,
   ArrowUpDown,
   ChevronRight,
@@ -75,7 +74,7 @@ const CORES_DISPONIVEIS = [
 function Materias() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { loadData: loadCachedData } = useDashboardData();
+  useDashboardData();
   
   const [materias, setMaterias] = useState([]);
   const [allFlashcards, setAllFlashcards] = useState([]);
@@ -123,19 +122,6 @@ function Materias() {
     return Math.round((materias.filter(m => m.concluida).length / materias.length) * 100);
   }, [materias]);
 
-  const lastActivityByMateria = useMemo(() => {
-    const map = {};
-    allFlashcards.forEach(fc => {
-      const mid = fc.materiaId;
-      if (!mid) return;
-      const ts = fc.updatedAt?.toDate?.() || fc.updatedAt || fc.createdAt?.toDate?.() || fc.createdAt;
-      if (!ts) return;
-      const date = ts instanceof Date ? ts : new Date(ts);
-      if (!map[mid] || date > map[mid]) map[mid] = date;
-    });
-    return map;
-  }, [allFlashcards]);
-
   const filterAndSort = (list) => {
     let filtered = list;
     if (searchTerm.trim()) {
@@ -158,18 +144,6 @@ function Materias() {
         break;
     }
     return sorted;
-  };
-
-  const formatTimeAgo = (date) => {
-    if (!date) return null;
-    const now = new Date();
-    const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Hoje';
-    if (diffDays === 1) return 'Ontem';
-    if (diffDays < 7) return `${diffDays} dias atrás`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} sem. atrás`;
-    return `${Math.floor(diffDays / 30)} mês(es) atrás`;
   };
 
   const hexToRgba = (hex, alpha) => {
@@ -225,7 +199,7 @@ function Materias() {
       resetForm();
       setError(null);
       toast.success(editingId ? 'Matéria atualizada com sucesso!' : 'Matéria criada com sucesso!');
-    } catch (err) {
+    } catch {
       setError('Não foi possível salvar a matéria. Tente novamente.');
       toast.error('Não foi possível salvar a matéria.');
     }
@@ -246,7 +220,7 @@ function Materias() {
     try {
       await atualizarMateria(materia.id, { ...materia, concluida: !materia.concluida });
       await carregarMaterias();
-    } catch (err) {
+    } catch {
       toast.error('Erro ao atualizar status da matéria.');
     }
   };
@@ -266,7 +240,7 @@ function Materias() {
       await deletarMateria(confirmDelete.id);
       await carregarMaterias();
       toast.success('Matéria excluída com sucesso.');
-    } catch (err) {
+    } catch {
       toast.error('Não foi possível excluir a matéria.');
     } finally {
       setIsDeleting(false);

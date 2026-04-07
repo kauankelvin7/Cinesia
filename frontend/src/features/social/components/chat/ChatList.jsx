@@ -7,7 +7,7 @@
  */
 
 import React, { memo } from 'react';
-import { MessageCircle, Search, Swords, FileText, Sparkles } from 'lucide-react';
+import { MessageCircle, Swords, FileText, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import OnlineIndicator from '../shared/OnlineIndicator';

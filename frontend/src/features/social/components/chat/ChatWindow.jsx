@@ -7,7 +7,7 @@
  */
 
 import React, { memo, useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, ChevronDown, X, Sparkles, Clock, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronDown, X, Sparkles, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { useChat } from '../../hooks/useChat';

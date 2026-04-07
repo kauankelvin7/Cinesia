@@ -4,19 +4,15 @@
  */
 
 import React, { memo, useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Users,
-  MoreVertical,
   Send,
   BookOpen,
-  Info,
 } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { useChat } from '../../hooks/useChat';
 import { formatMessageTime } from '../../utils/chatHelpers';
-import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
 import TypingIndicator from '../chat/TypingIndicator';
 
 const GroupChat = memo(({ group, onBack, onShowMembers }) => {

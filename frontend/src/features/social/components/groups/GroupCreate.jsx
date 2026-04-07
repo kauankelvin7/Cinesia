@@ -7,13 +7,11 @@ import React, { memo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Users, Plus, Loader2, Search, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';
 
 const MAX_MEMBERS = 10;
 
 const GroupCreate = memo(({ isOpen, onClose, friends = [], onCreateGroup }) => {
-  const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFriends, setSelectedFriends] = useState([]);

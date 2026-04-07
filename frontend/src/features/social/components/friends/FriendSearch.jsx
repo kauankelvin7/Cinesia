@@ -7,7 +7,7 @@
  */
 
 import React, { memo, useState, useRef, useCallback } from 'react';
-import { Search, UserPlus, Clock, Check, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import { Search, UserPlus, Clock, Check, Loader2, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';

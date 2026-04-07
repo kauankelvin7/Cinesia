@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  BookOpen, CreditCard, FileText, Calendar, Flame, Rocket,
+  BookOpen, CreditCard, FileText, Calendar, Flame,
   ChevronLeft, ChevronRight, Sun, Moon, Trophy, Sparkles,
   ArrowRight, MessageCircle, Compass, User, Zap, Dna
 } from 'lucide-react';

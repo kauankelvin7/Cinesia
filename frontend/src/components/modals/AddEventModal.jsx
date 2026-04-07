@@ -14,8 +14,7 @@ import {
   BookOpen, 
   FileText, 
   GraduationCap,
-  Check,
-  Sparkles
+  Check
 } from 'lucide-react';
 import { Input } from '../ui/Input';
 import Button from '../ui/Button';
@@ -75,7 +74,7 @@ const AddEventModal = ({
     try {
       await onSave({ titulo: titulo.trim(), tipo, data: eventDate });
       onClose();
-    } catch (err) {
+    } catch {
       setError('Erro ao salvar. Tente novamente.');
     } finally {
       setIsSubmitting(false);

@@ -23,7 +23,7 @@ const limparMarkdown = (text) =>
     .replace(/#{1,6}\s/g, '')          // títulos
     .replace(/\n{2,}/g, '. ')          // parágrafos viram pausa
     .replace(/\n/g, ' ')              // quebras de linha
-    .replace(/[•\-]\s/g, '')           // bullets
+    .replace(/[•-]\s/g, '')           // bullets
     .trim();
 
 /**

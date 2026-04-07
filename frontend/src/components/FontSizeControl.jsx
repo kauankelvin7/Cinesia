@@ -3,7 +3,6 @@
  * * Controle visual de tamanho de fonte integrado ao Design System
  * Design premium com animações de deslizamento e feedback visual progressivo
  */
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Type, Sparkles } from 'lucide-react';
@@ -106,7 +105,7 @@ const FontSizeControl = ({ variant = 'default' }) => {
       </div>
 
       <p className="mt-4 text-center text-[12px] font-medium text-slate-400 italic">
-        "O tamanho ideal do texto melhora a retenção do conteúdo em 20%."
+        &ldquo;O tamanho ideal do texto melhora a retenção do conteúdo em 20%.&rdquo;
       </p>
     </div>
   );

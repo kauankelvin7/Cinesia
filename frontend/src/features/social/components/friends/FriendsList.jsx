@@ -7,7 +7,7 @@
  */
 
 import React, { memo } from 'react';
-import { Users, Search, Loader2, Sparkles, Wifi, Moon } from 'lucide-react';
+import { Search, Loader2, Sparkles, Wifi, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FriendCard from './FriendCard';
 

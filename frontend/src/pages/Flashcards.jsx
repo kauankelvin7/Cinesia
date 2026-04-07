@@ -39,7 +39,7 @@ import { calculateSM2, isDueForReview, getNextReviewLabel } from '../utils/sm2';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
-import { Input, Textarea, Select } from '../components/ui/Input';
+import { Textarea, Select } from '../components/ui/Input';
 import FlashcardItem from '../components/FlashcardItem';
 import Badge from '../components/ui/Badge';
 import ConfirmModal from '../components/ui/ConfirmModal';

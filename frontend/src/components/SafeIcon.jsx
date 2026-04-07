@@ -39,7 +39,7 @@ const SafeIcon = memo(({
         BiIcons[name] || 
         FallbackIcon
       );
-    } catch (error) {
+    } catch {
       return FallbackIcon;
     }
   };

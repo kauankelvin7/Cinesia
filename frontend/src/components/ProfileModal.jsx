@@ -23,17 +23,12 @@ import {
   Check, 
   Loader2,
   Camera,
-  Type,
-  Eye,
   Shield,
   Calendar,
   Sun,
   Moon,
   Monitor,
   Palette,
-  Settings2,
-  Sparkles,
-  ImagePlus,
   Trash2,
 } from 'lucide-react';
 
@@ -56,7 +51,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const ProfileModal = ({ isOpen, onClose }) => {
   const { user, setUser } = useAuth();
-  const { mode, setMode, isDarkMode } = useTheme();
+  const { mode, setMode } = useTheme();
   const fileInputRef = useRef(null);
   const [displayName, setDisplayName] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -134,7 +129,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
         setUploadingPhoto(true);
         try {
           photoURL = await uploadImage(photoFile);
-        } catch (uploadErr) {
+        } catch {
           toast.error('Erro ao enviar foto. Salvando dados básicos.');
         } finally {
           setUploadingPhoto(false);
@@ -162,7 +157,7 @@ const ProfileModal = ({ isOpen, onClose }) => {
       setSuccess(true);
       toast.success('Perfil atualizado! ✨');
       setTimeout(() => onClose(), 1200);
-    } catch (err) {
+    } catch {
       hapticError();
       setError('Não foi possível salvar as alterações.');
     } finally {

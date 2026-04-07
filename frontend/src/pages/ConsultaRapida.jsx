@@ -14,7 +14,6 @@ import {
   ClipboardList,
   Heart,
   Activity,
-  Thermometer,
   ChevronDown,
   ChevronRight,
   Search,
@@ -28,7 +27,6 @@ import {
   Flame,
   FileHeart
 } from 'lucide-react';
-import { Input } from '../components/ui/Input';
 import {
   sinaisVitaisData,
   dermatomosData,
@@ -398,7 +396,7 @@ function ConsultaRapida() {
                   <Search size={32} className="text-slate-300 dark:text-slate-600" />
                 </div>
                 <p className="text-[18px] font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  Nenhum resultado para "{searchTerm}"
+                  Nenhum resultado para &ldquo;{searchTerm}&rdquo;
                 </p>
                 <p className="text-[14px] text-slate-500 dark:text-slate-400">
                   Tente buscar por termos mais genéricos (Ex: FC, C5, ombro, dor).

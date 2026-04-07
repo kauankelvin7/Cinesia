@@ -11,7 +11,6 @@ import {
   UserMinus,
   LogOut,
   MessageCircle,
-  Shield,
 } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext-firebase';
 import { getInitials, getAvatarColor } from '../../utils/chatHelpers';

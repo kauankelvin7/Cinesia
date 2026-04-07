@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useEffect } from 'react';
-import { Trash2, Copy, Check, Swords, Trophy, Clock, XCircle, Loader2 } from 'lucide-react';
+import { Trash2, Copy, Check, Swords, Trophy, Clock, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../../../../config/firebase-config';

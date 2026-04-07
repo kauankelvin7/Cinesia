@@ -519,7 +519,7 @@ const Home = () => {
       setDashboardData(updatedData);
       setConfirmDeleteEvento({ isOpen: false, evento: null });
       toast.success('Evento excluído com sucesso.');
-    } catch (error) {
+    } catch {
       toast.error('Não foi possível excluir o evento.');
     } finally {
       setIsDeletingEvento(false);
@@ -1271,7 +1271,7 @@ const Home = () => {
           <>
             Tem certeza que deseja excluir o evento{' '}
             <span className="font-semibold" style={{ color: 'var(--text-1)' }}>
-              "{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}"
+              &ldquo;{confirmDeleteEvento.evento?.titulo || confirmDeleteEvento.evento?.title}&rdquo;
             </span>
             ?<br />
             <span className="font-medium mt-2 block" style={{ color: 'var(--accent)' }}>

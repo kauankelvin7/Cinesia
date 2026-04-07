@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Camera,
@@ -20,7 +20,6 @@ import {
   Save,
   UserCircle2,
   Image as ImageIcon,
-  Loader2,
   X,
   CheckCircle2,
   Calendar,
@@ -28,7 +27,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { auth, db, storage } from '../config/firebase-config';
 import { useAuth } from '../contexts/AuthContext-firebase';
@@ -148,7 +147,7 @@ export default function MeuPerfil() {
         try {
           const storageRef = ref(storage, `profile-pictures/${user.uid}/avatar.${ext}`);
           await deleteObject(storageRef);
-        } catch (e) { /* File may not exist */ }
+        } catch { /* File may not exist */ }
       }
 
       // Update Auth profile

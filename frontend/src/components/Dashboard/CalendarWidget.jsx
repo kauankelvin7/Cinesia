@@ -11,7 +11,7 @@ import 'react-calendar/dist/Calendar.css';
 import '../../styles/calendar.css';
 import { CalendarDays, Trash2 } from 'lucide-react';
 
-const CalendarWidget = ({ eventos = [], onOpenAddModal, onClickDay, onDeleteEvento }) => {
+const CalendarWidget = ({ eventos = [], onClickDay, onDeleteEvento }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Check if date has events

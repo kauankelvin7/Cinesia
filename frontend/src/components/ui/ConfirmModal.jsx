@@ -8,7 +8,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, Trash2, X, Info, Sparkles, Loader2 } from 'lucide-react';
+import { AlertTriangle, Trash2, Info, Loader2 } from 'lucide-react';
 import Button from './Button';
 
 const ConfirmModal = ({
@@ -74,7 +74,7 @@ const ConfirmModal = ({
 
   const messageContent = message || (
     <p className="text-[14px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-      Tem certeza que deseja remover <span className="font-bold text-slate-900 dark:text-slate-100">"{itemName}"</span>? 
+      Tem certeza que deseja remover <span className="font-bold text-slate-900 dark:text-slate-100">&ldquo;{itemName}&rdquo;</span>? 
       <br />
       <span className="text-red-500/80 dark:text-red-400/80 text-[13px] font-bold">Esta ação é irreversível.</span>
     </p>
