@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X, Share, Plus, Smartphone, Zap, Wifi, Sparkles } from 'lucide-react';
 import { canInstall, showInstallPrompt, shouldShowIOSInstallBanner, dismissIOSInstallBanner } from '../utils/pwaUtils';
+import Button from './ui/Button';
 
 const PWAInstallBanner = () => {
   const [showBanner, setShowBanner] = useState(false);

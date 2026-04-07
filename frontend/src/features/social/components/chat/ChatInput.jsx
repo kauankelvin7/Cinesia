@@ -72,6 +72,7 @@ const EmojiPicker = memo(({ onSelect, onClose }) => {
     </motion.div>
   );
 });
+EmojiPicker.displayName = 'EmojiPicker';
 
 const ChatInput = memo(({ onSend, onTyping, disabled }) => {
   const [text, setText] = useState('');

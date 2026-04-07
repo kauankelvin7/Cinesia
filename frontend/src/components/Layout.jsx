@@ -99,6 +99,7 @@ const MobileTopbar = memo(({ onOpenDrawer }) => {
     </header>
   );
 });
+MobileTopbar.displayName = 'MobileTopbar';
 
 const Layout = memo(({ children }) => {
   const location = useLocation();

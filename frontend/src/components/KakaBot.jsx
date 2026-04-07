@@ -96,6 +96,12 @@ const sanitizarTexto = (texto) =>
     .replace(/```json[\s\S]*?```/g, '')
     .trim();
 
+const stripUnsafeControlChars = (value) =>
+  String(value || '')
+    .replace(/undefined|null/g, '')
+    .replace(/[\p{Cc}\uFFFD]/gu, (char) => (char === '\n' || char === '\r' || char === '\t' ? char : ''))
+    .trim();
+
 /**
  * Respostas locais para mensagens triviais que não precisam do Gemini.
  * Economiza tokens e reduz latência em interações simples.
@@ -1105,7 +1111,7 @@ const KakaBot = () => {
     const pageContext = PAGE_CONTEXTS[location.pathname] || '';
     let systemPromptRaw = buildSystemPrompt(memoriaUsuario, dadosSistema, pageContext) + contextoHistorico;
     // Sanitiza prompt: remove undefined/null, força string
-    systemPromptRaw = String(systemPromptRaw || '').replace(/undefined|null/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '').trim();
+    systemPromptRaw = stripUnsafeControlChars(systemPromptRaw);
     let systemPrompt = systemPromptRaw.length > MAX_SYSTEM_PROMPT_CHARS
       ? systemPromptRaw.substring(0, MAX_SYSTEM_PROMPT_CHARS) + '\n\n[contexto truncado]'
       : systemPromptRaw;
@@ -1114,7 +1120,7 @@ const KakaBot = () => {
     const remembered = (sessaoAtual?.mensagens || [])
       .filter((m) => !m.isSystem)
       .filter((m) => typeof m.content === 'string' && m.content.trim() !== '' && m.content !== undefined && m.content !== null)
-      .map((m) => ({ ...m, content: String(m.content).replace(/undefined|null/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '').trim() }))
+      .map((m) => ({ ...m, content: stripUnsafeControlChars(m.content) }))
       .filter((m) => m.content.length > 0)
       .slice(-(MAX_HISTORICO_GEMINI * 2));
 
@@ -1311,9 +1317,7 @@ const KakaBot = () => {
         : userMessage;
 
       // Sanitização
-      const mensagemLimpa = mensagemComContexto
-        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFD]/g, '')
-        .trim();
+      const mensagemLimpa = stripUnsafeControlChars(mensagemComContexto);
 
       if (!mensagemLimpa) {
         setIsLoading(false);

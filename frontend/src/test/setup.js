@@ -4,6 +4,7 @@
  */
 
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock ResizeObserver (not available in jsdom)
 class ResizeObserverMock {

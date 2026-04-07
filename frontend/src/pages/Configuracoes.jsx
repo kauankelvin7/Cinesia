@@ -287,13 +287,17 @@ export default function Configuracoes() {
         const storageRef = ref(storage, `profile-pictures/${user.uid}`);
         const listResult = await listAll(storageRef);
         await Promise.all(listResult.items.map(item => deleteObject(item)));
-      } catch (e) { }
+      } catch {
+        // Ignora erros de limpeza de imagens de perfil para seguir com a exclusao.
+      }
 
       try {
         const flashStorageRef = ref(storage, `flashcards/${user.uid}`);
         const flashList = await listAll(flashStorageRef);
         await Promise.all(flashList.items.map(item => deleteObject(item)));
-      } catch (e) { }
+      } catch {
+        // Ignora erros de limpeza de imagens de flashcards para seguir com a exclusao.
+      }
 
       await deleteUser(auth.currentUser);
       toast.success('Conta excluída permanentemente.');

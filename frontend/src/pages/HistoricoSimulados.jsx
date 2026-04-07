@@ -25,6 +25,7 @@ import {
 import { listarSimulados, criarFlashcard } from '../services/firebaseService';
 import { useAuth } from '../contexts/AuthContext-firebase';
 import Button from '../components/ui/Button';
+import { toast } from 'sonner';
 
 const formatTime = (s) => {
   if (!s || s <= 0) return '--:--';

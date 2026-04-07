@@ -56,11 +56,6 @@ export default function OnboardingFlow() {
 
   const uid = user?.uid || user?.id;
 
-  // Bloqueia UI até autenticação estar pronta
-  if (!uid || !auth.currentUser) {
-    return <div style={{textAlign:'center',marginTop:'2rem'}}>Aguardando autenticação...</div>;
-  }
-
   // ─── State ───────────────────────────────────────────────────────────────────
   const [status, setStatus] = useState('checking'); // checking | show | done
   const [step, setStep] = useState(1);
@@ -196,6 +191,10 @@ export default function OnboardingFlow() {
   }, [uid, onboardingData, navigate]);
 
   // ─── Render conditions ──────────────────────────────────────────────────────
+  if (!uid || !auth.currentUser) {
+    return <div style={{ textAlign: 'center', marginTop: '2rem' }}>Aguardando autenticação...</div>;
+  }
+
   if (status !== 'show') return null;
 
   const isSkippable = SKIPPABLE_STEPS.includes(step);

@@ -83,6 +83,7 @@ const OptimizedImage = memo(({
     </div>
   );
 });
+OptimizedImage.displayName = 'OptimizedImage';
 
 /**
  * 👤 AVATAR IMAGE PREMIUM
@@ -122,5 +123,6 @@ export const AvatarImage = memo(({ src, name = '', size = 40, className = '', ..
     />
   );
 });
+AvatarImage.displayName = 'AvatarImage';
 
 export default OptimizedImage;

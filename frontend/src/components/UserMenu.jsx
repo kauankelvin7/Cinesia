@@ -66,6 +66,7 @@ const ThemeSegmented = memo(() => {
     </div>
   );
 });
+ThemeSegmented.displayName = 'ThemeSegmented';
 
 /* ── Menu Item Premium ── */
 const MenuItem = memo(({ icon: Icon, label, onClick, danger, badge }) => (
@@ -90,6 +91,7 @@ const MenuItem = memo(({ icon: Icon, label, onClick, danger, badge }) => (
     )}
   </button>
 ));
+  MenuItem.displayName = 'MenuItem';
 
 /* ── Componente Principal ── */
 const UserMenu = ({ onOpenProfile, className = '' }) => {

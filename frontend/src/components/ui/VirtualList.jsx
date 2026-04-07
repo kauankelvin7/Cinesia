@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const VirtualList = memo(({
   items = [],
@@ -86,6 +86,7 @@ const VirtualList = memo(({
     </div>
   );
 });
+VirtualList.displayName = 'VirtualList';
 
 /* ─── VIRTUAL GRID PREMIUM ─── */
 export const VirtualGrid = memo(({
@@ -187,5 +188,6 @@ export const VirtualGrid = memo(({
     </div>
   );
 });
+VirtualGrid.displayName = 'VirtualGrid';
 
 export default VirtualList;

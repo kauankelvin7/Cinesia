@@ -65,6 +65,7 @@ const ChallengeInviteMessage = memo(({ attachedContent, isOwn, createdAt, onAcce
     </div>
   );
 });
+ChallengeInviteMessage.displayName = 'ChallengeInviteMessage';
 
 /* ─── Chat Message Main Component ─── */
 const ChatMessage = memo(({ message, isOwn, isFirstInGroup, isLastInGroup, onOpenContent, onAcceptChallenge, onDeclineChallenge, onDelete }) => {
@@ -92,7 +93,13 @@ const ChatMessage = memo(({ message, isOwn, isFirstInGroup, isLastInGroup, onOpe
     setShowActions(false);
   }, [message.id, onDelete]);
 
-  const isEmojiOnly = text && /^[\p{Emoji}\p{Emoji_Presentation}\p{Emoji_Modifier}\p{Emoji_Modifier_Base}\p{Emoji_Component}\u200d\uFE0F\s]{1,11}$/u.test(text.trim()) && text.trim().length <= 11;
+  const trimmedText = (text || '').trim();
+  const emojiChars = [...trimmedText].filter((ch) => !/\s/u.test(ch));
+  const isEmojiOnly =
+    trimmedText.length > 0 &&
+    emojiChars.length > 0 &&
+    emojiChars.length <= 11 &&
+    emojiChars.every((ch) => /\p{Extended_Pictographic}/u.test(ch));
 
   // 3. APENAS DEPOIS DOS HOOKS PODEMOS TER RETORNOS CONDICIONAIS
   if (type === 'system') {
