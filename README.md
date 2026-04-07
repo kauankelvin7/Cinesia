@@ -345,7 +345,9 @@ Seu app estará em: `https://cinesia-72d45.web.app`
 
 ## 📚 Documentação Adicional
 
-- [MIGRACAO_FIREBASE.md](MIGRACAO_FIREBASE.md) - Detalhes da migração para Firebase
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Arquitetura e organização técnica
+- [docs/DEPLOY.md](docs/DEPLOY.md) - Deploy em Firebase Hosting e Vercel
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) - Fluxo de contribuição
 - [Firebase Docs](https://firebase.google.com/docs)
 - [React Docs](https://react.dev)
 - [Vite Docs](https://vitejs.dev)
@@ -377,7 +379,7 @@ Seu app estará em: `https://cinesia-72d45.web.app`
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT.
 
 ## ✨ Autor
 
@@ -386,59 +388,5 @@ Desenvolvido com ❤️ para estudantes de Fisioterapia
 ---
 
 **Stack:** React + Firebase (Serverless)  
-**Última atualização:** 2 de Fevereiro de 2026
-   - Repositories com métodos específicos
-
-5. **Dependency Inversion Principle (DIP)**
-   - Injeção de dependências com Spring
-   - Dependência de abstrações, não implementações
-
-## 📱 PWA - Instalação
-
-### Android/iOS
-1. Abra o aplicativo no navegador
-2. Clique no menu (⋮)
-3. Selecione "Adicionar à tela inicial"
-4. O app será instalado como aplicativo nativo
-
-### Desktop
-1. Abra no Chrome/Edge
-2. Clique no ícone de instalação na barra de endereço
-3. Confirme a instalação
-
-## 🚀 Build para Produção
-
-### Backend
-```bash
-cd backend
-mvn clean package
-java -jar target/cinesia-1.0.0.jar
-```
-
-### Frontend
-```bash
-cd frontend
-npm run build
-# Os arquivos estarão em dist/
-```
-
-## 🤝 Contribuindo
-
-Ver [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) para fluxo de trabalho, convenção de commits e padrões de código.
-
-## 🚀 Deploy
-
-Ver [docs/DEPLOY.md](docs/DEPLOY.md) para instruções de deploy no Firebase Hosting e Vercel, incluindo configuração do GitHub Actions automático.
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT.
-
-## 👩‍💻 Desenvolvido para
-
-Sistema de estudos para estudantes de Fisioterapia.
-
----
-
-<div align="center">🧬 Cinesia — Estudos de Fisioterapia 📚</div>
+**Última atualização:** Abril de 2026
 
