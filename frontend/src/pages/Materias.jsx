@@ -10,7 +10,7 @@
  * - FIX: Quebra de texto (overflow) nos cards de status superiores resolvida
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -182,13 +182,7 @@ function Materias() {
 
   // ==================== EFFECTS & HANDLERS ====================
 
-  useEffect(() => {
-    if (user) {
-      carregarMaterias();
-    }
-  }, [user]);
-
-  const carregarMaterias = async () => {
+  const carregarMaterias = useCallback(async () => {
     try {
       setLoading(true);
       const userId = user.id || user.uid;
@@ -205,7 +199,13 @@ function Materias() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      carregarMaterias();
+    }
+  }, [user, carregarMaterias]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

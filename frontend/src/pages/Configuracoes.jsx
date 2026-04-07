@@ -159,7 +159,7 @@ export default function Configuracoes() {
       }
     };
     loadPrefs();
-  }, [user]);
+  }, [user, setMode]);
 
   // Handlers (Mantidos como originais)
   const handleSaveName = async () => {

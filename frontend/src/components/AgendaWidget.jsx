@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -20,23 +20,25 @@ const AgendaWidget = () => {
     tipo: 'prova'
   });
 
-  useEffect(() => {
-    if (user) {
-      carregarEventos();
-    }
-  }, [user]);
-
-  const carregarEventos = async () => {
+  const carregarEventos = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await listarEventos(user.id);
+      const userId = user?.id || user?.uid;
+      if (!userId) return;
+      const data = await listarEventos(userId);
       setEventos(data);
     } catch (err) {
       console.error('Erro ao carregar eventos:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, user?.uid]);
+
+  useEffect(() => {
+    if (user) {
+      carregarEventos();
+    }
+  }, [user, carregarEventos]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

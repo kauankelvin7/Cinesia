@@ -740,6 +740,7 @@ const KakaBot = () => {
   const inputRef = useRef(null);
   const chatRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const initializeGeminiRef = useRef(null);
 
   // Voice input
   const handleVoiceFinalResult = useCallback((finalText) => {
@@ -754,7 +755,7 @@ const KakaBot = () => {
 
   useEffect(() => {
     if (voiceError) addSystemMessage(`🎤 ${voiceError}`, 'error');
-  }, [voiceError]);
+  }, [voiceError, addSystemMessage]);
 
   // ─── Memória — Carregar / Salvar ───────────────────────────────────────────
 
@@ -989,7 +990,7 @@ const KakaBot = () => {
         novaSessao(memoriaUsuario, dadosSistema);
       }
     });
-  }, [isOpen, memoryLoaded, sessaoAtual]);
+  }, [isOpen, memoryLoaded, sessaoAtual, listarSessoes, carregarSessao, novaSessao, memoriaUsuario, dadosSistema]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1011,7 +1012,7 @@ const KakaBot = () => {
 
   useEffect(() => {
     if (isOpen && connectionStatus === 'disconnected' && memoryLoaded && sessaoAtual && !isLoadingContext) {
-      initializeGemini();
+      initializeGeminiRef.current?.();
     }
   }, [isOpen, connectionStatus, memoryLoaded, sessaoAtual, isLoadingContext]);
 
@@ -1041,7 +1042,7 @@ const KakaBot = () => {
     if (showHistorico) {
       listarSessoes().then(setSessoes);
     }
-  }, [showHistorico]);
+  }, [showHistorico, listarSessoes]);
 
   // ─── Gemini — Inicialização ────────────────────────────────────────────────
 
@@ -1105,6 +1106,8 @@ const KakaBot = () => {
       }
     }
   };
+
+  initializeGeminiRef.current = initializeGemini;
 
   const createChatWithPersona = (model, contextoHistorico = '') => {
     const MAX_SYSTEM_PROMPT_CHARS = 12000;

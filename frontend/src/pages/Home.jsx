@@ -443,7 +443,7 @@ const Home = () => {
     listarFlashcards(userId)
       .then(fcs => setPendingReviews(fcs.filter(fc => isDueForReview(fc)).length))
       .catch(() => setPendingReviews(0));
-  }, [user?.uid]);
+  }, [user?.id, user?.uid]);
 
   // Ouvir evento de alteração de resumo e re-fetchar o dashboard
   useEffect(() => {
@@ -482,7 +482,7 @@ const Home = () => {
       }
     };
     loadDash();
-  }, [user]);
+  }, [user, loadData]);
 
   /* ── Event handlers ── */
   const handleOpenEventModal = useCallback((date = new Date()) => {

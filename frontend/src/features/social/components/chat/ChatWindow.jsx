@@ -117,7 +117,7 @@ const ChatWindow = memo(({ conversationId, friendData, friendStatus, onBack, onC
 
   useEffect(() => {
     if (!loading && messages.length > 0) scrollToBottom(false);
-  }, [loading]);
+  }, [loading, messages.length, scrollToBottom]);
 
   const handleAcceptChallenge = useCallback(async (challengeId) => {
     try {

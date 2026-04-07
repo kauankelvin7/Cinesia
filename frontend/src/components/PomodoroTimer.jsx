@@ -47,35 +47,71 @@ const PomodoroTimer = memo(() => {
 
   // Carregar dados do usuário
   useEffect(() => {
-    if (user) {
-      loadUserPomodoroData();
-    }
-  }, [user]);
+    if (!user) return;
 
-  const loadUserPomodoroData = async () => {
-    try {
-      const userId = user?.id || user?.uid;
-      const today = new Date().toISOString().split('T')[0];
-      const pomodoroRef = doc(db, 'pomodoro', `${userId}_${today}`);
-      const docSnap = await getDoc(pomodoroRef);
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setCyclesCompleted(data.cycles || 0);
-        setTotalMinutesToday(data.minutesStudied || 0);
+    const loadUserPomodoroData = async () => {
+      try {
+        const userId = user?.id || user?.uid;
+        const today = new Date().toISOString().split('T')[0];
+        const pomodoroRef = doc(db, 'pomodoro', `${userId}_${today}`);
+        const docSnap = await getDoc(pomodoroRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setCyclesCompleted(data.cycles || 0);
+          setTotalMinutesToday(data.minutesStudied || 0);
+        }
+      } catch (error) {
+        if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
+          console.warn('[PomodoroTimer] Firestore temporariamente indisponível, usando dados locais');
+          return;
+        }
+        console.error('Erro ao carregar dados do Pomodoro:', error);
       }
-    } catch (error) {
-      if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
-        console.warn('[PomodoroTimer] Firestore temporariamente indisponível, usando dados locais');
-        return;
-      }
-      console.error('Erro ao carregar dados do Pomodoro:', error);
-    }
-  };
+    };
+
+    loadUserPomodoroData();
+  }, [user]);
 
   // Timer logic
   const handleTimerComplete = useCallback(async () => {
     setIsRunning(false);
+
+    const savePomodoroProgress = async (cycles, minutes) => {
+      try {
+        const userId = user?.id || user?.uid;
+        const today = new Date().toISOString().split('T')[0];
+        const pomodoroRef = doc(db, 'pomodoro', `${userId}_${today}`);
+
+        const pomodoroData = {
+          uid: userId,
+          date: today,
+          cycles,
+          minutesStudied: minutes,
+          updatedAt: serverTimestamp()
+        };
+
+        await setDoc(pomodoroRef, pomodoroData, { merge: true });
+        await setDoc(pomodoroRef, cleanUndefined(pomodoroData), { merge: true });
+
+        // Atualizar também o total do usuário (setDoc + merge para criar se não existir)
+        const userRef = doc(db, 'users', userId);
+        const userData = {
+          totalMinutesStudied: increment(25),
+          lastPomodoroAt: serverTimestamp()
+        };
+
+        await setDoc(userRef, userData, { merge: true });
+        await setDoc(userRef, cleanUndefined(userData), { merge: true });
+
+      } catch (error) {
+        if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
+          console.warn('[PomodoroTimer] Firestore indisponível, progresso será salvo depois');
+          return;
+        }
+        console.error('Erro ao salvar progresso Pomodoro:', error);
+      }
+    };
     
     // Tocar som de notificação
     if (audioRef.current) {
@@ -136,42 +172,6 @@ const PomodoroTimer = memo(() => {
       }
     };
   }, [isRunning, timeLeft]);
-
-  const savePomodoroProgress = async (cycles, minutes) => {
-    try {
-      const userId = user?.id || user?.uid;
-      const today = new Date().toISOString().split('T')[0];
-      const pomodoroRef = doc(db, 'pomodoro', `${userId}_${today}`);
-      
-      const pomodoroData = {
-        uid: userId,
-        date: today,
-        cycles,
-        minutesStudied: minutes,
-        updatedAt: serverTimestamp()
-      };
-
-      await setDoc(pomodoroRef, pomodoroData, { merge: true });
-      await setDoc(pomodoroRef, cleanUndefined(pomodoroData), { merge: true });
-      
-      // Atualizar também o total do usuário (setDoc + merge para criar se não existir)
-      const userRef = doc(db, 'users', userId);
-      const userData = {
-        totalMinutesStudied: increment(25),
-        lastPomodoroAt: serverTimestamp()
-      };
-
-      await setDoc(userRef, userData, { merge: true });
-      await setDoc(userRef, cleanUndefined(userData), { merge: true });
-      
-    } catch (error) {
-      if (error?.message?.includes('INTERNAL ASSERTION FAILED')) {
-        console.warn('[PomodoroTimer] Firestore indisponível, progresso será salvo depois');
-        return;
-      }
-      console.error('Erro ao salvar progresso do Pomodoro:', error);
-    }
-  };
 
   // useMemo para cálculos derivados (evita recálculo a cada render)
   const progress = useMemo(() => {

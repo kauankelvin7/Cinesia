@@ -328,13 +328,13 @@ function Simulado() {
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     
     const file = e.dataTransfer.files[0];
     handleFileSelect(file);
-  }, []);
+  };
 
   const handleFileInputChange = (e) => {
     const file = e.target.files[0];

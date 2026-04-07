@@ -9,7 +9,7 @@
  * - Carregamento Consistente Sincronizado
  */
 
-import React, { useState, useEffect, useMemo, Suspense, lazy, memo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy, memo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -191,10 +191,6 @@ function Resumos() {
     }
   }, [location.state, loading]);
 
-  useEffect(() => {
-    if (user) carregarDados();
-  }, [user]);
-
   const resumosFiltrados = useMemo(() => {
     let filtered = [...resumos];
     if (searchTerm) {
@@ -241,7 +237,7 @@ function Resumos() {
     return { total: resumos.length, materiasCobertas, novosNaSemana };
   }, [resumos]);
 
-  const carregarDados = async () => {
+  const carregarDados = useCallback(async () => {
     try {
       setLoading(true);
       const userId = user?.id || user?.uid;
@@ -260,7 +256,11 @@ function Resumos() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) carregarDados();
+  }, [user, carregarDados]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

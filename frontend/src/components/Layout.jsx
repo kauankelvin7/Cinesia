@@ -139,7 +139,7 @@ const Layout = memo(({ children }) => {
 
   const toggleSidebar = useCallback(() => setSidebarVisible(p => !p), []);
 
-  useEffect(() => { if (mobileDrawerOpen) setMobileDrawerOpen(false); }, [location.pathname]);
+  useEffect(() => { setMobileDrawerOpen(false); }, [location.pathname]);
 
   useEffect(() => {
     document.body.style.overflow = mobileDrawerOpen ? 'hidden' : '';

@@ -127,9 +127,40 @@ function Flashcards() {
   const [reviewStats, setReviewStats] = useState({ easy: 0, medium: 0, hard: 0 }); // session stats
 
   useEffect(() => {
-    if (user) {
-      carregarDados();
-    }
+    if (!user) return;
+
+    const carregarDadosIniciais = async () => {
+      try {
+        setLoading(true);
+        const userId = user?.id || user?.uid;
+        const [flashcardsData, materiasData] = await Promise.all([
+          listarFlashcards(userId),
+          listarMateriasSimples(userId)
+        ]);
+
+        const flashcardsEnriquecidos = flashcardsData.map(fc => {
+          if (fc.materiaNome && fc.materiaCor) return fc;
+          const materia = materiasData.find(m => m.id === fc.materiaId);
+          return {
+            ...fc,
+            materiaNome: fc.materiaNome || materia?.nome || 'Sem matéria',
+            materiaCor: fc.materiaCor || materia?.cor || '#94A3B8'
+          };
+        });
+
+        setFlashcards(flashcardsEnriquecidos);
+        setFlashcardsFiltrados(flashcardsEnriquecidos);
+        setMaterias(materiasData);
+        setError(null);
+      } catch (err) {
+        setError('Erro ao carregar dados');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarDadosIniciais();
   }, [user]);
 
   // Suporte para filterMateria vindo de Matérias
@@ -190,11 +221,22 @@ function Flashcards() {
   // Auto-iniciar modo revisão se vindo do Home
   useEffect(() => {
     if (location.state?.reviewMode && flashcards.length > 0 && !modoEstudo) {
-      iniciarModoEstudo(true);
+      const cards = flashcardsFiltrados.filter(fc => isDueForReview(fc));
+      if (cards.length === 0) {
+        toast.info('Nenhum card pendente para revisão hoje! 🎉');
+      } else {
+        setStudyCards(cards);
+        setCurrentIndex(0);
+        setIsStudyFlipped(false);
+        setSlideDirection(0);
+        setModoRevisao(true);
+        setReviewStats({ easy: 0, medium: 0, hard: 0 });
+        setModoEstudo(true);
+      }
       // Limpar o state para não re-ativar no re-render
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, flashcards.length]);
+  }, [location.state, flashcards.length, flashcardsFiltrados, modoEstudo]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
@@ -354,17 +396,17 @@ function Flashcards() {
     setModoEstudo(true);
   };
 
-  const fecharModoEstudo = () => {
+  const fecharModoEstudo = useCallback(() => {
     setModoEstudo(false);
     setModoRevisao(false);
     setCurrentIndex(0);
     setIsStudyFlipped(false);
     setStudyCards([]);
     setReviewStats({ easy: 0, medium: 0, hard: 0 });
-  };
+  }, []);
 
   // SM-2 rating handler
-  const handleSM2Rating = async (quality) => {
+  const handleSM2Rating = useCallback(async (quality) => {
     const card = studyCards[currentIndex];
     if (!card) return;
 
@@ -415,9 +457,8 @@ function Flashcards() {
       const total = reviewStats.easy + reviewStats.medium + reviewStats.hard + 1;
       toast.success(`Sessão concluída! ${total} cards revisados 🎉`);
       fecharModoEstudo();
-      carregarDados(); // refresh to get updated nextReviewDate
     }
-  };
+  }, [studyCards, currentIndex, reviewStats, fecharModoEstudo]);
 
   const pendingReviewCount = useMemo(() => {
     return flashcards.filter(fc => isDueForReview(fc)).length;
@@ -491,7 +532,7 @@ function Flashcards() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modoEstudo, currentIndex, studyCards.length, isStudyFlipped]);
+  }, [modoEstudo, currentIndex, studyCards.length, isStudyFlipped, handleSM2Rating]);
 
   const currentFlashcard = studyCards[currentIndex];
   const progressPercent = studyCards.length > 0 
