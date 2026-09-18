@@ -37,6 +37,9 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@firebase/rules-unit-testing": "5.0.2",
+    "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -45,6 +48,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "firebase-tools": "15.30.0",
     "jsdom": "^26.1.0",
     "vite": "^5.0.11",
     "vite-plugin-pwa": "^0.17.4",
@@ -66,7 +70,14 @@
     "lint:fix": "eslint src --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy": "npm run build && firebase deploy --only hosting"
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "test:integration": "firebase emulators:exec --config ../firebase.json --project demo-cinesia --only firestore \"npm run test:integration:inside\"",
+    "test:integration:inside": "vitest run --config vitest.integration.config.js",
+    "test:e2e": "playwright test --config playwright.local.config.js",
+    "test:e2e:local": "npm run build && npm run test:e2e",
+    "test:e2e:install": "playwright install chromium",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "check": "npm run lint && npm test && npm run build && npm run test:integration && npm run test:e2e"
   },
   "eslintConfig": {
     "extends": [

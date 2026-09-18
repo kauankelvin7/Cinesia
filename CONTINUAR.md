@@ -113,3 +113,17 @@ Etapa atual:
 - Etapa 4 — componentes compartilhados, login, dashboard, copy e acessibilidade.
 
 Diretrizes visuais canônicas: `docs/UI-UX-GUIDELINES.md`.
+
+
+## Etapa 5 — quality gates
+
+Em implementação:
+
+- Firestore Emulator + Rules integration tests;
+- Playwright desktop/mobile;
+- Axe no fluxo público de login;
+- comando `check` completo;
+- auditoria de produção no CI;
+- Java 21 no CI.
+
+A auditoria permanece diagnóstica até a etapa de hardening remover/classificar vulnerabilidades high/critical.
