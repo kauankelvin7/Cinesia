@@ -549,13 +549,13 @@ const Home = () => {
     <motion.div className="min-h-screen pb-32" initial="hidden" animate="show" variants={staggerContainer}>
 
       {/* ═══════════════════════════════════════════
-         ① HERO HEADER — dark gradient + dot grid + ring avatar
+         ① HERO HEADER — contextual study summary
          ═══════════════════════════════════════════ */}
       <motion.div
         variants={fadeUp}
         className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4 pb-16 sm:pb-24 shadow-xl"
         style={{
-          borderRadius: '20px'
+          borderRadius: '20px',
           backgroundImage: isDarkMode ? [
             'linear-gradient(135deg, #0f172a 0%, #12233d 60%, #103b3a 100%)',
           ].join(', ') : [
@@ -566,7 +566,7 @@ const Home = () => {
           paddingRight: 'clamp(24px, 5vw, 40px)',
         }}
       >
-        {/* Avatar + Greeting row (Ajustado gap para evitar cortes no mobile) */}
+        {/* Avatar + contexto atual */}
         <div className="relative z-10 flex items-center gap-4 sm:gap-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }} 
