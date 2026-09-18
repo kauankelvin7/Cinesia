@@ -22,7 +22,7 @@ describe('chatHelpers', () => {
     it('trunca texto longo com reticências', () => {
       const long = 'A'.repeat(60);
       const result = truncateText(long, 50);
-      expect(result.length).toBe(53); // 50 + '...'
+      expect(result.length).toBe(50); // limite total inclui as reticências
       expect(result.endsWith('...')).toBe(true);
     });
 
@@ -52,9 +52,9 @@ describe('chatHelpers', () => {
   });
 
   describe('getAvatarColor', () => {
-    it('retorna uma classe CSS de cor', () => {
+    it('retorna uma cor CSS válida para style.backgroundColor', () => {
       const color = getAvatarColor('João');
-      expect(color).toMatch(/^bg-/);
+      expect(color).toMatch(/^#[0-9A-F]{6}$/i);
     });
 
     it('é determinístico - mesmo nome, mesma cor', () => {
@@ -67,8 +67,8 @@ describe('chatHelpers', () => {
       const c1 = getAvatarColor('Ana');
       const c2 = getAvatarColor('Zé');
       // Não garante sempre diferente, mas testa que funciona sem erro
-      expect(c1).toMatch(/^bg-/);
-      expect(c2).toMatch(/^bg-/);
+      expect(c1).toMatch(/^#[0-9A-F]{6}$/i);
+      expect(c2).toMatch(/^#[0-9A-F]{6}$/i);
     });
   });
 
@@ -106,8 +106,8 @@ describe('chatHelpers', () => {
       const timestamp = { toDate: () => now };
       const result = formatMessageTime(timestamp);
       expect(result).toBeTruthy();
-      // Deve conter horas e minutos (formato HH:MM)
-      expect(result).toMatch(/\d{1,2}:\d{2}/);
+      // Mensagens com menos de um minuto usam o rótulo relativo.
+      expect(result).toBe('Agora');
     });
 
     it('retorna string vazia para null', () => {
