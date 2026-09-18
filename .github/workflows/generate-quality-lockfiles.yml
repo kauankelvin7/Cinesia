@@ -26,9 +26,14 @@ jobs:
       - name: Generate root workspace lock
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Generate frontend lock
-        working-directory: frontend
-        run: npm install --package-lock-only --ignore-scripts
+      - name: Generate standalone frontend lock
+        run: |
+          rm -rf /tmp/cinesia-frontend-lock
+          mkdir -p /tmp/cinesia-frontend-lock
+          cp frontend/package.json /tmp/cinesia-frontend-lock/package.json
+          cd /tmp/cinesia-frontend-lock
+          npm install --package-lock-only --ignore-scripts
+          cp package-lock.json "$GITHUB_WORKSPACE/frontend/package-lock.json"
 
       - name: Commit generated lockfiles to PR branch
         run: |
