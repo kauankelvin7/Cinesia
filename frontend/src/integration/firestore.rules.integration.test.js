@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   assertFails,
@@ -14,7 +15,7 @@ import {
 
 const PROJECT_ID = 'demo-cinesia';
 const RULES = readFileSync(
-  new URL('../../../infra/firebase/firestore.rules', import.meta.url),
+  path.resolve(process.cwd(), '../infra/firebase/firestore.rules'),
   'utf8',
 );
 
