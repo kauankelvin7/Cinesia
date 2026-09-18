@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Relatório histórico.** Este documento registra uma auditoria anterior e contém itens que já foram corrigidos ou ficaram obsoletos. Não use este arquivo como fonte de verdade do estado atual. Consulte `CONTINUAR.md` e `docs/CINESIA-ENGENHARIA-DE-SOFTWARE.md`.
+
 # 🧪 CINESIA — RELATÓRIO DE QA COMPLETO
 > Auditoria estática de código · 16 módulos · 7 blocos de teste  
 > Gerado por: GitHub Copilot (Claude Sonnet 4.6) · Análise manual linha a linha

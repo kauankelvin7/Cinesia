@@ -1,288 +1,129 @@
-
 <div align="center">
 
 # Cinesia
 
-Plataforma de estudos para Fisioterapia com foco em organização, revisão espaçada, IA assistiva e experiência PWA.
+**Estudo de Fisioterapia em um só lugar.**
 
-![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=black)
-![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)
-![PWA](https://img.shields.io/badge/PWA-Instalável-5A0FC8)
+Organize matérias, crie resumos e flashcards, revise com repetição espaçada, faça simulados e estude com recursos sociais e IA assistiva.
 
 </div>
 
----
+## O produto
 
-## Visão Geral
+O Cinesia é uma PWA de estudos construída para reduzir a troca entre várias ferramentas durante a rotina acadêmica.
 
-O Cinesia é um monorepo com frontend React/Vite e um backend Java legado mantido para compatibilidade histórica. A experiência principal da aplicação está no `frontend/`, com Firebase como camada de persistência e autenticação.
+Hoje ele reúne:
 
-O sistema foi desenhado para apoiar estudos de Fisioterapia com:
-- resumos editor rich text
-- flashcards com repetição espaçada SM-2
-- simulados gerados com IA
-- KakaBot para apoio conversacional
-- atlas 3D, lousa digital e pomodoro
-- recursos sociais com grupos, chat e desafios
-- PWA instalável e sincronização em tempo real
+- matérias, resumos e flashcards;
+- revisão espaçada com SM-2;
+- simulados e histórico de desempenho;
+- KakaBot com contexto de estudo, memória e voz;
+- agenda, pomodoro, conquistas e analytics;
+- amigos, grupos, chat, presença e desafios;
+- Atlas 3D;
+- quadro branco com tldraw;
+- instalação como PWA.
+
+## Arquitetura atual
+
+A aplicação ativa é serverless:
+
+```text
+React + Vite
+   │
+   ├── Firebase Auth
+   ├── Firestore
+   ├── Realtime Database
+   ├── Firebase Storage
+   ├── Cloudinary
+   └── Gemini
+```
+
+O backend Spring Boot em `backend/legacy/` é histórico e não participa do runtime atual.
 
 ## Stack
 
-| Camada | Tecnologia |
+| Área | Tecnologia |
 | --- | --- |
-| Interface | React 18 + Vite |
-| Estilo | Tailwind CSS 4 + Framer Motion |
-| Estado e dados | Firebase Auth, Firestore e Storage |
+| Interface | React 18 |
+| Build | Vite 5 |
+| Rotas | React Router 6 |
+| Estilo | Tailwind CSS 4 + CSS |
+| Dados | Firebase Firestore |
+| Autenticação | Firebase Auth |
+| Presença | Firebase Realtime Database |
+| Arquivos | Firebase Storage + Cloudinary |
 | IA | Google Gemini |
-| Navegação | React Router DOM |
+| 3D | Three.js + React Three Fiber |
+| Quadro branco | tldraw |
+| Editor | React Quill |
 | Testes | Vitest + Testing Library |
-| Build | Vite PWA |
+| PWA | vite-plugin-pwa / Workbox |
 
-## Estrutura do Repositório
+## Começando
 
-```text
-.
-├── frontend/              # Aplicação principal
-├── backend/               # Backend Java legado
-├── docs/                  # Arquitetura, deploy e contribuição
-├── firebase.json          # Configuração do hosting
-├── firestore.rules        # Regras do Firestore
-├── firestore.indexes.json  # Índices do Firestore
-└── scripts/               # Utilitários e scripts auxiliares
-```
+### Requisitos
 
-## Principais Funcionalidades
-
-- autenticação com Google e email/senha
-- matérias, resumos e flashcards por usuário
-- revisão espaçada com SM-2
-- simulados e apoio de IA
-- comunidade com amigos, grupos, chat e desafios
-- quadro branco e atlas 3D
-- notificações, conquistas e métricas de estudo
-- suporte a PWA e uso em dispositivos móveis
-
-## Como Executar
-
-### Pré-requisitos
-
-- Node.js 18+
-- npm
-- conta Firebase com projeto configurado
+- Node.js compatível com o projeto;
+- npm;
+- configuração Firebase.
 
 ### Instalação
 
 ```bash
-npm install
+npm ci
 ```
 
 ### Desenvolvimento
 
 ```bash
-npm run dev:frontend
-```
-
-Ou, diretamente no frontend:
-
-```bash
-cd frontend
 npm run dev
 ```
 
-### Build
-
-```bash
-npm run build:frontend
-```
-
-### Lint
+### Qualidade
 
 ```bash
 npm run lint
+npm test
+npm run build
 ```
 
-### Testes
+## Variáveis
 
-```bash
-cd frontend
-npm run test
-```
+Use `.env.example` como referência.
 
-## Configuração Firebase
+A configuração Web do Firebase identifica o projeto e pode existir no bundle do navegador. Segredos de servidor não devem ser colocados em variáveis `VITE_*`.
 
-As credenciais do Firebase devem ser fornecidas nas variáveis `VITE_*` usadas em `frontend/src/config/firebase-config.js`.
+A chave Gemini ainda é usada no cliente em partes do sistema; isso está registrado como dívida de segurança e faz parte da modernização arquitetural em andamento.
 
-Campos esperados:
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
-- `VITE_FIREBASE_MEASUREMENT_ID`
-- `VITE_GEMINI_API_KEY`
+## Engenharia
+
+A documentação canônica está aqui:
+
+- [Engenharia de Software](docs/CINESIA-ENGENHARIA-DE-SOFTWARE.md)
+- [Modelo de dados](docs/DATA_MODEL.md)
+- [Quality gates](docs/QUALITY-GATES.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Deploy](docs/DEPLOY.md)
+- [ADRs](docs/adr/)
+- [Ponto de retomada](CONTINUAR.md)
+
+Para agentes e automações, leia também [AGENTS.md](AGENTS.md).
 
 ## Deploy
 
-O fluxo oficial de deploy está documentado em [docs/DEPLOY.md](docs/DEPLOY.md).
+Vercel é suportada e usada no fluxo atual. Firebase Hosting continua disponível quando a credencial de service account estiver configurada.
 
-Resumo rápido:
-- Firebase Hosting é o caminho recomendado
-- GitHub Actions automatiza o deploy na branch principal
-- Vercel também é suportado com `frontend/` como root directory
+Consulte [docs/DEPLOY.md](docs/DEPLOY.md) antes de alterar build, root directory ou cache.
 
-## Documentação
+## Estado da modernização
 
-- [Arquitetura](docs/ARCHITECTURE.md)
-- [Deploy](docs/DEPLOY.md)
-- [Contribuição](docs/CONTRIBUTING.md)
+O projeto está passando por uma refatoração incremental inspirada na disciplina de engenharia usada no Leve:
 
-## Observações
+- sem rewrite completo;
+- mudanças pequenas e reversíveis;
+- documentação antes de migrações grandes;
+- testes como gate;
+- segurança e dados tratados como arquitetura, não acabamento.
 
-- O backend Java existente é legado e foi mantido para compatibilidade com partes antigas do ecossistema.
-- O fluxo principal de produto está concentrado no frontend e nos serviços Firebase.
-- Variáveis `VITE_*` entram no bundle no build e não devem conter segredos sensíveis fora do escopo esperado para frontend.
-
-## Contribuição
-
-Antes de abrir PR ou enviar alterações:
-1. rode `npm run lint`
-2. rode `npm run build:frontend`
-3. valide o comportamento das rotas principais no navegador
-
-Consulte [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) para o processo completo.
-1. Vá em "Matérias"
-2. Clique em "Nova Matéria"
-3. Preencha nome, cor e descrição
-4. Dados salvos automaticamente no Firestore
-
-### 3. Criar Flashcards
-1. Vá em "Flashcards"
-2. Clique em "Novo Flashcard"
-3. Adicione pergunta e resposta
-4. (Opcional) Faça upload de imagem
-5. Associe a uma matéria
-
-### 4. Modo de Estudo
-1. Em Flashcards, clique em "Iniciar Estudo"
-2. Clique no card para revelar resposta
-3. Navegue com setas < >
-
-### 5. Criar Resumos
-1. Vá em "Resumos"
-2. Use o editor rico para formatar conteúdo
-3. Suporta negrito, listas, cores, imagens inline
-
-## 🔒 Segurança Firebase
-
-✅ **Regras de Firestore:**
-- Usuários só acessam seus próprios dados
-- Validação de `uid` em todas operações
-
-✅ **Regras de Storage:**
-- Upload apenas na pasta do próprio usuário
-- Leitura permitida para usuários autenticados
-
-✅ **Autenticação:**
-- Tokens JWT gerenciados pelo Firebase
-- Auto-refresh de tokens
-- Logout seguro
-
-## 🎯 Vantagens da Arquitetura Serverless
-
-| Aspecto | Firebase | Backend Tradicional |
-|---------|----------|---------------------|
-| **Infraestrutura** | ✅ Gerenciada pelo Google | ❌ Você configura tudo |
-| **Escalabilidade** | ✅ Automática | ❌ Manual |
-| **Custo Inicial** | ✅ Grátis até 1GB | ❌ Servidor sempre ligado |
-| **Manutenção** | ✅ Zero | ❌ Alta |
-| **Deploy** | ✅ Apenas frontend | ❌ Backend + Frontend |
-| **Tempo Real** | ✅ Nativo | ❌ Requer WebSockets |
-
-## 📦 Scripts Disponíveis
-
-```bash
-# Frontend
-npm run dev          # Desenvolvimento (Vite)
-npm run build        # Build de produção
-npm run preview      # Preview do build
-npm run lint         # Linter
-
-# Firebase (após instalar firebase-tools)
-firebase deploy      # Deploy completo
-firebase serve       # Teste local
-```
-
-## 🌐 Deploy (Opcional)
-
-### Hospedar no Firebase Hosting:
-```bash
-# Instalar Firebase CLI
-npm install -g firebase-tools
-
-# Login
-firebase login
-
-# Inicializar
-firebase init hosting
-
-# Build do frontend
-cd frontend
-npm run build
-
-# Deploy
-firebase deploy --only hosting
-```
-
-Seu app estará em: `https://cinesia-72d45.web.app`
-
-## 📚 Documentação Adicional
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Arquitetura e organização técnica
-- [docs/DEPLOY.md](docs/DEPLOY.md) - Deploy em Firebase Hosting e Vercel
-- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) - Fluxo de contribuição
-- [Firebase Docs](https://firebase.google.com/docs)
-- [React Docs](https://react.dev)
-- [Vite Docs](https://vitejs.dev)
-
-## 🆘 Solução de Problemas
-
-### ❌ Erro: "Missing or insufficient permissions"
-**Solução:** Verifique as regras de segurança do Firestore/Storage
-
-### ❌ Erro: "Storage bucket not configured"  
-**Solução:** Crie o Storage no Firebase Console
-
-### ❌ Erro: "The query requires an index"
-**Solução:** Clique no link do erro, Firebase cria índice automaticamente
-
-### ❌ Upload de imagem não funciona
-**Solução:** 
-- Verifique regras de Storage
-- Limite de 5MB por imagem
-- Apenas imagens permitidas (jpg, png, gif)
-
-## 🤝 Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/NovaFuncionalidade`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT.
-
-## ✨ Autor
-
-Desenvolvido com ❤️ para estudantes de Fisioterapia
-
----
-
-**Stack:** React + Firebase (Serverless)  
-**Última atualização:** Abril de 2026
-
+O comportamento funcional existente deve ser preservado durante cada etapa.
