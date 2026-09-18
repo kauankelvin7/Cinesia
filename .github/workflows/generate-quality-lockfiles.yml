@@ -1,0 +1,37 @@
+name: Generate quality lockfiles
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lockfiles:
+    if: github.head_ref == 'refactor/quality-gates-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate root workspace lock
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Generate frontend lock
+        working-directory: frontend
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Upload lockfiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-lockfiles
+          path: |
+            package-lock.json
+            frontend/package-lock.json
+          if-no-files-found: error
