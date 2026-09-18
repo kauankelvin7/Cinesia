@@ -67,31 +67,31 @@ export const friendsService = {
       if (data.status === 'blocked')  throw new Error('Não é possível enviar pedido.');
     }
 
-    const sortedUsers = [currentUser.uid, targetUser.uid].sort();
+    const sortedUsers = [currentUserResolved.uid, targetUserResolved.uid].sort();
 
     const dadosAmizade = {
       id: fid,
       users: sortedUsers,
       status: 'pending',
-      requestedBy: currentUser.uid,
-      requestedTo: targetUser.uid,
+      requestedBy: currentUserResolved.uid,
+      requestedTo: targetUserResolved.uid,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       user1Data: {
-        uid: sortedUsers[0] === currentUser.uid ? currentUser.uid : targetUser.uid,
-        displayName: sortedUsers[0] === currentUser.uid
+        uid: sortedUsers[0] === currentUserResolved.uid ? currentUserResolved.uid : targetUserResolved.uid,
+        displayName: sortedUsers[0] === currentUserResolved.uid
           ? (currentUser.displayName || currentUser.email || '')
           : (targetUser.displayName  || targetUser.email  || ''),
-        photoURL: sortedUsers[0] === currentUser.uid
+        photoURL: sortedUsers[0] === currentUserResolved.uid
           ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
           : (typeof targetUser.photoURL  === 'string' ? targetUser.photoURL  : null),
       },
       user2Data: {
-        uid: sortedUsers[1] === currentUser.uid ? currentUser.uid : targetUser.uid,
-        displayName: sortedUsers[1] === currentUser.uid
+        uid: sortedUsers[1] === currentUserResolved.uid ? currentUserResolved.uid : targetUserResolved.uid,
+        displayName: sortedUsers[1] === currentUserResolved.uid
           ? (currentUser.displayName || currentUser.email || '')
           : (targetUser.displayName  || targetUser.email  || ''),
-        photoURL: sortedUsers[1] === currentUser.uid
+        photoURL: sortedUsers[1] === currentUserResolved.uid
           ? (typeof currentUser.photoURL === 'string' ? currentUser.photoURL : null)
           : (typeof targetUser.photoURL  === 'string' ? targetUser.photoURL  : null),
       },
@@ -112,12 +112,12 @@ export const friendsService = {
     await setDoc(friendshipRef, cleanUndefined(dadosAmizade));
 
     const dadosNotificacao = {
-      recipientId: targetUser.uid,
+      recipientId: targetUserResolved.uid,
       type: 'friend_request',
       title: 'Novo pedido de amizade',
       body: `${currentUser.displayName || currentUser.email} quer ser seu amigo no Cinesia`,
       data: {
-        senderId:    currentUser.uid,
+        senderId:    currentUserResolved.uid,
         senderName:  currentUser.displayName || currentUser.email,
         senderPhoto: currentUser.photoURL || null,
         friendshipId: fid,
