@@ -33,9 +33,7 @@ test.describe('Login — fluxo público crítico', () => {
   test('não apresenta violações sérias ou críticas de acessibilidade', async ({ page }) => {
     await page.goto('/login');
 
-    const results = await new AxeBuilder({ page })
-      .disableRules(['color-contrast'])
-      .analyze();
+    const results = await new AxeBuilder({ page }).analyze();
 
     const blocking = results.violations.filter((violation) =>
       ['serious', 'critical'].includes(violation.impact),
