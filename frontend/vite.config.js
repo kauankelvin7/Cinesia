@@ -51,10 +51,22 @@ export default defineConfig({
 
         runtimeCaching: [
 
-          // Sempre buscar página do servidor (evita versão antiga)
+          // Navegação resiliente: rede primeiro, cache como fallback.
+          // Evita tela em branco ao abrir o PWA com conexão instável/offline.
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkOnly'
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 4,
+              expiration: {
+                maxEntries: 12,
+                maxAgeSeconds: 60 * 60 * 24 * 7
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           },
 
           // Cache Google Fonts CSS
