@@ -1,20 +1,15 @@
 # Cinesia — quality gates
 
-A qualidade é proporcional ao risco. O objetivo não é rodar tudo para qualquer alteração, e sim nunca deixar uma mudança de alto risco passar por uma validação fraca.
+**Status:** canônico  
+**Atualizado em:** 18/09/2026
 
-## Gate A — alteração local simples
+Os gates do Cinesia seguem a mesma disciplina usada no Leve, adaptada ao runtime serverless deste projeto.
 
-Para copy, estilo isolado ou componente sem dados:
+O objetivo não é rodar a suíte mais cara para qualquer mudança. O objetivo é impedir que alterações de risco alto sejam validadas apenas com lint ou inspeção visual.
 
-```bash
-npm run lint
-npm test
-npm run build
-```
+## 1. Baseline obrigatório
 
-## Gate B — domínio/persistência
-
-Para services, repositories, SM-2, KakaBot actions, simulados ou contratos:
+Toda mudança de código deve passar por:
 
 ```bash
 npm run lint
@@ -22,97 +17,167 @@ npm test
 npm run build
 ```
 
-Além disso, criar teste automatizado que falhe antes da correção quando for bug.
+Na raiz do repositório, os mesmos comandos são encaminhados para o workspace `frontend`.
 
-## Gate C — Auth/Rules/isolamento
+## 2. Gate de domínio
 
-Exige emuladores Firebase assim que o harness estiver integrado:
+Use quando a mudança altera:
+
+- regras de negócio;
+- schemas Zod;
+- repositories;
+- SM-2;
+- simulados;
+- ações do KakaBot;
+- transformação de dados.
+
+Além do baseline, deve existir teste automatizado do comportamento alterado.
+
+Bug corrigido deve, sempre que possível, ganhar um teste que falharia antes da correção.
+
+## 3. Gate de segurança e Firestore Rules
+
+Mudanças em:
+
+- ownership;
+- Firestore Rules;
+- perfil público/privado;
+- Auth;
+- isolamento de conta;
+- formato persistido sensível;
+
+exigem:
 
 ```bash
 npm run test:integration
 ```
 
-Cenários mínimos:
+Esse comando:
 
-- usuário A não lê dado privado de B;
-- usuário A não altera dado de B;
-- perfil público expõe apenas o contrato público;
-- create/update rejeitam ownership inválido;
-- índices/queries usados pelo produto funcionam.
+1. inicia o Firestore Emulator;
+2. carrega as Rules reais de `infra/firebase/firestore.rules`;
+3. executa a suíte `*.integration.test.js`;
+4. encerra o emulador automaticamente.
 
-## Gate D — rota crítica/PWA
+Cenários cobertos na primeira versão:
 
-Exige E2E local assim que Playwright estiver integrado:
+- dono cria/lê a própria matéria;
+- outro usuário não lê nem altera matéria privada;
+- `uid` de documento privado não pode ser trocado;
+- `publicProfiles` pode ser lido por usuário autenticado;
+- `publicProfiles` rejeita campos fora do contrato público;
+- terceiros não editam perfil público alheio;
+- leitura anônima de perfil público é rejeitada.
+
+### Dívida explicitamente não normalizada
+
+A leitura ampla temporária de `users/{uid}` continua existindo enquanto a migração gradual de `publicProfiles` não terminar.
+
+Existe um teste `todo` para o corte final. Não escreveremos um teste aprovando a exposição temporária como comportamento desejado.
+
+## 4. Gate E2E
+
+Para mudanças em fluxo crítico, navegação, acessibilidade ou PWA:
 
 ```bash
 npm run test:e2e:local
 ```
 
-Fluxos mínimos:
+Na primeira execução local, instale o browser de teste:
 
-- login;
-- criar matéria;
-- criar/estudar flashcard;
-- criar/abrir resumo;
-- iniciar/concluir simulado sem IA real;
-- abrir KakaBot em modo degradado;
-- instalar/atualizar PWA;
-- navegar offline para shell já instalado;
-- logout sem vazar estado anterior.
+```bash
+npm run test:e2e:install
+```
 
-## Gate E — release
+A suíte inicial roda Chromium em desktop e mobile e cobre:
 
-Meta:
+- renderização do login;
+- labels acessíveis;
+- alternância login/cadastro;
+- Axe para violações serious/critical;
+- ausência de overflow horizontal em viewport móvel.
+
+Novos fluxos críticos devem entrar nessa suíte à medida que a infraestrutura de Auth/Firebase para E2E for amadurecida.
+
+## 5. Gate completo local
 
 ```bash
 npm run check
 ```
 
-que deve agregar:
+O comando agrega:
 
-- lint;
-- testes unitários/componentes;
-- integração;
+1. ESLint;
+2. testes unitários/componentes;
+3. build de produção;
+4. testes de integração com Firestore Emulator;
+5. E2E Playwright.
+
+## 6. CI
+
+Pull requests para `main` executam:
+
+- `npm ci --include=dev`;
+- auditoria das dependências de produção;
+- ESLint;
+- Vitest;
 - build;
-- E2E crítico.
+- Firestore Rules integration tests.
 
-## Acessibilidade
+Java 21 é instalado no runner porque o Firebase Emulator precisa dele.
+
+### Auditoria de dependências
+
+Durante a etapa de hardening, `npm audit --omit=dev --audit-level=high` é **diagnóstico, não bloqueante**.
+
+Isso é temporário.
+
+A auditoria só vira gate obrigatório depois que as vulnerabilidades high/critical atuais forem classificadas e reduzidas sem `npm audit fix --force`.
+
+## 7. PWA
+
+Alteração em Workbox, manifest, service worker ou cache precisa provar:
+
+1. build gera manifest e service worker;
+2. atualização não prende versão antiga;
+3. navegação instalada não vira tela branca com rede instável;
+4. conteúdo privado não entra em cache sem intenção;
+5. `prefers-reduced-motion` e acessibilidade continuam funcionais onde aplicável.
+
+## 8. Acessibilidade
 
 Nas telas principais:
 
 - foco visível;
-- navegação por teclado;
-- sem ação essencial exclusiva de gesto;
+- teclado;
+- nome acessível;
+- erros anunciáveis;
 - touch target adequado;
 - reflow em 200%;
 - reduced motion;
-- contraste e nome acessível;
-- cor nunca como único sinal.
+- contraste suficiente;
+- cor não é o único sinal;
+- gesto não é o único caminho para ação importante.
 
-A evolução prevista é adicionar Axe ao Playwright, seguindo o padrão usado no Leve.
+## 9. Regras de integridade do gate
 
-## PWA
+Nunca:
 
-Toda mudança em cache/service worker precisa provar:
+- remover teste para fazer CI passar;
+- marcar falha real como sucesso;
+- usar `npm audit fix --force`;
+- dizer que E2E passou sem executar E2E;
+- dizer que preview/deploy está aprovado sem evidência;
+- alterar Rules sem integração quando o emulador estiver disponível.
 
-1. build gera manifest/SW;
-2. atualização não prende versão antiga;
-3. navegação não vira tela em branco com rede instável;
-4. reduced functionality offline é explícita;
-5. dados privados não ficam em cache sem intenção.
+## 10. Definition of Done
 
-## Segurança de dependências
+Uma etapa técnica só pode ser integrada quando:
 
-Rodar auditoria de produção de forma controlada.
-
-Nunca usar:
-
-`npm audit fix --force`
-
-Vulnerabilidades devem ser classificadas por:
-
-- runtime ou dev;
-- direta ou transitiva;
-- explorável no contexto do app;
-- versão segura disponível;
-- risco de breaking change.
+- lint passou;
+- testes pertinentes passaram;
+- build passou;
+- integração passou quando há dados/Rules;
+- E2E passou quando o escopo exige fluxo visual crítico;
+- documentação canônica foi atualizada;
+- dívidas restantes estão explicitamente registradas.
