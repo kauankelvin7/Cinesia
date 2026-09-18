@@ -169,10 +169,10 @@ export default function Configuracoes() {
         setUser(updated);
         localStorage.setItem('user', JSON.stringify(updated));
       }
-      toast.success('Nome atualizado!');
+      toast.success('Nome atualizado.');
     } catch (err) {
       console.error('Erro ao atualizar nome:', err);
-      toast.error('Erro ao atualizar nome.');
+      toast.error('Não consegui atualizar seu nome. Tente de novo.');
     } finally {
       setSavingName(false);
     }
@@ -187,14 +187,14 @@ export default function Configuracoes() {
       await reauthenticateWithCredential(auth.currentUser, credential);
       await updateEmail(auth.currentUser, newEmail.trim());
       await setDoc(doc(db, 'users', user.uid), { email: newEmail.trim() }, { merge: true });
-      toast.success('Email atualizado!');
+      toast.success('Email atualizado.');
       setCurrentPasswordForEmail('');
     } catch (err) {
       console.error('Erro ao atualizar email:', err);
       if (err.code === 'auth/wrong-password') toast.error('Senha atual incorreta.');
       else if (err.code === 'auth/email-already-in-use') toast.error('Este email já está em uso.');
       else if (err.code === 'auth/requires-recent-login') toast.error('Por favor, faça login novamente para alterar o email.');
-      else toast.error('Erro ao atualizar email.');
+      else toast.error('Não consegui atualizar seu email. Tente de novo.');
     } finally {
       setSavingEmail(false);
     }
@@ -248,7 +248,7 @@ export default function Configuracoes() {
       toast.success(enabled ? 'Notificações ativadas' : 'Notificações desativadas');
     } catch (err) {
       console.error('Erro ao salvar preferência de notificações:', err);
-      toast.error('Erro ao salvar preferência');
+      toast.error('Não consegui salvar essa preferência. Tente de novo.');
     }
   };
 
@@ -464,10 +464,10 @@ export default function Configuracoes() {
         )}
 
         {/* ── Aparência ── */}
-        <Section icon={Palette} title="Customização" description="Ajuste o visual do sistema ao seu gosto">
+        <Section icon={Palette} title="Aparência" description="Escolha como o Cinesia deve aparecer para você">
           <div className="space-y-6">
             <div>
-              <p className="text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-3 ml-1">Esquema de Cores</p>
+              <p className="text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-3 ml-1">Tema</p>
               <div className="relative flex p-1 bg-slate-100 dark:bg-slate-900/50 rounded-[16px] border border-slate-200/50 dark:border-slate-800">
                 {themeOptions.map(({ key, icon: ThIcon, label }) => {
                   const active = mode === key;
@@ -507,26 +507,26 @@ export default function Configuracoes() {
         </Section>
 
         {/* ── Notificações ── */}
-        <Section icon={Bell} title="Alertas" description="Escolha como deseja ser notificado">
+        <Section icon={Bell} title="Notificações" description="Escolha quais lembretes você quer receber">
           <Toggle
-            label="Notificações Push"
-            description="Lembretes de revisão, metas diárias e novidades do Cinesia"
+            label="Notificações"
+            description="Lembretes de revisão e atividades importantes"
             checked={notificationsEnabled}
             onChange={handleNotificationsToggle}
           />
         </Section>
 
         {/* ── Zona de Perigo ── */}
-        <Section icon={AlertTriangle} title="Zona Crítica" description="Ações permanentes na sua conta" danger>
+        <Section icon={AlertTriangle} title="Excluir conta" description="Revise os dados antes de continuar" danger>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex-1">
-              <p className="text-[14px] font-bold text-red-900 dark:text-red-300">Encerrar e Excluir Conta</p>
+              <p className="text-[14px] font-bold text-red-900 dark:text-red-300">Excluir conta</p>
               <p className="text-[12px] font-medium text-red-600/70 dark:text-red-400/70 mt-1 max-w-sm leading-relaxed">
-                Esta ação removerá todos os seus resumos, matérias e progresso. Não há como desfazer.
+                Se você continuar, seus dados do Cinesia serão removidos. Essa ação não pode ser desfeita.
               </p>
             </div>
             <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)} leftIcon={<Trash2 size={16} />} className="font-bold px-6 border-none shadow-md shadow-red-500/20">
-              Excluir permanentemente
+              Excluir conta
             </Button>
           </div>
         </Section>
@@ -555,16 +555,16 @@ export default function Configuracoes() {
                   <AlertTriangle size={40} className="text-red-500" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-                  Tem certeza absoluta?
+                  Excluir sua conta?
                 </h3>
                 <p className="text-[14px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                  Você está prestes a apagar sua jornada no Cinesia. Todos os seus dados serão <span className="text-red-600 dark:text-red-400 font-bold underline">destruídos para sempre</span>.
+                  Se você confirmar, seus dados serão removidos do Cinesia e não poderão ser recuperados.
                 </p>
               </div>
 
               <div className="px-8 pb-8 space-y-5">
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Confirmação de segurança</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">Confirme para continuar</label>
                   <Input
                     type="text"
                     value={deleteConfirmText}
@@ -582,7 +582,7 @@ export default function Configuracoes() {
                       type="password"
                       value={deletePassword}
                       onChange={(e) => setDeletePassword(e.target.value)}
-                      placeholder="Sua senha secreta..."
+                      placeholder="Sua senha"
                       leftIcon={Lock}
                       disabled={deletingAccount}
                       className="h-12 bg-white dark:bg-slate-900"
@@ -599,14 +599,14 @@ export default function Configuracoes() {
                     disabled={deleteConfirmText !== 'EXCLUIR'}
                     className="h-14 rounded-2xl text-[15px] font-bold shadow-lg shadow-red-500/20 border-none"
                   >
-                    Sim, excluir tudo
+                    Excluir minha conta
                   </Button>
                   <button
                     onClick={() => !deletingAccount && setShowDeleteModal(false)}
                     disabled={deletingAccount}
                     className="py-3 text-[14px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                   >
-                    Mudei de ideia
+                    Cancelar
                   </button>
                 </div>
               </div>

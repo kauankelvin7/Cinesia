@@ -155,11 +155,11 @@ const ProfileModal = ({ isOpen, onClose }) => {
       }
       hapticSuccess();
       setSuccess(true);
-      toast.success('Perfil atualizado! ✨');
+      toast.success('Perfil atualizado.');
       setTimeout(() => onClose(), 1200);
     } catch {
       hapticError();
-      setError('Não foi possível salvar as alterações.');
+      setError('Não consegui salvar suas alterações. Tente de novo.');
     } finally {
       setLoading(false);
     }

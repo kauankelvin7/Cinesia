@@ -84,7 +84,7 @@ A modernização deve cobrir:
 
 ## Etapa em andamento
 
-**Etapa 1 — Fundação de engenharia**
+**Etapa 4 — Fundação de UI/UX em validação**
 
 Entregas:
 
@@ -98,3 +98,18 @@ Entregas:
 - CI baseline preservado.
 
 Não iniciar migração agressiva de dados na mesma etapa.
+
+
+## Progresso da modernização
+
+Etapas integradas:
+
+- Etapa 1 — documentação canônica e higiene;
+- Etapa 2 — contratos Zod e data layer por domínio;
+- Etapa 3 — perfil social público com migração segura.
+
+Etapa atual:
+
+- Etapa 4 — componentes compartilhados, login, dashboard, copy e acessibilidade.
+
+Diretrizes visuais canônicas: `docs/UI-UX-GUIDELINES.md`.

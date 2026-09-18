@@ -1,176 +1,200 @@
-/**
- * 📝 INPUT
- * * Features: Focus glow dinâmico, suporte a ícones, estados de erro semânticos
- * Exports: Input, Select, Textarea
- */
-
-import React, { forwardRef } from 'react';
-import { motion } from 'framer-motion';
+import React, { forwardRef, useId } from 'react';
 import { AlertCircle, ChevronDown } from 'lucide-react';
 
 const fieldBase = `
   w-full
   bg-white dark:bg-slate-900
-  border border-slate-200 dark:border-slate-800
-  rounded-xl
-  text-[14px] font-medium
+  border border-slate-200 dark:border-slate-700
+  rounded-lg
+  text-sm font-medium
   text-slate-900 dark:text-slate-100
-  placeholder-slate-400 dark:placeholder-slate-600
-  transition-all duration-300 ease-in-out
-  focus:border-indigo-400 dark:focus:border-indigo-500
-  focus:ring-4 focus:ring-indigo-500/10 dark:focus:ring-indigo-400/5
+  placeholder-slate-400 dark:placeholder-slate-500
+  transition-colors duration-150
+  focus:border-indigo-500 dark:focus:border-indigo-400
+  focus:ring-2 focus:ring-indigo-500/10
   focus:outline-none
   disabled:bg-slate-50 dark:disabled:bg-slate-950
   disabled:text-slate-400 dark:disabled:text-slate-600
   disabled:cursor-not-allowed
-  shadow-sm
 `;
 
 const fieldError = `
-  border-red-300 dark:border-red-900/50 
-  bg-red-50/30 dark:bg-red-950/10 
+  border-red-400 dark:border-red-800
   focus:border-red-500 focus:ring-red-500/10
 `;
 
-/* ─── Input Component ─── */
-export const Input = forwardRef(({ 
-  label, 
-  error, 
+function FieldMeta({ hint, error, hintId, errorId }) {
+  if (error) {
+    return (
+      <p
+        id={errorId}
+        role="alert"
+        className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400"
+      >
+        <AlertCircle size={14} aria-hidden="true" />
+        {error}
+      </p>
+    );
+  }
+
+  if (hint) {
+    return (
+      <p id={hintId} className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        {hint}
+      </p>
+    );
+  }
+
+  return null;
+}
+
+function FieldLabel({ htmlFor, label, required }) {
+  if (!label) return null;
+
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-2 block text-[13px] font-semibold text-slate-700 dark:text-slate-300"
+    >
+      {label}
+      {required && (
+        <>
+          <span className="ml-1 text-red-500" aria-hidden="true">*</span>
+          <span className="sr-only"> obrigatório</span>
+        </>
+      )}
+    </label>
+  );
+}
+
+export const Input = forwardRef(({
+  id,
+  label,
+  error,
   hint,
-  className = '', 
+  className = '',
   required = false,
   leftIcon: LeftIcon = null,
-  ...props 
+  ...props
 }, ref) => {
+  const generatedId = useId();
+  const fieldId = id || generatedId;
+  const hintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const describedBy = error ? errorId : hint ? hintId : undefined;
+
   return (
     <div className="w-full">
-      {label && (
-        <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1 tracking-tight">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-      )}
-      <div className="relative group">
+      <FieldLabel htmlFor={fieldId} label={label} required={required} />
+
+      <div className="group relative">
         {LeftIcon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors duration-300 pointer-events-none">
-            {React.isValidElement(LeftIcon) ? LeftIcon : <LeftIcon size={18} strokeWidth={2.5} />}
+          <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500">
+            {React.isValidElement(LeftIcon)
+              ? LeftIcon
+              : <LeftIcon size={18} strokeWidth={2} aria-hidden="true" />}
           </div>
         )}
+
         <input
           ref={ref}
+          id={fieldId}
+          required={required}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
           className={`
             ${fieldBase}
-            h-12 ${LeftIcon ? 'pl-11' : 'px-4'} pr-4
+            h-11 ${LeftIcon ? 'pl-10' : 'px-3.5'} pr-3.5
             ${error ? fieldError : ''}
             ${className}
           `}
           {...props}
         />
       </div>
-      {hint && !error && (
-        <p className="mt-2 ml-1 text-[11px] font-medium text-slate-400 uppercase tracking-wider">{hint}</p>
-      )}
-      {error && (
-        <motion.p 
-          initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
-          className="mt-2 ml-1 text-[12px] font-bold text-red-500 flex items-center gap-1.5"
-        >
-          <AlertCircle size={14} strokeWidth={3} />
-          {error}
-        </motion.p>
-      )}
+
+      <FieldMeta hint={hint} error={error} hintId={hintId} errorId={errorId} />
     </div>
   );
 });
 
 Input.displayName = 'Input';
 
-/* ─── Select Component ─── */
-export const Select = forwardRef(({ 
-  label, 
-  error, 
-  children, 
-  className = '', 
+export const Select = forwardRef(({
+  id,
+  label,
+  error,
+  hint,
+  children,
+  className = '',
   required = false,
-  ...props 
+  ...props
 }, ref) => {
+  const generatedId = useId();
+  const fieldId = id || generatedId;
+  const hintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const describedBy = error ? errorId : hint ? hintId : undefined;
+
   return (
     <div className="w-full">
-      {label && (
-        <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1 tracking-tight">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-      )}
-      <div className="relative group">
+      <FieldLabel htmlFor={fieldId} label={label} required={required} />
+
+      <div className="group relative">
         <select
           ref={ref}
-          className={`
-            ${fieldBase}
-            h-12 px-4 pr-10
-            appearance-none cursor-pointer
-            ${error ? fieldError : ''}
-            ${className}
-          `}
+          id={fieldId}
+          required={required}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          className={`${fieldBase} h-11 appearance-none px-3.5 pr-10 ${error ? fieldError : ''} ${className}`}
           {...props}
         >
           {children}
         </select>
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-          <ChevronDown size={18} strokeWidth={2.5} />
-        </div>
+        <ChevronDown
+          size={17}
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500"
+        />
       </div>
-      {error && (
-        <p className="mt-2 ml-1 text-[12px] font-bold text-red-500 flex items-center gap-1.5">
-          <AlertCircle size={14} strokeWidth={3} />
-          {error}
-        </p>
-      )}
+
+      <FieldMeta hint={hint} error={error} hintId={hintId} errorId={errorId} />
     </div>
   );
 });
 
 Select.displayName = 'Select';
 
-/* ─── Textarea Component ─── */
-export const Textarea = forwardRef(({ 
-  label, 
-  error, 
+export const Textarea = forwardRef(({
+  id,
+  label,
+  error,
   hint,
-  className = '', 
+  className = '',
   required = false,
   rows = 4,
-  ...props 
+  ...props
 }, ref) => {
+  const generatedId = useId();
+  const fieldId = id || generatedId;
+  const hintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const describedBy = error ? errorId : hint ? hintId : undefined;
+
   return (
     <div className="w-full">
-      {label && (
-        <label className="block text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-2 ml-1 tracking-tight">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-      )}
+      <FieldLabel htmlFor={fieldId} label={label} required={required} />
       <textarea
         ref={ref}
+        id={fieldId}
         rows={rows}
-        className={`
-          ${fieldBase}
-          p-4
-          resize-none
-          ${error ? fieldError : ''}
-          ${className}
-        `}
+        required={required}
+        aria-invalid={Boolean(error)}
+        aria-describedby={describedBy}
+        className={`${fieldBase} resize-y p-3.5 ${error ? fieldError : ''} ${className}`}
         {...props}
       />
-      {hint && !error && (
-        <p className="mt-2 ml-1 text-[11px] font-medium text-slate-400 uppercase tracking-wider">{hint}</p>
-      )}
-      {error && (
-        <p className="mt-2 ml-1 text-[12px] font-bold text-red-500 flex items-center gap-1.5">
-          <AlertCircle size={14} strokeWidth={3} />
-          {error}
-        </p>
-      )}
+      <FieldMeta hint={hint} error={error} hintId={hintId} errorId={errorId} />
     </div>
   );
 });

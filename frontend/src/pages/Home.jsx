@@ -55,22 +55,6 @@ const getGreeting = () => {
   return { text: 'Boa noite', Icon: Moon, color: '#A78BFA' };
 };
 
-const motivationalPhrases = [
-  'A anatomia é a base. Domine-a e tudo fará sentido.',
-  'Cada flashcard revisado é um passo mais perto da aprovação.',
-  'Consistência supera intensidade. Continue estudando!',
-  'Seu futuro paciente agradece cada hora de estudo.',
-  'Fisioterapia é ciência e arte — domine ambas.',
-  'Pequenos passos diários constroem conhecimento sólido.',
-  'Revise hoje o que aprendeu ontem. Repetição espaçada funciona!',
-  'Você está construindo uma base que vai durar toda sua carreira.',
-];
-
-const getMotivationalPhrase = () => {
-  const idx = (new Date().getDate() + new Date().getHours()) % motivationalPhrases.length;
-  return motivationalPhrases[idx];
-};
-
 const getStoredMetaMensal = () => {
   try {
     const raw = localStorage.getItem('cinesia:meta:mensal');
@@ -218,23 +202,22 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '20px', // Mais arredondado (Premium)
-        padding: '20px 16px', // Mais respiro
+        borderRadius: '14px',
+        padding: '18px 16px',
         boxShadow: isDarkMode 
-          ? '0 8px 32px rgba(0,0,0,0.4)' 
-          : '0 8px 32px rgba(37,99,235,0.08)',
+          ? '0 1px 2px rgba(0,0,0,0.28)' 
+          : '0 1px 3px rgba(15,23,42,0.06)',
       }}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
       whileHover={{
-        y: -4,
-        borderColor: color,
-        boxShadow: `0 12px 40px ${color}25`,
+        y: -2,
+        borderColor: 'var(--border-strong)',
       }}
       whileTap={{ y: 0, scale: 0.98 }}
     >
-      {/* Top color line (Soft glow) */}
+      {/* Indicador de categoria */}
       <div 
         className="absolute pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
         style={{ top: 0, left: '20px', right: '20px', height: '3px', borderRadius: '0 0 6px 6px', background: color, filter: 'blur(1px)' }} 
@@ -331,7 +314,7 @@ const CircularProgress = memo(({ current = 0, total = 50, size = 100, showStartM
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {showStartMessage ? (
-          <span className="font-display font-bold" style={{ fontSize: '14px', color: 'var(--primary)', lineHeight: 1.2, textAlign: 'center' }}>Comece!</span>
+          <span className="font-display font-bold" style={{ fontSize: '14px', color: 'var(--primary)', lineHeight: 1.2, textAlign: 'center' }}>0 de {total}</span>
         ) : (
           <>
             <span className="font-mono font-black" style={{ fontSize: '24px', color: 'var(--text-1)', lineHeight: 1 }}>
@@ -358,13 +341,13 @@ const SectionCard = memo(({ children, className = '', hover = true, onClick }) =
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '24px', // Mais arredondado
+        borderRadius: '16px',
         boxShadow: isDarkMode
-          ? '0 4px 20px rgba(0,0,0,0.2)'
-          : '0 4px 24px rgba(37,99,235,0.04)',
+          ? '0 1px 3px rgba(0,0,0,0.24)'
+          : '0 1px 3px rgba(15,23,42,0.05)',
       }}
       onClick={onClick}
-      whileHover={hover && onClick ? { y: -2, borderColor: 'var(--border-strong)', boxShadow: isDarkMode ? '0 8px 30px rgba(0,0,0,0.4)' : '0 8px 30px rgba(37,99,235,0.08)' } : undefined}
+      whileHover={hover && onClick ? { y: -2, borderColor: 'var(--border-strong)', boxShadow: isDarkMode ? '0 4px 14px rgba(0,0,0,0.24)' : '0 4px 14px rgba(15,23,42,0.07)' } : undefined}
     >
       {children}
     </motion.div>
@@ -528,7 +511,9 @@ const Home = () => {
 
   /* ── Computed values ── */
   const greeting = useMemo(() => getGreeting(), []);
-  const motivational = useMemo(() => getMotivationalPhrase(), []);
+  const studySummary = pendingReviews > 0
+    ? `${pendingReviews} ${pendingReviews === 1 ? 'flashcard está pronto' : 'flashcards estão prontos'} para revisão hoje.`
+    : 'Sem revisões pendentes agora. Escolha uma matéria quando quiser continuar.';
 
   const progressPercent = useMemo(() => {
     if (!dashboardData || !dashboardData.totalMaterias) return 0;
@@ -564,47 +549,24 @@ const Home = () => {
     <motion.div className="min-h-screen pb-32" initial="hidden" animate="show" variants={staggerContainer}>
 
       {/* ═══════════════════════════════════════════
-         ① HERO HEADER — dark gradient + dot grid + ring avatar
+         ① HERO HEADER — contextual study summary
          ═══════════════════════════════════════════ */}
       <motion.div
         variants={fadeUp}
         className="relative overflow-hidden mx-3 sm:mx-5 mt-2 sm:mt-4 pb-16 sm:pb-24 shadow-xl"
         style={{
-          borderRadius: '28px', // Premium rounding
+          borderRadius: '20px',
           backgroundImage: isDarkMode ? [
-            'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.20) 0%, transparent 60%)',
-            'linear-gradient(135deg, #0f1f3d 0%, #0d2540 35%, #0a3040 65%, #083c3c 100%)',
+            'linear-gradient(135deg, #0f172a 0%, #12233d 60%, #103b3a 100%)',
           ].join(', ') : [
-            'radial-gradient(circle at 70% 30%, rgba(37,99,235,0.12) 0%, transparent 60%)',
-            'linear-gradient(135deg, #1e3a8a 0%, #1e40af 35%, #0e7490 65%, #0f766e 100%)',
+            'linear-gradient(135deg, #172554 0%, #1e3a5f 58%, #115e59 100%)',
           ].join(', '),
           paddingTop: 'clamp(28px, 5vw, 40px)',
           paddingLeft: 'clamp(24px, 5vw, 40px)',
           paddingRight: 'clamp(24px, 5vw, 40px)',
         }}
       >
-        {/* Decorative glow — teal, top-right */}
-        <div 
-          className="absolute pointer-events-none" 
-          style={{ 
-            top: '-80px', 
-            right: '-80px', 
-            width: '300px', 
-            height: '300px', 
-            background: isDarkMode ? 'radial-gradient(circle, rgba(13,148,136,0.3) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(13,148,136,0.4) 0%, transparent 70%)',
-            filter: 'blur(20px)'
-          }} 
-        />
-        {/* Bright bottom border line */}
-        <div 
-          className="absolute bottom-0 left-0 right-0 pointer-events-none" 
-          style={{ 
-            height: '2px', 
-            background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.5), rgba(96,165,250,0.4), transparent)' 
-          }} 
-        />
-
-        {/* Avatar + Greeting row (Ajustado gap para evitar cortes no mobile) */}
+        {/* Avatar + contexto atual */}
         <div className="relative z-10 flex items-center gap-4 sm:gap-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.8 }} 
@@ -614,8 +576,7 @@ const Home = () => {
             <Avatar 
               src={user?.photoURL} 
               name={user?.displayName || user?.email} 
-              size={68} 
-              ring 
+              size={64} 
             />
           </motion.div>
 
@@ -636,26 +597,22 @@ const Home = () => {
             >
               {greeting.text}, {user?.displayName || user?.email?.split('@')[0] || 'Estudante'}
               {' '}
-              <motion.span
-                className="inline-flex ml-1 align-middle"
-                animate={{ rotate: [0, 15, -10, 0] }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 5 }}
-              >
-                <greeting.Icon size={28} style={{ color: greeting.color, filter: 'drop-shadow(0px 0px 8px rgba(255,255,255,0.3))' }} />
-              </motion.span>
+              <span className="ml-1 inline-flex align-middle">
+                <greeting.Icon size={23} style={{ color: greeting.color }} aria-hidden="true" />
+              </span>
             </motion.h1>
 
             <motion.p
-              className="italic mt-1.5 line-clamp-2 hidden sm:block font-medium"
-              style={{ fontSize: '15px', color: isDarkMode ? 'rgba(199,210,254,0.85)' : 'rgba(219,234,254,0.95)' }}
+              className="mt-2 line-clamp-2 hidden max-w-2xl sm:block"
+              style={{ fontSize: '14px', lineHeight: 1.6, color: 'rgba(226,232,240,0.78)' }}
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               transition={{ delay: 0.3 }}
             >
-              &ldquo;{motivational}&rdquo;
+              {studySummary}
             </motion.p>
 
-            {/* Streak badge Premium */}
+            {/* Resumo de sequência */}
             <motion.div 
               className="mt-3 sm:mt-4" 
               initial={{ opacity: 0 }} 
@@ -663,27 +620,15 @@ const Home = () => {
               transition={{ delay: 0.4 }}
             >
               <div 
-                className="inline-flex items-center gap-2 rounded-full font-bold shadow-lg" 
-                style={{ 
-                  background: 'rgba(0,0,0,0.3)', 
-                  border: '1px solid rgba(255,255,255,0.15)', 
-                  color: '#FFFFFF', 
-                  padding: '6px 16px', 
-                  fontSize: '13px', 
-                  backdropFilter: 'blur(8px)' 
-                }}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/15 px-3 py-1.5 text-white/85"
               >
-                <motion.span 
-                  animate={{ scale: [1, 1.2, 1] }} 
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  🔥
-                </motion.span>
-                <span className="font-mono tabular-nums text-orange-400 text-sm">
+                <Zap size={14} className="text-orange-300" aria-hidden="true" />
+                <span className="text-xs">Sequência</span>
+                <span className="font-mono text-xs font-semibold text-white">
                   {isLoading ? '—' : <AnimatedNumber value={dashboardData?.offensiveStreak || 0} />}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: 'normal' }}>
-                  {(dashboardData?.offensiveStreak || 0) === 0 ? 'Comece hoje!' : 'dias consecutivos'}
+                <span className="text-xs text-white/65">
+                  {(dashboardData?.offensiveStreak || 0) === 1 ? 'dia' : 'dias'}
                 </span>
               </div>
             </motion.div>
@@ -766,10 +711,10 @@ const Home = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-extrabold text-xl tracking-tight" style={{ color: 'var(--text-1)' }}>
-                          Sua Revisão Diária
+                          Revisões de hoje
                         </h3>
                         <p className="text-[15px] mt-1 font-medium" style={{ color: 'var(--text-3)' }}>
-                          Você tem <span className="font-black font-mono text-orange-500 text-lg mx-1">{pendingReviews}</span> flashcards te esperando.
+                          <span className="font-black font-mono text-orange-500 text-lg mr-1">{pendingReviews}</span> {pendingReviews === 1 ? 'flashcard está pronto' : 'flashcards estão prontos'} para revisar.
                         </p>
                       </div>
                       <Button
@@ -777,7 +722,7 @@ const Home = () => {
                         className="bg-orange-500 hover:bg-orange-600 shrink-0 font-bold px-8 py-3.5 rounded-xl shadow-lg shadow-orange-500/30 text-[15px]"
                         onClick={(e) => { e.stopPropagation(); navigate('/flashcards', { state: { reviewMode: true } }); }}
                       >
-                        Iniciar Revisão
+                        Revisar agora
                       </Button>
                     </div>
                   </motion.div>
@@ -809,7 +754,7 @@ const Home = () => {
                         Tudo em dia!
                       </span>
                       <span className="text-[15px] font-medium" style={{ color: 'var(--text-3)' }}>
-                        Você completou todas as revisões programadas para hoje.
+                        Não há flashcards programados para revisão agora.
                       </span>
                     </div>
                   </div>
@@ -1113,7 +1058,7 @@ const Home = () => {
                       <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--teal-bg)' }}>
                         <TrendingUp size={16} style={{ color: 'var(--teal)' }} strokeWidth={2.5} />
                       </div>
-                      Produção Mensal
+                      Neste mês
                     </h2>
                     <span className="inline-flex px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest border" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-3)' }}>
                       {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' })}
@@ -1198,7 +1143,7 @@ const Home = () => {
                             disabled={isSavingMeta}
                             className="h-12 rounded-xl mt-2"
                           >
-                            {isSavingMeta ? '⏳ Salvando...' : 'Salvar'}
+                            {isSavingMeta ? 'Salvando…' : 'Salvar meta'}
                           </Button>
                         </div>
                       ) : (
@@ -1212,7 +1157,7 @@ const Home = () => {
                             />
                           </div>
                           <p className="text-[12px] font-bold uppercase tracking-widest mt-2" style={{ color: 'var(--text-3)' }}>
-                            Meta Atingida
+                            Progresso da meta
                           </p>
                           <p className="font-mono font-black text-[20px]" style={{ color: 'var(--primary)' }}>
                             {dashboardData?.metaMensal?.porcentagem || 0}%
@@ -1236,9 +1181,9 @@ const Home = () => {
                       </div>
                       <p className="text-[14px] font-medium leading-relaxed" style={{ color: 'var(--text-2)' }}>
                         {(dashboardData?.offensiveStreak || 0) > 0 ? (
-                          <>Você está em uma sequência de <span className="font-bold text-orange-500">🔥 {dashboardData.offensiveStreak} dias</span>! Não quebre a corrente, revise seus cards hoje.</>
+                          <>Sua sequência está em <span className="font-semibold text-orange-500">{dashboardData.offensiveStreak} dias</span>. Se houver revisão pendente, ela aparece acima.</>
                         ) : (
-                          <>Estude pelo menos <strong style={{ color: 'var(--text-1)' }}>15 minutos</strong> hoje para começar sua sequência de foco (Streak).</>
+                          <>A sequência começa quando você registra um dia de estudo. Use o Pomodoro se quiser acompanhar o tempo.</>
                         )}
                       </p>
                     </div>
