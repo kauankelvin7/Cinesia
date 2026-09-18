@@ -202,8 +202,8 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
       style={{
         backgroundColor: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '14px'
-        padding: '18px 16px'
+        borderRadius: '14px',
+        padding: '18px 16px',
         boxShadow: isDarkMode 
           ? '0 1px 2px rgba(0,0,0,0.28)' 
           : '0 1px 3px rgba(15,23,42,0.06)',
