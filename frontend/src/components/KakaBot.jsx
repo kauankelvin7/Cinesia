@@ -738,6 +738,21 @@ const KakaBot = () => {
   const messagesContainerRef = useRef(null);
   const initializeGeminiRef = useRef(null);
 
+  // Mensagens de sistema precisam existir antes de qualquer hook que as referencie.
+  // Mantê-las aqui evita Temporal Dead Zone em arrays de dependências do React.
+  const addSystemMessage = useCallback((content, type = 'info') => {
+    setMensagensVisiveis((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content,
+        isSystem: true,
+        systemType: type,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  }, [setMensagensVisiveis]);
+
   // Voice input
   const handleVoiceFinalResult = useCallback((finalText) => {
     setInputValue(finalText);
@@ -1218,21 +1233,6 @@ const KakaBot = () => {
       solutions: ['Aguarde 1-2 minutos', 'Tente reconectar', 'Verifique o console (F12)'],
     };
   };
-
-  // ─── Mensagens de Sistema ──────────────────────────────────────────────────
-
-  const addSystemMessage = useCallback((content, type = 'info') => {
-    setMensagensVisiveis((prev) => [
-      ...prev,
-      {
-        role: 'assistant',
-        content,
-        isSystem: true,
-        systemType: type,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
-  }, [setMensagensVisiveis]);
 
   const checkRateLimit = () => {
     const now = Date.now();
