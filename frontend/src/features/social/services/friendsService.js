@@ -11,6 +11,11 @@ import {
 import { cleanUndefined } from '../../../utils/firestoreHelpers';
 import { db } from '../../../config/firebase-config';
 import { handleFirestoreError } from '../../../utils/firestoreErrorHandler';
+import {
+  getPublicProfile,
+  searchPublicProfiles,
+  upsertPublicProfile,
+} from './publicProfileService';
 
 /**
  * Gera um ID determinístico para a amizade (sempre o mesmo independente da ordem).
@@ -228,18 +233,47 @@ export const friendsService = {
   async searchUsers(searchTerm, currentUserId) {
     if (!searchTerm || searchTerm.trim().length < 2) return [];
 
-    const trimmed = searchTerm.trim().toLowerCase();
-    const q = query(
-      collection(db, 'users'),
-      where('displayNameLower', '>=', trimmed),
-      where('displayNameLower', '<=', trimmed + '\uf8ff'),
-      orderBy('displayNameLower'),
-      limit(20),
-    );
-    const snap = await getDocs(q);
-    return snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((u) => u.uid !== currentUserId);
+    const publicResults = await searchPublicProfiles(searchTerm, currentUserId);
+    if (publicResults.length >= 20) return publicResults;
+
+    // Compatibilidade temporária durante a migração gradual de usuários antigos.
+    // Quando publicProfiles estiver populada para toda a base, este fallback deve ser removido
+    // junto com a leitura autenticada ampla de /users/{uid} nas Firestore Rules.
+    try {
+      const trimmed = searchTerm.trim().toLocaleLowerCase('pt-BR');
+      const legacyQuery = query(
+        collection(db, 'users'),
+        where('displayNameLower', '>=', trimmed),
+        where('displayNameLower', '<=', trimmed + '\uf8ff'),
+        orderBy('displayNameLower'),
+        limit(20),
+      );
+      const snapshot = await getDocs(legacyQuery);
+      const byUid = new Map(publicResults.map((profile) => [profile.uid, profile]));
+
+      for (const item of snapshot.docs) {
+        const data = item.data();
+        const uid = data.uid || item.id;
+        if (uid === currentUserId || byUid.has(uid)) continue;
+
+        byUid.set(uid, {
+          id: item.id,
+          uid,
+          displayName: data.displayName || 'Usuário',
+          displayNameLower:
+            data.displayNameLower ||
+            (data.displayName || 'Usuário').toLocaleLowerCase('pt-BR'),
+          photoURL: data.photoURL || null,
+          bio: data.bio || '',
+          institution: data.institution || '',
+        });
+      }
+
+      return Array.from(byUid.values()).slice(0, 20);
+    } catch (error) {
+      console.warn('[SOCIAL] Busca legada de perfis indisponível:', error?.code || error?.message);
+      return publicResults;
+    }
   },
 
   /**
@@ -257,29 +291,56 @@ export const friendsService = {
    */
   async ensureUserProfile(user) {
     if (!user?.uid) return;
+
     const userRef = doc(db, 'users', user.uid);
     const snap = await getDoc(userRef);
     const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
 
-    if (!snap.exists()) {
-      await setDoc(userRef, cleanUndefined({
-        uid:               user.uid,
+    let privateProfile = snap.exists() ? snap.data() : null;
+
+    if (!privateProfile) {
+      privateProfile = {
+        uid: user.uid,
         displayName,
-        displayNameLower:  displayName.toLowerCase(),
-        email:             user.email    || '',
-        photoURL:          user.photoURL || null,
-        bio:               '',
-      }));
+        displayNameLower: displayName.toLocaleLowerCase('pt-BR'),
+        email: user.email || '',
+        photoURL: user.photoURL || null,
+        bio: '',
+        institution: '',
+      };
+      await setDoc(userRef, cleanUndefined(privateProfile));
     }
+
+    await upsertPublicProfile(user, privateProfile);
   },
 
   /**
    * Busca o perfil público de um usuário.
    */
   async getUserProfile(userId) {
-    const snap = await getDoc(doc(db, 'users', userId));
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() };
+    const publicProfile = await getPublicProfile(userId);
+    if (publicProfile) return publicProfile;
+
+    // Fallback de migração para perfis ainda não materializados em publicProfiles.
+    try {
+      const snap = await getDoc(doc(db, 'users', userId));
+      if (!snap.exists()) return null;
+      const data = snap.data();
+      return {
+        id: snap.id,
+        uid: data.uid || snap.id,
+        displayName: data.displayName || 'Usuário',
+        displayNameLower:
+          data.displayNameLower ||
+          (data.displayName || 'Usuário').toLocaleLowerCase('pt-BR'),
+        photoURL: data.photoURL || null,
+        bio: data.bio || '',
+        institution: data.institution || '',
+      };
+    } catch (error) {
+      console.warn('[SOCIAL] Perfil legado indisponível:', error?.code || error?.message);
+      return null;
+    }
   },
 };
 
@@ -291,11 +352,13 @@ export async function ensureUserProfileOnAuth(user) {
     const snap = await getDoc(userRef);
     const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
 
-    if (!snap.exists() || !snap.data().uid) {
-      await setDoc(userRef, cleanUndefined({
+    let privateProfile = snap.exists() ? snap.data() : null;
+
+    if (!privateProfile || !privateProfile.uid) {
+      privateProfile = {
         uid: user.uid,
         displayName,
-        displayNameLower: displayName.toLowerCase(),
+        displayNameLower: displayName.toLocaleLowerCase('pt-BR'),
         email: user.email || '',
         photoURL: user.photoURL || null,
         bio: '',
@@ -313,8 +376,12 @@ export async function ensureUserProfileOnAuth(user) {
           showStudyActivity: true,
           challengeNotifications: true,
         },
-      }));
+      };
+
+      await setDoc(userRef, cleanUndefined(privateProfile), { merge: true });
     }
+
+    await upsertPublicProfile(user, privateProfile);
   } catch (error) {
     handleFirestoreError(error, 'ensureUserProfileOnAuth');
   }
