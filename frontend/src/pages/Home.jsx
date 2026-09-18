@@ -217,7 +217,7 @@ const KpiCard = memo(({ variant, value, loading, navigate: nav, delay = 0, isDar
       }}
       whileTap={{ y: 0, scale: 0.98 }}
     >
-      {/* Top color line (Soft glow) */}
+      {/* Indicador de categoria */}
       <div 
         className="absolute pointer-events-none transition-opacity duration-300 opacity-80 group-hover:opacity-100" 
         style={{ top: 0, left: '20px', right: '20px', height: '3px', borderRadius: '0 0 6px 6px', background: color, filter: 'blur(1px)' }} 
@@ -612,7 +612,7 @@ const Home = () => {
               {studySummary}
             </motion.p>
 
-            {/* Streak badge Premium */}
+            {/* Resumo de sequência */}
             <motion.div 
               className="mt-3 sm:mt-4" 
               initial={{ opacity: 0 }} 
@@ -1058,7 +1058,7 @@ const Home = () => {
                       <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--teal-bg)' }}>
                         <TrendingUp size={16} style={{ color: 'var(--teal)' }} strokeWidth={2.5} />
                       </div>
-                      Produção Mensal
+                      Neste mês
                     </h2>
                     <span className="inline-flex px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest border" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-3)' }}>
                       {dashboardData?.metaMensal?.mesNome || new Date().toLocaleDateString('pt-BR', { month: 'long' })}
@@ -1143,7 +1143,7 @@ const Home = () => {
                             disabled={isSavingMeta}
                             className="h-12 rounded-xl mt-2"
                           >
-                            {isSavingMeta ? '⏳ Salvando...' : 'Salvar'}
+                            {isSavingMeta ? 'Salvando…' : 'Salvar meta'}
                           </Button>
                         </div>
                       ) : (
