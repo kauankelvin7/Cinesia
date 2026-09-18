@@ -11,9 +11,6 @@ import {
 import { cleanUndefined } from '../../../utils/firestoreHelpers';
 import { db } from '../../../config/firebase-config';
 import { handleFirestoreError } from '../../../utils/firestoreErrorHandler';
-import { getAuth } from 'firebase/auth';
-
-const auth = getAuth();
 
 /**
  * Gera um ID determinístico para a amizade (sempre o mesmo independente da ordem).
