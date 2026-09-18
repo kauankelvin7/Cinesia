@@ -286,36 +286,39 @@ export const friendsService = {
   },
 };
 
-export function ensureUserProfileOnAuth() {
-  auth.onAuthStateChanged(async (user) => {
-    if (user && user.uid) {
-      const userRef = doc(db, 'users', user.uid);
-      const snap = await getDoc(userRef);
-      const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
-      if (!snap.exists() || !snap.data().uid) {
-        await setDoc(userRef, cleanUndefined({
-          uid:                user.uid,
-          displayName,
-          displayNameLower:   displayName.toLowerCase(),
-          email:              user.email    || '',
-          photoURL:           user.photoURL || null,
-          bio:                '',
-          institution:        '',
-          streakDays:         0,
-          totalStudyMinutes:  0,
-          lastActive:         Timestamp.now(),
-          isOnline:           true,
-          isStudying:         false,
-          currentPage:        'home',
-          createdAt:          Timestamp.now(),
-          settings: {
-            allowFriendRequests:      true,
-            showOnlineStatus:         true,
-            showStudyActivity:        true,
-            challengeNotifications:   true,
-          },
-        }));
-      }
+export async function ensureUserProfileOnAuth(user) {
+  if (!user?.uid) return;
+
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    const snap = await getDoc(userRef);
+    const displayName = user.displayName || user.email?.split('@')[0] || 'Usuário';
+
+    if (!snap.exists() || !snap.data().uid) {
+      await setDoc(userRef, cleanUndefined({
+        uid: user.uid,
+        displayName,
+        displayNameLower: displayName.toLowerCase(),
+        email: user.email || '',
+        photoURL: user.photoURL || null,
+        bio: '',
+        institution: '',
+        streakDays: 0,
+        totalStudyMinutes: 0,
+        lastActive: Timestamp.now(),
+        isOnline: true,
+        isStudying: false,
+        currentPage: 'home',
+        createdAt: Timestamp.now(),
+        settings: {
+          allowFriendRequests: true,
+          showOnlineStatus: true,
+          showStudyActivity: true,
+          challengeNotifications: true,
+        },
+      }));
     }
-  });
+  } catch (error) {
+    handleFirestoreError(error, 'ensureUserProfileOnAuth');
+  }
 }
