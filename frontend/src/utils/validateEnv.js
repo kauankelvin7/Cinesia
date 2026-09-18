@@ -1,45 +1,36 @@
+import { getRuntimeConfigHealth } from '../config/runtime-config';
+
 /**
- * @file validateEnv.js
- * @description Valida variáveis de ambiente obrigatórias na inicialização.
- * Lança erro descritivo se alguma estiver faltando, evitando falhas silenciosas
- * (ex: Firebase inicializar sem API key e só quebrar mais tarde).
+ * Faz diagnóstico da configuração sem derrubar o produto por features opcionais.
  *
- * @usage Chamar antes de ReactDOM.createRoot() em main.jsx
- */
-
-const REQUIRED_ENV_VARS = [
-  'VITE_FIREBASE_API_KEY',
-  'VITE_FIREBASE_AUTH_DOMAIN',
-  'VITE_FIREBASE_PROJECT_ID',
-  'VITE_FIREBASE_STORAGE_BUCKET',
-  'VITE_FIREBASE_MESSAGING_SENDER_ID',
-  'VITE_FIREBASE_APP_ID',
-  'VITE_GEMINI_API_KEY',
-];
-
-/**
- * Valida que todas as variáveis de ambiente obrigatórias estão definidas.
- * Em desenvolvimento lança um erro claro; em produção apenas loga um aviso
- * para evitar quebrar o app inteiramente caso alguma variável opcional falte.
+ * O boot só é considerado inválido se a configuração crítica do Firebase estiver
+ * incompleta. Gemini, Cloudinary e Analytics degradam de forma independente.
  */
 export const validateEnv = () => {
-  const missing = REQUIRED_ENV_VARS.filter(
-    (key) => !import.meta.env[key]
-  );
+  const health = getRuntimeConfigHealth();
 
-  if (missing.length > 0) {
-    const msg = [
-      '[Cinesia] Variáveis de ambiente faltando:',
-      ...missing.map((k) => `  • ${k}`),
-      '',
-      'Copie .env.example para .env e preencha os valores.',
-      'Na Vercel/Firebase Hosting: configure em Settings → Environment Variables.',
-    ].join('\n');
+  if (health.missingCritical.length > 0) {
+    const message =
+      '[Cinesia] Configuração crítica do Firebase incompleta: ' +
+      health.missingCritical.join(', ');
 
     if (import.meta.env.DEV) {
-      throw new Error(msg);
-    } else {
-      console.error(msg);
+      throw new Error(message);
     }
+
+    console.error(message);
   }
+
+  const disabled = Object.entries(health.optionalFeatures)
+    .filter(([, enabled]) => !enabled)
+    .map(([feature]) => feature);
+
+  if (disabled.length > 0) {
+    console.warn(
+      '[Cinesia] Recursos opcionais indisponíveis neste deploy:',
+      disabled.join(', '),
+    );
+  }
+
+  return health;
 };
