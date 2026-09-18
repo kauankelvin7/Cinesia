@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 
 // ── Firebase mocks ──
-vi.mock('../../../../config/firebase-config', () => ({
+vi.mock('../../../config/firebase-config', () => ({
   db: {},
   auth: { currentUser: { uid: 'user1' } },
   rtdb: {},
@@ -43,7 +43,7 @@ vi.mock('firebase/database', () => ({
   serverTimestamp: vi.fn(),
 }));
 
-vi.mock('../../../../contexts/AuthContext-firebase', () => ({
+vi.mock('../../../contexts/AuthContext-firebase', () => ({
   useAuth: () => ({
     user: { uid: 'user1', displayName: 'Test User', email: 'test@test.com', photoURL: null },
     isAuthenticated: true,
@@ -52,27 +52,27 @@ vi.mock('../../../../contexts/AuthContext-firebase', () => ({
 }));
 
 // ── Testes dos componentes shared ──
-import OnlineIndicator from '../../components/shared/OnlineIndicator';
-import StudyingBadge from '../../components/shared/StudyingBadge';
-import NotificationBadge from '../../components/shared/NotificationBadge';
+import OnlineIndicator from '../components/shared/OnlineIndicator';
+import StudyingBadge from '../components/shared/StudyingBadge';
+import NotificationBadge from '../components/shared/NotificationBadge';
 
 describe('OnlineIndicator', () => {
   it('renderiza dot verde para online', () => {
-    const { container } = render(<OnlineIndicator status="online" />);
+    const { container } = render(<OnlineIndicator isOnline />);
     const dot = container.firstChild;
     expect(dot).toBeTruthy();
     expect(dot.className).toContain('bg-green');
   });
 
   it('renderiza dot cinza para offline', () => {
-    const { container } = render(<OnlineIndicator status="offline" />);
+    const { container } = render(<OnlineIndicator isOnline={false} />);
     const dot = container.firstChild;
     expect(dot).toBeTruthy();
     expect(dot.className).toContain('bg-slate');
   });
 
   it('renderiza dot cyan para studying', () => {
-    const { container } = render(<OnlineIndicator status="studying" />);
+    const { container } = render(<OnlineIndicator isOnline isStudying />);
     const dot = container.firstChild;
     expect(dot).toBeTruthy();
     expect(dot.className).toContain('bg-cyan');
@@ -81,13 +81,13 @@ describe('OnlineIndicator', () => {
 
 describe('StudyingBadge', () => {
   it('renderiza com nome da página', () => {
-    render(<StudyingBadge page="Flashcards" />);
-    expect(screen.getByText('Flashcards')).toBeTruthy();
+    render(<StudyingBadge isStudying currentPage="flashcards" />);
+    expect(screen.getByText('Estudando Flashcards')).toBeTruthy();
   });
 
   it('renderiza sem nome de página', () => {
-    render(<StudyingBadge />);
-    expect(screen.getByText('Estudando')).toBeTruthy();
+    render(<StudyingBadge isStudying />);
+    expect(screen.getByText(/^Estudando/)).toBeTruthy();
   });
 });
 
@@ -109,18 +109,18 @@ describe('NotificationBadge', () => {
 });
 
 // ── Testes do TypingIndicator ──
-import TypingIndicator from '../../components/chat/TypingIndicator';
+import TypingIndicator from '../components/chat/TypingIndicator';
 
 describe('TypingIndicator', () => {
   it('renderiza 3 dots de animação', () => {
-    const { container } = render(<TypingIndicator />);
+    const { container } = render(<TypingIndicator typingUsers={[{ userName: 'Ana' }]} />);
     const dots = container.querySelectorAll('[class*="rounded-full"]');
     expect(dots.length).toBeGreaterThanOrEqual(3);
   });
 });
 
 // ── Testes do MessageStatus ──
-import MessageStatus from '../../components/chat/MessageStatus';
+import MessageStatus from '../components/chat/MessageStatus';
 
 describe('MessageStatus', () => {
   it('renderiza check para enviada', () => {

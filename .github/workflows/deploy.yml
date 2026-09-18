@@ -3,6 +3,7 @@ name: Deploy to Firebase Hosting
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 defaults:
   run:
@@ -41,12 +42,31 @@ jobs:
           VITE_CLOUDINARY_CLOUD_NAME: ${{ secrets.VITE_CLOUDINARY_CLOUD_NAME }}
           VITE_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.VITE_CLOUDINARY_UPLOAD_PRESET }}
 
+      - name: Check Firebase credentials
+        id: firebase
+        working-directory: .
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Firebase deploy skipped: configure FIREBASE_SERVICE_ACCOUNT in repository secrets."
+          fi
+
       - name: Deploy to Firebase Hosting
+        if: steps.firebase.outputs.enabled == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          projectId: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          # firebase.json na raiz do repositório
+          projectId: cinesia-72d45
           entryPoint: .
+
+      - name: Deployment notice
+        if: steps.firebase.outputs.enabled != 'true'
+        working-directory: .
+        run: echo "Firebase Hosting deploy was skipped; Vercel Git integration remains available."

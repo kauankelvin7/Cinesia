@@ -30,8 +30,10 @@ jobs:
         run: npm ci
 
       - name: ESLint
-        continue-on-error: true
         run: npm run lint
+
+      - name: Tests
+        run: npm run test -- --passWithNoTests
 
       - name: Build
         run: npm run build

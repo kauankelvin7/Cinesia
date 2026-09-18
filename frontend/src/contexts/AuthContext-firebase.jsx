@@ -55,33 +55,39 @@ export const AuthProvider = ({ children }) => {
     // Ouve mudanças de estado de autenticação do Firebase (login, logout, expiração de token)
     // NOTE: `onAuthStateChanged` é disparado também no carregamento inicial da página
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Usuário está logado — busca o JWT mais recente
-        const idToken = await firebaseUser.getIdToken();
+      try {
+        if (firebaseUser) {
+          const idToken = await firebaseUser.getIdToken();
+          const fallbackName =
+            firebaseUser.email?.split('@')[0] ||
+            firebaseUser.displayName ||
+            'Usuário';
 
-        // Normaliza o objeto de usuário exposto pelo contexto
-        // NOTE: `id` e `uid` são sinônimos aqui — ambos expostos para compatibilidade com código legado
-        const userData = {
-          id: firebaseUser.uid,
-          uid: firebaseUser.uid,
-          nome: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
-          email: firebaseUser.email,
-          photoURL: firebaseUser.photoURL
-        };
-        
-        setUser(userData);
-        setToken(idToken);
-        // Persiste localmente para restaurar UI instantâneamente no próximo carregamento
-        // WARN: o localStorage não substitui o estado real do Firebase — use apenas para UI inicial
-        localStorage.setItem('user', JSON.stringify(userData));
-      } else {
-        // Usuário deslogado ou sessão expirada
+          const userData = {
+            id: firebaseUser.uid,
+            uid: firebaseUser.uid,
+            nome: firebaseUser.displayName || fallbackName,
+            displayName: firebaseUser.displayName || fallbackName,
+            email: firebaseUser.email || '',
+            photoURL: firebaseUser.photoURL || null,
+          };
+
+          setUser(userData);
+          setToken(idToken);
+          localStorage.setItem('user', JSON.stringify(userData));
+        } else {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        console.error('[AUTH] Falha ao restaurar sessão:', error);
         setUser(null);
         setToken(null);
         localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
