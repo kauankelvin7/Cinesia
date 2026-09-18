@@ -71,7 +71,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "deploy": "npm run build && firebase deploy --only hosting",
-    "test:integration": "firebase emulators:exec --config ../firebase.json --project demo-cinesia --only auth,firestore,database \"npm run test:integration:inside\"",
+    "test:integration": "firebase emulators:exec --config ../firebase.json --project demo-cinesia --only firestore \"npm run test:integration:inside\"",
     "test:integration:inside": "vitest run --config vitest.integration.config.js",
     "test:e2e": "playwright test --config playwright.local.config.js",
     "test:e2e:local": "npm run build && npm run test:e2e",
