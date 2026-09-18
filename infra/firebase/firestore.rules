@@ -142,9 +142,29 @@ service cloud.firestore {
     // SOCIAL — Estude Juntos
     // ============================================================
 
-    // -- USUÁRIOS (perfil público para busca) --
-    // O perfil /users/{userId} original permite apenas owner.
-    // Para buscas sociais, permitimos leitura autenticada de campos públicos.
+    // -- PERFIS PÚBLICOS --
+    // Contrato mínimo usado em busca e exibição social.
+    match /publicProfiles/{userId} {
+      allow read: if isAuthenticated();
+
+      allow create, update: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.keys().hasOnly([
+                      'uid',
+                      'displayName',
+                      'displayNameLower',
+                      'photoURL',
+                      'bio',
+                      'institution'
+                    ]);
+
+      allow delete: if isOwner(userId);
+    }
+
+    // -- USUÁRIOS (fallback temporário de migração) --
+    // Compatibilidade temporária: usuários antigos ainda podem não ter
+    // publicProfiles/{uid}. Remover este bloco quando a migração gradual
+    // estiver concluída; Rules não conseguem ocultar campos de um documento.
     match /users/{userId} {
       allow read: if isAuthenticated();
     }
