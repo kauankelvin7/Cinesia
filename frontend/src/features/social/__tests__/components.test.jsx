@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 
 // ── Firebase mocks ──
-vi.mock('../../../../config/firebase-config', () => ({
+vi.mock('../../../config/firebase-config', () => ({
   db: {},
   auth: { currentUser: { uid: 'user1' } },
   rtdb: {},
@@ -43,7 +43,7 @@ vi.mock('firebase/database', () => ({
   serverTimestamp: vi.fn(),
 }));
 
-vi.mock('../../../../contexts/AuthContext-firebase', () => ({
+vi.mock('../../../contexts/AuthContext-firebase', () => ({
   useAuth: () => ({
     user: { uid: 'user1', displayName: 'Test User', email: 'test@test.com', photoURL: null },
     isAuthenticated: true,
@@ -52,9 +52,9 @@ vi.mock('../../../../contexts/AuthContext-firebase', () => ({
 }));
 
 // ── Testes dos componentes shared ──
-import OnlineIndicator from '../../components/shared/OnlineIndicator';
-import StudyingBadge from '../../components/shared/StudyingBadge';
-import NotificationBadge from '../../components/shared/NotificationBadge';
+import OnlineIndicator from '../components/shared/OnlineIndicator';
+import StudyingBadge from '../components/shared/StudyingBadge';
+import NotificationBadge from '../components/shared/NotificationBadge';
 
 describe('OnlineIndicator', () => {
   it('renderiza dot verde para online', () => {
@@ -109,7 +109,7 @@ describe('NotificationBadge', () => {
 });
 
 // ── Testes do TypingIndicator ──
-import TypingIndicator from '../../components/chat/TypingIndicator';
+import TypingIndicator from '../components/chat/TypingIndicator';
 
 describe('TypingIndicator', () => {
   it('renderiza 3 dots de animação', () => {
@@ -120,7 +120,7 @@ describe('TypingIndicator', () => {
 });
 
 // ── Testes do MessageStatus ──
-import MessageStatus from '../../components/chat/MessageStatus';
+import MessageStatus from '../components/chat/MessageStatus';
 
 describe('MessageStatus', () => {
   it('renderiza check para enviada', () => {
