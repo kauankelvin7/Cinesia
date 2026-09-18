@@ -4,9 +4,12 @@
     "frontend"
   ],
   "scripts": {
+    "dev": "npm -w frontend run dev",
+    "build": "npm -w frontend run build",
+    "test": "npm -w frontend run test",
+    "lint": "npm -w frontend run lint",
     "dev:frontend": "npm -w frontend run dev",
-    "build:frontend": "npm -w frontend run build",
-    "lint": "npm -w frontend run lint"
+    "build:frontend": "npm -w frontend run build"
   },
   "overrides": {
     "react": "18.3.1",
