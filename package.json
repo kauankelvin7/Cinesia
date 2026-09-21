@@ -9,7 +9,12 @@
     "test": "npm -w frontend run test",
     "lint": "npm -w frontend run lint",
     "dev:frontend": "npm -w frontend run dev",
-    "build:frontend": "npm -w frontend run build"
+    "build:frontend": "npm -w frontend run build",
+    "test:integration": "npm -w frontend run test:integration",
+    "test:e2e": "npm -w frontend run test:e2e",
+    "test:e2e:local": "npm -w frontend run test:e2e:local",
+    "audit:prod": "npm -w frontend run audit:prod",
+    "check": "npm -w frontend run check"
   },
   "overrides": {
     "react": "18.3.1",
