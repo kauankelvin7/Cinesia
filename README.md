@@ -4,6 +4,8 @@
 
 **Estudo de Fisioterapia em um só lugar.**
 
+[**Ver demonstração →**](https://cinesia-five.vercel.app)
+
 Organize matérias, crie resumos e flashcards, revise com repetição espaçada, faça simulados e estude com recursos sociais e IA assistiva.
 
 </div>
